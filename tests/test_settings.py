@@ -1,0 +1,1 @@
+from elites_franchise_portal.config.settings import *

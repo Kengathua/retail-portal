@@ -1,0 +1,26 @@
+__pycache__/
+
+db.sqlite3
+mediafiles/
+
+.pytest_cache/
+
+franchise_portal.egg-info/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.vscode/
+.coverage*
+.cache
+nosetests.xml
+coverage.xml
+coverage
+junitxml_report
+.ebextensions/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+dump.rdb

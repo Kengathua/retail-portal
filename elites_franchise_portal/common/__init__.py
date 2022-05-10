@@ -1,0 +1,1 @@
+from elites_franchise_portal.franchises.models import Franchise
