@@ -1,5 +1,7 @@
 """Store models file."""
 
+from re import I
+from secrets import choice
 from django.db import models
 from django.db.models import PROTECT
 from django.core.exceptions import ValidationError
@@ -7,14 +9,15 @@ from django.core.exceptions import ValidationError
 from elites_franchise_portal.items.models import Item
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord)
+    Inventory ,InventoryItem, InventoryInventoryItem, InventoryRecord)
+from elites_franchise_portal.franchises.models import Franchise
 
 REMOVE_FROM_STOCK_CHOICES = (
     ('SALES', 'SALES'),
     ('DAMAGES', 'DAMAGES'),
 )
 
-REMOVE_FROM_STORE_CHOICES = (
+REMOVE_FROM_WAREHOUSE_CHOICES = (
     ('INVENTORY', 'INVENTORY'),
     ('DAMAGES', 'DAMAGES'),
     ('SUPPLIES', 'SUPPLIES'),
@@ -25,25 +28,36 @@ RECORD_TYPE_CHOICES = (
     ('REMOVE', 'REMOVE'),
 )
 
+WAREHOUSE_TYPE_CHOICES = (
+    ('PUBLIC', 'PUBLIC'),
+    ('PRIVATE', 'PRIVATE'),
+    ('BONDED', 'BONDED'),
+    ('SMART', 'SMART'),
+    ('CONSOLIDATED', 'CONSOLIDATED'),
+    ('COOPERATIVE', 'COOPERATIVE'),
+    ('GOVERNMENT', 'GOVERNMENT'),
+    ('DISTRIBUTION CENTER', 'DISTRIBUTION CENTER')
+)
 
 SALES = 'SALES'
 ADD = 'ADD'
 REMOVE = 'REMOVE'
 INVENTORY = 'INVENTORY'
+PRIVATE = 'PRIVATE'
 
 
-class Store(AbstractBase):
-    """Store model."""
+class WarehouseItem(AbstractBase):
+    """Warehouse Item model."""
 
     item = models.OneToOneField(
         Item, null=False, blank=False, on_delete=PROTECT, unique=True)
-    store_code = models.CharField(max_length=250, null=True, blank=True)
     description = models.CharField(max_length=300, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     @property
     def summary(self):
         """Get summary."""
-        store_records = StoreRecord.objects.filter(store=self, franchise=self.franchise)
+        store_records = WarehouseRecord.objects.filter(warehouse_item=self, franchise=self.franchise)
         total_quantity = 0
         total_amount = 0
         for store_record in store_records:
@@ -63,7 +77,7 @@ class Store(AbstractBase):
     @property
     def quantity(self):
         """Get quantity."""
-        store_record = StoreRecord.objects.filter(store=self)
+        store_record = WarehouseRecord.objects.filter(warehouse_item=self)
         if not store_record.exists():
             return 0
 
@@ -73,7 +87,7 @@ class Store(AbstractBase):
     @property
     def total_amount(self):
         """Get total amount."""
-        store_record = StoreRecord.objects.filter(store=self)
+        store_record = WarehouseRecord.objects.filter(warehouse_item=self)
         if not store_record.exists():
             return 0
 
@@ -94,11 +108,36 @@ class Store(AbstractBase):
         ordering = ['item__item_name']
 
 
-class StoreRecord(AbstractBase):
-    """Store model."""
+class Warehouse(AbstractBase):
+    """Warehouse model."""
+    warehouse_code = models.CharField(max_length=250, null=True, blank=True)
+    warehouse_name = models.CharField(max_length=300)
+    warehouse_type = models.CharField(
+        max_length=300, choices=WAREHOUSE_TYPE_CHOICES, default=PRIVATE)
+    warehouse_items = models.ManyToManyField(
+        WarehouseItem, through='WarehouseWarehouseItem', related_name='warehousewarehouseitems')
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    pushed_to_edi = models.BooleanField(default=False)
 
-    store = models.ForeignKey(
-        Store, null=False, blank=False, on_delete=PROTECT)
+
+class WarehouseWarehouseItem(AbstractBase):
+    """Warehouse Warehouse Items model."""
+    warehouse = models.ForeignKey(
+        Warehouse, on_delete=models.PROTECT)
+    warehouse_item = models.ForeignKey(
+        WarehouseItem, on_delete=models.PROTECT)
+    is_active = models.BooleanField(default=True)
+    pushed_to_edi = models.BooleanField(default=False)
+
+
+class WarehouseRecord(AbstractBase):
+    """Warehouse model."""
+
+    warehouse = models.ForeignKey(
+        Warehouse, null=False, blank=False, on_delete=models.PROTECT)
+    warehouse_item = models.ForeignKey(
+        WarehouseItem, null=False, blank=False, on_delete=models.PROTECT)
     opening_quantity = models.FloatField(default=0.0)
     opening_total_amount = models.FloatField(default=0.0)
     record_type = models.CharField(
@@ -106,20 +145,20 @@ class StoreRecord(AbstractBase):
         choices=RECORD_TYPE_CHOICES, default=ADD)
     quantity_recorded = models.FloatField(null=False, blank=False)
     removal_type = models.CharField(
-        max_length=300, null=True, blank=True, choices=REMOVE_FROM_STORE_CHOICES)
+        max_length=300, null=True, blank=True, choices=REMOVE_FROM_WAREHOUSE_CHOICES)
     unit_price = models.FloatField(null=True, blank=True)
     disposing_price = models.FloatField(null=True, blank=True)
     total_amount_recorded = models.FloatField(null=True, blank=True)
     closing_quantity = models.FloatField(null=True, blank=True)
     closing_total_amount = models.FloatField(null=True, blank=True)
-    removal_quantity_leaving_store = models.FloatField(null=True, blank=True, default=0)
-    removal_quantity_remaining_in_store = models.FloatField(null=True, blank=True, default=0)
+    removal_quantity_leaving_warehouse = models.FloatField(null=True, blank=True, default=0)
+    removal_quantity_remaining_in_warehouse = models.FloatField(null=True, blank=True, default=0)
     # clean to create inventory record if removal type is inventory
 
     def get_unit_price(self):
         """Get unit price."""
         if not self.unit_price:
-            inventory_item = InventoryItem.objects.filter(item=self.store.item)
+            inventory_item = InventoryItem.objects.filter(item=self.warehouse_item.item)
             if not inventory_item.exists():
                 self.unit_price = 0
             else:
@@ -128,7 +167,7 @@ class StoreRecord(AbstractBase):
 
     def get_opening_records(self):
         """Initialize opening records."""
-        records = self.__class__.objects.filter(store=self.store)
+        records = self.__class__.objects.filter(warehouse=self.warehouse)
         if records.exists():
             latest_record = records.latest('updated_on')
             self.opening_quantity = latest_record.closing_quantity
@@ -155,12 +194,7 @@ class StoreRecord(AbstractBase):
     def calculate_total_amount_recorded(self):
         """Calculate total amount recorded."""
         if not self.disposing_price:
-            try:
-                total = float(self.quantity_recorded) * float(self.unit_price)
-            except TypeError:
-                import pdb
-                pdb.set_trace()
-
+            total = float(self.quantity_recorded) * float(self.unit_price)
             self.total_amount_recorded = total
         else:
             total = self.quantity_recorded * self.disposing_price
@@ -195,18 +229,37 @@ class StoreRecord(AbstractBase):
 
         if self.removal_type == INVENTORY:
             inventory_items = InventoryItem.objects.filter(
-                item=self.store.item, franchise=self.franchise)
-            if not inventory_items.exists():
-                InventoryItem.objects.create(
-                    item=self.store.item, created_by=self.created_by, updated_by=self.updated_by,
-                    franchise=self.franchise)
+                item=self.warehouse_item.item, franchise=self.franchise)
             inventory_item = inventory_items.first()
+            if not inventory_items.exists():
+                inventory_item = InventoryItem.objects.create(
+                    item=self.warehouse_item.item, created_by=self.created_by, updated_by=self.updated_by,
+                    franchise=self.franchise)
+
+            inventory_inventory_items = InventoryInventoryItem.objects.filter(
+                inventory_item=inventory_item, is_active=True)
+
+            if not inventory_inventory_items.exists():
+                inventories = Inventory.objects.filter(
+                    franchise=self.franchise, inventory_type='WORKING STOCK', is_active=True)
+                inventory = inventories.first()
+                if not inventories.exists():
+                    franchise = Franchise.objects.get(elites_code=self.franchise)
+                    inventory_name = f'{franchise.name} WORKING INVENTORY'
+                    inventory = Inventory.objects.create(
+                        inventory_name=inventory_name, inventory_type='WORKING STOCK',
+                        created_by=self.created_by, updated_by=self.updated_by,
+                        franchise=self.franchise)
+
+            else:
+                inventory_inventory_item = inventory_inventory_items.first()
+                inventory_item = inventory_inventory_item.inventory_item
 
             return InventoryRecord.objects.create(
-                inventory_item=inventory_item, quantity_recorded=self.quantity_recorded,
-                unit_price=self.unit_price, record_type=ADD,
-                quantity_of_stock_on_display=self.removal_quantity_leaving_store,
-                quantity_of_stock_in_store=self.removal_quantity_remaining_in_store,
+                inventory=inventory, inventory_item=inventory_item,
+                quantity_recorded=self.quantity_recorded, unit_price=self.unit_price,
+                record_type=ADD, quantity_of_stock_on_display=self.removal_quantity_leaving_warehouse,
+                quantity_of_stock_in_warehouse=self.removal_quantity_remaining_in_warehouse,
                 created_by=self.created_by, updated_by=self.updated_by, franchise=self.franchise)
 
     def save(self, *args, **kwargs):
