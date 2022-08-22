@@ -43,14 +43,16 @@ class CatalogItemViewSet(BaseViewMixin):
     search_fields = (
         'section__section_name', 'inventory_item__item__item_name',
         'inventory_item__item__item_model__model_name',
-        'inventory_item__item__item_model__brand_item_type__brand__brand_name',
-        'inventory_item__item__item_model__brand_item_type__item_type__type_name',
+        'inventory_item__item__item_model__brand__brand_name',
+        'inventory_item__item__item_model__item_type__type_name',
         'inventory_item__item__item_code', 'inventory_item__item__barcode')
 
     @method_decorator(vary_on_cookie)
     @method_decorator(cache_page(60*60*14))
     def dispatch(self, *args, **kwargs):
         """."""
+        if self.request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+            cache.delete('catalog_items_objects')
         catalog_items_objects = cache.get('catalog_items_objects')
         if catalog_items_objects is None:
             cache.set('catalog_items_objects', self.queryset)

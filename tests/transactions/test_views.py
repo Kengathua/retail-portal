@@ -11,7 +11,7 @@ from elites_franchise_portal.items.models import (
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
     InventoryItem, InventoryRecord, Sale, SaleRecord,
-    Store, StoreRecord)
+    Warehouse, WarehouseItem, WarehouseWarehouseItem, WarehouseRecord)
 from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem,
@@ -69,7 +69,7 @@ class TestMpesaCheckoutView(TestCase):
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,

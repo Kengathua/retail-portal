@@ -24,6 +24,10 @@ Default data is loaded
 
 You should be set now
 
+### Ngrok
+
+    ngrok http 8000
+
 ### Install redis
 
 #### On Ubuntu

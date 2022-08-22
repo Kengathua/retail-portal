@@ -11,8 +11,8 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord, Sale, SaleRecord,
-    Store, StoreRecord)
+    InventoryItem, InventoryRecord, Warehouse, WarehouseItem,
+    WarehouseWarehouseItem, WarehouseRecord)
 from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem)
@@ -83,20 +83,20 @@ class TestCart(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B/SUT',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731L-C/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731L-C/SUT',
             franchise=franchise_code)
         item_model3 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731M-D/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731M-D/SUT',
             franchise=franchise_code)
         item_model4 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731N-E/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731N-E/SUT',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='838383885673', make_year=2020,
@@ -194,10 +194,10 @@ class TestCart(TestCase):
         customer.save()
         cart.customer = customer
         cart.save()
-        assert order.is_franchise == False   # noqa
+        assert not order.is_franchise
         cart.checkout_cart()
         order.refresh_from_db()
-        assert order.is_franchise == True    # noqa
+        assert order.is_franchise == True
 
     def test_fail_checkout_specific_items_empyt_cart(self):
         """."""
@@ -227,20 +227,20 @@ class TestCart(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B/SUT',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731L-C/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731L-C/SUT',
             franchise=franchise_code)
         item_model3 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731M-D/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731M-D/SUT',
             franchise=franchise_code)
         item_model4 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731N-E/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731N-E/SUT',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='838383885673', make_year=2020,
@@ -343,10 +343,10 @@ class TestCart(TestCase):
         customer.save()
         cart.customer = customer
         cart.save()
-        assert order.is_franchise == False   # noqa
+        assert not order.is_franchise
         cart.checkout_cart()
         order.refresh_from_db()
-        assert order.is_franchise == True    # noqa
+        assert order.is_franchise
 
     def test_checkout_selected_specific_items_in_cart(self):
         """."""
@@ -360,20 +360,20 @@ class TestCart(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B/SUT',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731L-C/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731L-C/SUT',
             franchise=franchise_code)
         item_model3 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731M-D/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731M-D/SUT',
             franchise=franchise_code)
         item_model4 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731N-E/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731N-E/SUT',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='838383885673', make_year=2020,
@@ -483,20 +483,20 @@ class TestCart(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B/SUT',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731L-C/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731L-C/SUT',
             franchise=franchise_code)
         item_model3 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731M-D/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731M-D/SUT',
             franchise=franchise_code)
         item_model4 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731N-E/SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731N-E/SUT',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='838383885673', make_year=2020,
@@ -610,11 +610,11 @@ class TestCartItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
@@ -674,11 +674,11 @@ class TestCartItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
@@ -751,14 +751,14 @@ class TestCartItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='RT26HAR2DSA',
+            ItemModel, brand=brand, item_type=item_type, model_name='RT26HAR2DSA',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='HSHHSHS8837',
+            ItemModel, brand=brand, item_type=item_type, model_name='HSHHSHS8837',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='9876543', make_year=2020,

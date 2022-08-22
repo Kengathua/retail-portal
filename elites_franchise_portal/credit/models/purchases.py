@@ -9,7 +9,7 @@ from django.core.validators import MinValueValidator
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.debit.models import (
-    Store, StoreRecord)
+    Warehouse, WarehouseItem, WarehouseRecord)
 from elites_franchise_portal.items.models import Item, ItemUnits
 
 
@@ -32,7 +32,7 @@ class Purchase(AbstractBase):
     purchase_date = models.DateTimeField(db_index=True, default=timezone.now)
     quantity_to_inventory = models.FloatField(null=True, blank=True)
     quantity_to_inventory_on_display = models.FloatField(null=True, blank=True)
-    quantity_to_inventory_in_store = models.FloatField(null=True, blank=True)
+    quantity_to_inventory_in_warehouse = models.FloatField(null=True, blank=True)
     move_in_bulk = models.BooleanField(default=False)
 
     def get_total_no_of_items(self):
@@ -74,24 +74,27 @@ class Purchase(AbstractBase):
             'updated_by': self.updated_by,
             'franchise': self.franchise,
         }
-        if not Store.objects.filter(item=self.item, franchise=self.franchise).exists():
-            Store.objects.create(
+
+        if not WarehouseItem.objects.filter(item=self.item, franchise=self.franchise).exists():
+            WarehouseItem.objects.create(
                 item=self.item, **audit_fields)
 
-        store = Store.objects.get(item=self.item, franchise=self.franchise)
+        warehouse_item = WarehouseItem.objects.get(item=self.item, franchise=self.franchise)
+        warehouse = Warehouse.objects.get(is_default=True, franchise=self.franchise, is_active=True)
         if not self.move_in_bulk:
             quantity_recorded = self.sale_units_purchased
         else:
             quantity_recorded = self.quantity_purchased
 
-        StoreRecord.objects.create(
-            store=store, record_type='ADD', quantity_recorded=quantity_recorded,
-            unit_price=self.unit_marked_price, **audit_fields)
+        WarehouseRecord.objects.create(
+            warehouse=warehouse, warehouse_item=warehouse_item, record_type='ADD',
+            quantity_recorded=quantity_recorded, unit_price=self.unit_marked_price,
+            **audit_fields)
 
         if self.quantity_to_inventory:
-            StoreRecord.objects.create(
-                store=store, record_type='REMOVE', quantity_recorded=self.quantity_to_inventory,
-                removal_type='INVENTORY', unit_price=self.unit_marked_price,
-                removal_quantity_leaving_store=self.quantity_to_inventory_on_display,
-                removal_quantity_remaining_in_store=self.quantity_to_inventory_in_store,
-                **audit_fields)
+            WarehouseRecord.objects.create(
+                warehouse=warehouse, warehouse_item=warehouse_item, record_type='REMOVE',
+                quantity_recorded=self.quantity_to_inventory, removal_type='INVENTORY',
+                removal_quantity_leaving_warehouse=self.quantity_to_inventory_on_display,
+                removal_quantity_remaining_in_warehouse=self.quantity_to_inventory_in_warehouse,
+                unit_price=self.unit_marked_price, **audit_fields)

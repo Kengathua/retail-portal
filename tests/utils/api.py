@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 
 from django.urls import reverse
 from django.urls import resolve
-from django.db.models import ForeignKey
+from django.db.models import ForeignKey, OneToOneField
 from django.db.models.base import ModelBase
 
 from .login_mixins import LoggedInMixin, authenticate_test_user
@@ -177,6 +177,23 @@ class APITests(LoggedInMixin, object):
             assert candidate_dict[key] == test_dict[key], '{}  should equal -> {}, key {}'.format(
                 candidate_dict[key], test_dict[key], key)
 
+    def get_test_data(self, instance):
+        data = {}
+        for field in self.recipe._model._meta.fields:
+            if not field.name in self.ignore_fields:
+                data[field.name] = getattr(instance, field.name)
+                if isinstance(field, OneToOneField):
+                    f_instance = getattr(instance, field.name)
+                    data[field.name] = getattr(f_instance, self.id_field)
+                    if self._testMethodName == 'test_post':
+                        self.recipe._model.objects.filter(id=instance.id).delete()
+
+                if isinstance(field, ForeignKey):
+                    f_instance = getattr(instance, field.name)
+                    data[field.name] = getattr(f_instance, self.id_field)
+                    continue
+
+        return data
 
     def post_data(self):
         """."""
@@ -248,6 +265,7 @@ class APITests(LoggedInMixin, object):
         assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_post_data)  # noqa
         if resp.status_code != 201:
             return resp
+
         self.compare_dicts(test_post_data, resp.data)
 
         return test_post_data, resp
@@ -268,6 +286,7 @@ class APITests(LoggedInMixin, object):
         return resp
 
     def test_patch(self, status_code=200):
+        """."""
         self.client = authenticate_test_user()
 
         instance = self.make()

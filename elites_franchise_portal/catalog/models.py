@@ -84,8 +84,8 @@ class CatalogItem(AbstractBase):
 
     def compose_item_heading(self):
         """Compose an item heading to display item."""
-        type = self.inventory_item.item.item_model.brand_item_type.item_type.type_name
-        brand = self.inventory_item.item.item_model.brand_item_type.brand.brand_name
+        type = self.inventory_item.item.item_model.item_type.type_name
+        brand = self.inventory_item.item.item_model.brand.brand_name
         model = self.inventory_item.item.item_model.model_name
         units = ''
 
@@ -206,10 +206,8 @@ class CatalogItem(AbstractBase):
         self.get_marked_price()
         self.get_selling_price()
         self.get_threshold_price()
-        if not self.__class__.objects.filter(id=self.id).exists():
-            # Pre save instance not created
-            cache.delete('catalog_items_objects')
         super().save(*args, **kwargs)
+        cache.delete('catalog_items_objects')
 
     class Meta:
         """Meta class for catalog."""
