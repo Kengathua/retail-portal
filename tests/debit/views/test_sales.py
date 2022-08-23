@@ -83,17 +83,17 @@ class TestSaleView(APITests, APITestCase):
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='WRTHY46-G DAT',
+            ItemModel, brand=brand, item_type=item_type, model_name='WRTHY46-G DAT',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         item2 = baker.make(
             Item, item_model=item_model2, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -108,10 +108,8 @@ class TestSaleView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item1 = baker.make(
-            InventoryItem, item=item1, franchise=franchise_code)
-        inventory_item2 = baker.make(
-            InventoryItem, item=item2, franchise=franchise_code)
+        inventory_item1 = InventoryItem.objects.get(item=item1, franchise=franchise_code)
+        inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
             quantity_recorded=20, unit_price=1500,

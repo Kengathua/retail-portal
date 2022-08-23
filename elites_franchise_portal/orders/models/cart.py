@@ -188,9 +188,10 @@ class Cart(AbstractBase):
 
     def validate_one_empty_active_cart_per_customer(self):
         """Validate one active cart per customer."""
-        if self.__class__.objects.filter(
+        carts = self.__class__.objects.filter(
             sale=self.sale, customer=self.customer, is_active=True,
-            is_checked_out=False, is_empty=True).exists():
+            is_checked_out=False, is_empty=True)
+        if carts.exists() and not carts.filter(id=self.id).exists():
             raise ValidationError(
                 {'active_cart': 'The customer already has an active empty cart'})
 

@@ -10,7 +10,7 @@ from django.core.validators import MinValueValidator
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.orders.models import CartItem, Cart
-from elites_franchise_portal.debit.models import Store
+from elites_franchise_portal.debit.models import Warehouse, WarehouseItem, WarehouseRecord
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
@@ -240,12 +240,12 @@ class AbstractOrderItem(AbstractBase):
         if self.quantity > quantity_in_inventory:
             # Check quantity in store.
             order_item = self.cart_item.catalog_item.inventory_item.item
-            store = Store.objects.get(item=order_item, franchise=self.franchise)
-            store_summary = store.summary
-            quantity_in_store = store_summary['total_quantity']
-            if self.quantity > quantity_in_store:
+            warehouse_item = WarehouseItem.objects.get(item=order_item, franchise=self.franchise)
+            warehouse_item_summary = warehouse_item.summary
+            quantity_in_warehouse = warehouse_item_summary['total_quantity']
+            if self.quantity > quantity_in_warehouse:
                 raise ValidationError(
-                    {'quantity': 'There are not enough items in store to fulfil this order'})
+                    {'quantity': 'There are not enough items in warehouse to fulfil this order'})
 
     def get_total_amount(self):
         """Get total for the order item."""
