@@ -12,7 +12,7 @@ REMOVE_FROM_STOCK_CHOICES = (
     ('DAMAGES', 'DAMAGES'),
 )
 
-REMOVE_FROM_STORE_CHOICES = (
+REMOVE_FROM_warehouse_CHOICES = (
     ('INVENTORY', 'INVENTORY'),
     ('DAMAGES', 'DAMAGES'),
     ('SUPPLIES', 'SUPPLIES'),
@@ -23,20 +23,39 @@ RECORD_TYPE_CHOICES = (
     ('REMOVE', 'REMOVE'),
 )
 
+INVENTORY_TYPE_CHOICES = (
+    ('EXCESS', 'EXCESS'),
+    ('SERVICE', 'SERVICE'),
+    ('AVAILABLE', 'AVAILABLE'),
+    ('ALLOCATED', 'ALLOCATED'),
+    ('DECOUPLING', 'DECOUPLING'),
+    ('THEORETICAL', 'THEORETICAL'),
+    ('RAW MATERIALS', 'RAW MATERIALS'),
+    ('FINISHED GOODS', 'FINISHED GOODS'),
+    ('MAINTENANCE, REPAIR AND OPERATING', 'MRO'),
+    ('SAFETY STOCK', 'SAFETY STOCK'),
+    ('WORKING STOCK', 'WORKING STOCK'),
+    ('ANTICIPATORY STOCK', 'ANTICIPATORY STOCK'),
+    ('PSYCHIC STOCK', 'PSYCHIC STOCK'),
+    ('PACKING MATERIALS', 'PACKING MATERIALS'),
+    ('IN TRANSIT STOCK', 'IN TRANSIT STOCK'),
+    ('WORK IN PROGRESS', 'WORK IN PROGRESS'),
+)
+
 SALES = 'SALES'
 ADD = 'ADD'
 REMOVE = 'REMOVE'
 INVENTORY = 'INVENTORY'
 
+WORKING_STOCK = 'WORKING STOCK'
 
 class InventoryItem(AbstractBase):
     """Inventory item model."""
 
     item = models.OneToOneField(
-        Item, null=False, blank=False, unique=True, on_delete=PROTECT)
-    inventory_code = models.CharField(max_length=250, null=True, blank=True)
+        Item, null=False, blank=False, unique=True, on_delete=models.PROTECT)
     description = models.TextField(null=True, blank=True)
-    check_store = models.BooleanField(default=True)
+    check_warehouse = models.BooleanField(default=True)
 
     @property
     def summary(self):
@@ -71,18 +90,18 @@ class InventoryItem(AbstractBase):
         record = InventoryRecord.objects.filter(inventory_item=self).first()
         return record.unit_price if record else 0
 
-    def check_item_in_store(self):
+    def check_item_in_warehouse(self):
         """Check item exists in store."""
-        from .import Store
-        store_item_exists = Store.objects.filter(item=self.item).exists()
-        if not store_item_exists:
+        from .import WarehouseItem
+        warehouse_item_exists = WarehouseItem.objects.filter(item=self.item).exists()
+        if not warehouse_item_exists:
             data = {
                 'updated_by': self.updated_by,
                 'created_by': self.created_by,
                 'item': self.item,
                 'franchise': self.franchise,
             }
-            Store.objects.create(**data)
+            WarehouseItem.objects.create(**data)
 
     def check_item_in_catalog_items(self, section):
         """Check that item exists in catalog items."""
@@ -107,8 +126,6 @@ class InventoryItem(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Super save to perform pre and post save."""
-        if self.check_store:
-            self.check_item_in_store()
         super().save(*args, **kwargs)
 
     class Meta:
@@ -117,9 +134,32 @@ class InventoryItem(AbstractBase):
         ordering = ['item__item_name']
 
 
+class Inventory(AbstractBase):
+    """Inventory model."""
+
+    inventory_name = models.CharField(max_length=300)
+    inventory_code = models.CharField(max_length=300, null=True, blank=True)
+    inventory_type = models.CharField(
+        max_length=300, choices=INVENTORY_TYPE_CHOICES, default=WORKING_STOCK)
+    inventory_items =  models.ManyToManyField(
+        InventoryItem, through='InventoryInventoryItem', related_name='inventoryinventoryitems')
+    is_active = models.BooleanField(default=True)
+    pushed_to_edi = models.BooleanField(default=False)
+
+
+class InventoryInventoryItem(AbstractBase):
+    """Inventory Invetory Item model."""
+
+    inventory = models.ForeignKey(Inventory, on_delete=models.PROTECT)
+    inventory_item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)
+    is_active = models.BooleanField(default=True)
+    pushed_to_edi = models.BooleanField(default=False)
+
+
 class InventoryRecord(AbstractBase):
     """Inventory Record class."""
 
+    inventory = models.ForeignKey(Inventory, on_delete=models.PROTECT)
     inventory_item = models.ForeignKey(
         InventoryItem, null=False, blank=False, on_delete=PROTECT)
     opening_stock_quantity = models.FloatField(null=True, blank=True, default=0)
@@ -133,7 +173,7 @@ class InventoryRecord(AbstractBase):
     closing_stock_quantity = models.FloatField(null=True, blank=True, default=0)
     closing_stock_total_amount = models.FloatField(null=True, blank=True, default=0)
     quantity_of_stock_on_display = models.FloatField()
-    quantity_of_stock_in_store = models.FloatField(null=True, blank=True)
+    quantity_of_stock_in_warehouse = models.FloatField(null=True, blank=True)
     quantity_of_stock_on_sale = models.FloatField(null=True, blank=True)
     quantity_sold = models.FloatField(null=True, blank=True)
     remaining_stock_total_amount = models.FloatField(null=True, blank=True)
@@ -178,24 +218,24 @@ class InventoryRecord(AbstractBase):
         self.closing_stock_quantity = self.opening_stock_quantity + closing_stock
         self.closing_stock_total_amount = self.opening_stock_total_amount + total_amount
 
-    def validate_quantity_of_stock_in_store(self):
+    def validate_quantity_of_stock_in_warehouse(self):
         """Validate quantity of stock in store."""
         from .import Store
-        if self.quantity_of_stock_in_store:
+        if self.quantity_of_stock_in_warehouse:
             try:
                 store_item = Store.objects.get(item=self.item)
             except Store.DoesNotExist:
                 raise ValidationError(
                     {'item': 'The item does not a record in the store'})
 
-            if self.quantity_of_stock_in_store > store_item.closing_quantity:
+            if self.quantity_of_stock_in_warehouse > store_item.closing_quantity:
                 raise ValidationError(
                     {'quantity in store': 'Quantity in store is less than the added quantity'})
 
     def validate_quantity_of_stock_on_sale(self):
         """Validate quantity on stock matches expected quantity on stock."""
         expected_stock_on_sale = sum(
-            [self.quantity_of_stock_on_display, self.quantity_of_stock_in_store])
+            [self.quantity_of_stock_on_display, self.quantity_of_stock_in_warehouse])
         if not self.quantity_of_stock_on_sale == expected_stock_on_sale:
             raise ValidationError(
                 {'quantiy on sale': 'Quantity of stock on sale does not match the expected quantity.'}) # noqa

@@ -83,10 +83,10 @@ class TestSaleView(APITests, APITestCase):
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='GE731K-B SUT',
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
         item_model2 = baker.make(
-            ItemModel, brand_item_type=brand_item_type, model_name='WRTHY46-G DAT',
+            ItemModel, brand=brand, item_type=item_type, model_name='WRTHY46-G DAT',
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='83838388383', make_year=2020,

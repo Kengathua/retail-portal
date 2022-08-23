@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-NGROK_BASE_URL = 'https://8bf9-105-231-201-11.ngrok.io'
+NGROK_BASE_URL = 'http://293e-197-237-137-119.ngrok.io'
 ALLOWED_HOSTS = [
     'kengathua.pythonanywhere.com', '127.0.0.1', 'localhost', '.ngrok.io',
     NGROK_BASE_URL, 'chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop',
@@ -109,24 +109,24 @@ WSGI_APPLICATION = 'elites_franchise_portal.config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.getenv("POSTGRES_DB_NAME", 'elites_franchise'),
-        'USER': os.getenv("POSTGRES_DB_USER", 'elites_user'),
-        'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD", 'elites_pass'),
-        'HOST': os.getenv("POSTGRES_DB_HOST", 'localhost'),
-        'PORT': os.getenv("POSTGRES_DB_PORT", '5432'),
-    }
-}
-
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': os.getenv("POSTGRES_DB_NAME", 'elites_franchise'),
+#         'USER': os.getenv("POSTGRES_DB_USER", 'elites_user'),
+#         'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD", 'elites_pass'),
+#         'HOST': os.getenv("POSTGRES_DB_HOST", 'localhost'),
+#         'PORT': os.getenv("POSTGRES_DB_PORT", '5432'),
 #     }
 # }
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # Password validation

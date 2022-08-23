@@ -176,8 +176,10 @@ class BrandItemType(AbstractBase):
 class ItemModel(AbstractBase):
     """Item models model."""
 
-    brand_item_type = models.ForeignKey(
-        BrandItemType, null=False, blank=False, on_delete=PROTECT)
+    brand = models.ForeignKey(
+        Brand, null=False, blank=False, on_delete=models.PROTECT)
+    item_type = models.ForeignKey(
+        ItemType, null=False, blank=False, on_delete=models.PROTECT)
     model_name = models.CharField(max_length=250)
     model_code = models.CharField(
         max_length=250, null=True, blank=True, validators=[items_elites_code_validator])
@@ -198,8 +200,8 @@ class ItemModel(AbstractBase):
     def __str__(self):
         """Str representation for the item-models model."""
         return '{} -> {} {}'.format(
-            self.model_name, self.brand_item_type.brand.brand_name,
-            self.brand_item_type.item_type.type_name)
+            self.model_name, self.brand.brand_name,
+            self.item_type.type_name)
 
     class Meta:
         """Meta class for item models."""
@@ -226,8 +228,8 @@ class Item(AbstractBase):
 
     def get_item_name(self):
         """Get the item's name."""
-        type = self.item_model.brand_item_type.item_type.type_name
-        brand = self.item_model.brand_item_type.brand.brand_name
+        type = self.item_model.item_type.type_name
+        brand = self.item_model.brand.brand_name
         model = self.item_model.model_name
         self.item_name = brand + ' ' + model + ' ' + type
 
@@ -419,7 +421,6 @@ class ItemUnits(AbstractBase):
 
     def clean(self) -> None:
         """Clean Item Units model."""
-        # validate_franchise_exists(self)
         return super().clean()
 
 

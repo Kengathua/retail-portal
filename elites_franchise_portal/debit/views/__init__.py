@@ -1,13 +1,16 @@
 """."""
 
 from elites_franchise_portal.debit.views.inventory import (
-    InventoryRecordViewSet, InventoryItemViewSet)
+    InventoryViewSet, InventoryItemViewSet, InventoryInventoryItemViewSet,
+    InventoryRecordViewSet)
 from elites_franchise_portal.debit.views.sales import (
     SaleRecordViewSet, SaleViewSet)
-from elites_franchise_portal.debit.views.inventory import (
-    StoreRecordViewSet, StoreViewSet)
+from elites_franchise_portal.debit.views.warehouse import (
+    WarehouseViewSet, WarehouseRecordViewSet, WarehouseItemViewSet,
+    WarehouseWarehouseItemViewSet)
 
 __all__ = (
-    'InventoryRecordViewSet', 'InventoryItemViewSet',
-    'SaleRecordViewSet', 'SaleViewSet', 'StoreRecordViewSet',
-    'StoreViewSet')
+    'InventoryViewSet', 'InventoryRecordViewSet', 'InventoryItemViewSet',
+    'InventoryInventoryItemViewSet', 'SaleRecordViewSet', 'SaleViewSet',
+    'WarehouseViewSet', 'WarehouseRecordViewSet', 'WarehouseItemViewSet',
+    'WarehouseWarehouseItemViewSet')

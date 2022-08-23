@@ -58,41 +58,11 @@ class BrandSerializer(BaseSerializerMixin):
 
 class BrandItemTypeSerializer(BaseSerializerMixin):
     """Brand Item Type serializer class."""
-
-    brand_details = SerializerMethodField()
-
-    def get_brand_details(self, brand_item_type):
-        """Get brand details function."""
-        brand_details = {
-            'id': brand_item_type.brand.id,
-            'brand_name': brand_item_type.brand.brand_name,
-            'brand_code': brand_item_type.brand.brand_code
-        }
-
-        return brand_details
-
-    item_type_details = SerializerMethodField()
-
-    def get_item_type_details(self, brand_item_type):
-        """Get item type details function."""
-        type_details = {
-            'id': brand_item_type.item_type.id,
-            'type_name': brand_item_type.item_type.type_name,
-            'type_code': brand_item_type.item_type.type_code,
-        }
-
-        return type_details
-
     class Meta:
         """Category serializer Meta class."""
 
         model = models.BrandItemType
         fields = '__all__'
-
-        extra_kwargs = {
-            'brand': {'write_only': True},
-            'item_type': {'write_only': True},
-        }
 
 
 class ItemModelSerializer(BaseSerializerMixin):
@@ -104,10 +74,6 @@ class ItemModelSerializer(BaseSerializerMixin):
         model = models.ItemModel
         fields = '__all__'
 
-        extra_kwargs = {
-            'brand_item': {'write_only': True},
-        }
-
 
 class ItemSerializer(BaseSerializerMixin):
     """Item serializer class."""
@@ -117,10 +83,6 @@ class ItemSerializer(BaseSerializerMixin):
 
         model = models.Item
         fields = '__all__'
-
-        extra_kwargs = {
-            'item_model': {'write_only': True},
-        }
 
 
 class UnitsItemTypeSerializer(BaseSerializerMixin):
