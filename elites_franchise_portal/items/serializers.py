@@ -1,5 +1,6 @@
 """Item serializers file."""
 
+from urllib import request
 from rest_framework.fields import SerializerMethodField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
@@ -48,6 +49,46 @@ class ItemTypeSerializer(BaseSerializerMixin):
 
 class BrandSerializer(BaseSerializerMixin):
     """Brand serializer class."""
+
+    item_types = ItemTypeSerializer(many=True, required=False, read_only=True)
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+        audit_fields = {
+            'created_by':user.id,
+            'updated_by':user.id,
+            'franchise':user.franchise,
+            }
+
+        item_types_ids = request.data['item_types'] if 'item_types' in request.data.keys() else []
+        brand = models.Brand.objects.create(**validated_data, **audit_fields)
+        for item_type_id in item_types_ids:
+            item_type = models.ItemType.objects.get(id=item_type_id)
+            models.BrandItemType.objects.create(
+                brand=brand, item_type=item_type, **audit_fields)
+        return brand
+
+    def update(self, instance, validated_data):
+        request = self.context['request']
+        user = request.user
+        audit_fields = {
+            'created_by':user.id,
+            'updated_by':user.id,
+            'franchise':user.franchise,
+            }
+
+        item_types_ids = request.data['item_types'] if 'item_types' in request.data.keys() else []
+
+        for item in validated_data:
+            if models.Brand._meta.get_field(item):
+                setattr(instance, item, validated_data[item])
+        models.BrandItemType.objects.filter(brand=instance).delete()
+        for item_type_id in item_types_ids:
+            item_type = models.ItemType.objects.get(id=item_type_id)
+            models.BrandItemType.objects.create(
+                brand=instance, item_type=item_type, **audit_fields)
+        instance.save()
+        return instance
 
     class Meta:
         """Category serializer Meta class."""
