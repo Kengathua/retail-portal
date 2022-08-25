@@ -66,7 +66,7 @@ class TestBrandView(APITests, APITestCase):
     url = 'v1:items:brand'
 
 
-class TestBrandItenTypeView(APITests, APITestCase):
+class TestBrandItemTypeView(APITests, APITestCase):
     """."""
 
     def setUp(self):
