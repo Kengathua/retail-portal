@@ -161,9 +161,23 @@ class Inventory(AbstractBase):
     pushed_to_edi = models.BooleanField(default=False)
 
     @property
-    def summary():
-        import pdb
-        pdb.set_trace()
+    def summary(self):
+        inventory_items = self.inventory_items.all()
+        inventory_records = InventoryRecord.objects.filter(inventory=self, franchise=self.franchise)
+
+        summary = []
+        for inventory_item in inventory_items:
+            latest_inventory_item_record = inventory_records.filter(inventory_item=inventory_item).latest('updated_on')
+            quantity = latest_inventory_item_record.closing_stock_quantity
+            total_amount = latest_inventory_item_record.closing_stock_total_amount
+            data = {
+                'inventory_item': inventory_item,
+                'quantity':quantity,
+                'total_amount':total_amount,
+                }
+            summary.append(data)
+
+        return summary
 
     def validate_unique_active_master_inventory_for_franchise(self):
         inventory = self.__class__.objects.filter(id=self.id)

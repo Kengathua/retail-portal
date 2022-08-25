@@ -143,11 +143,14 @@ class CatalogItem(AbstractBase):
     def get_quantity(self):
         inventories = Inventory.objects.filter(is_active=True, franchise=self.franchise)
         if not inventories.filter(is_master=True).exists():
-            raise ValidationError({'inventory': 'Your store does not have a master Inventory. Please set up one first'})
+            raise ValidationError({'inventory': 'Your entity does not have a master Inventory. Please set up one first'})
 
-        # import pdb
-        # pdb.set_trace()
-        
+        quantity = 0
+        for inventory in inventories:
+            for data in inventory.summary:
+                quantity += data['quantity'] if data['inventory_item'] == self.inventory_item else 0
+
+        self.quantity = quantity
 
     def add_to_cart(self, customer=None, price=None, quantity=None, is_installment=False, order_now=False): # noqa
         """Add item to cart."""

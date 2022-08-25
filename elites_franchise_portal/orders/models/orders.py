@@ -97,17 +97,48 @@ class Order(AbstractBase):
         instant_order_items = InstantOrderItem.objects.filter(order=self)
         installment_order_items = InstallmentsOrderItem.objects.filter(order=self)
         order_total = 0
+        instant_item_spending = []
+        installment_item_spending = []
+        amount_paid_total = 0
+        order_total = 0
         if instant_order_items.exists():
-            instant_order_items.values_list('total_amount', flat=True)
-            import pdb
-            pdb.set_trace()
+            for instant_order_item in instant_order_items:
+                total_amount = instant_order_item.total_amount
+                amount_paid = instant_order_item.amount_paid
+                amount_paid_total += amount_paid
+                order_total += total_amount
+
+                data = {
+                    'item': instant_order_item,
+                    'total_amount': total_amount,
+                    'amount_paid': amount_paid,
+                }
+                instant_item_spending.append(data)
 
         if installment_order_items.exists():
-            installment_order_items.values_list('total_amount', flat=True)
-            import pdb
-            pdb.set_trace()
+            for installment_order_item in installment_order_items:
+                total_amount=installment_order_item.total_amount
+                amount_paid=installment_order_item.amount_paid
+                amount_paid_total += amount_paid
+                order_total += total_amount
 
-        return {'order_total': order_total}
+                data = {
+                    'item': installment_order_item,
+                    'total_amount': total_amount,
+                    'amount_paid': amount_paid,
+                }
+                installment_item_spending.append(data)
+
+        amount_due = order_total - amount_paid_total
+        summary = {
+            'paid_total': amount_paid_total,
+            'amount_due': amount_due,
+            'order_total': order_total,
+            'instant_items': instant_item_spending,
+            'installment_items': installment_item_spending,
+            }
+
+        return summary
 
     def process_order(self):
         """Process order."""
@@ -546,7 +577,9 @@ class OrderTransaction(AbstractBase):
                         installment_order_item.deposit_amount = self.balance if self.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
                         installment_order_item.amount_paid = installment_order_item.deposit_amount
                         installment_order_item.save()
-                        self.balance = Decimal(self.balance) - installment_order_item.amount_paid
+                        new_balance = Decimal(self.balance) - installment_order_item.amount_paid
+                        self.balance = new_balance
+                        self.__class__.objects.filter(id=self.id).update(balance=new_balance)
                     else:
                         if self.balance <= Decimal(installment_order_item.amount_due):
                             installment_amount = self.balance
