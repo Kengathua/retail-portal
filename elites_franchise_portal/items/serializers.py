@@ -1,6 +1,5 @@
 """Item serializers file."""
 
-from urllib import request
 from rest_framework.fields import SerializerMethodField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
@@ -108,6 +107,14 @@ class BrandItemTypeSerializer(BaseSerializerMixin):
 
 class ItemModelSerializer(BaseSerializerMixin):
     """Item model serializer class."""
+
+    heading = SerializerMethodField()
+
+    def get_heading(self, instance):
+        model_name = instance.model_name
+        brand_name = instance.brand.brand_name
+        type_name = instance.item_type.type_name
+        return f'{model_name} {brand_name} {type_name}'
 
     class Meta:
         """Item models Meta class."""

@@ -124,9 +124,9 @@ class BaseSerializerMixin(AuditFieldsMixin):
 
     all_data = SerializerMethodField()
 
-    def get_all_data(self, item_model):
+    def get_all_data(self, instance):
         """Get all data."""
-        data = self.serialize_instance(item_model)
+        data = self.serialize_instance(instance)
         return data
 
 
