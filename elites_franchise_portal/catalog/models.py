@@ -6,7 +6,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.common.choices import CURRENCY_CHOICES
-from elites_franchise_portal.debit.models import InventoryItem
+from elites_franchise_portal.debit.models import Inventory, InventoryItem
 from elites_franchise_portal.items.models import ItemUnits, ItemAttribute
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.common.validators import (
@@ -77,7 +77,7 @@ class CatalogItem(AbstractBase):
         null=False, blank=False, max_length=250, choices=CURRENCY_CHOICES, default=KSH)
     quantity = models.FloatField(default=0)
     on_display = models.BooleanField(default=True)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
@@ -139,6 +139,15 @@ class CatalogItem(AbstractBase):
         """Get threshold price."""
         if not self.threshold_price:
             self.threshold_price = self.selling_price
+
+    def get_quantity(self):
+        inventories = Inventory.objects.filter(is_active=True, franchise=self.franchise)
+        if not inventories.filter(is_master=True).exists():
+            raise ValidationError({'inventory': 'Your store does not have a master Inventory. Please set up one first'})
+
+        # import pdb
+        # pdb.set_trace()
+        
 
     def add_to_cart(self, customer=None, price=None, quantity=None, is_installment=False, order_now=False): # noqa
         """Add item to cart."""
@@ -205,6 +214,7 @@ class CatalogItem(AbstractBase):
         self.compose_item_heading()
         self.get_marked_price()
         self.get_selling_price()
+        self.get_quantity()
         self.get_threshold_price()
         super().save(*args, **kwargs)
         cache.delete('catalog_items_objects')
