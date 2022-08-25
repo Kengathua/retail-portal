@@ -64,8 +64,7 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -126,8 +125,7 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -190,8 +188,7 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -255,8 +252,7 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -321,8 +317,7 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -387,8 +382,7 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -450,10 +444,10 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='9876543', make_year=2020,
-            create_inventory_item=False, franchise=franchise_code)
+            franchise=franchise_code)
         item2 = baker.make(
             Item, item_model=item_model2, barcode='23456789', make_year=2020,
-            create_inventory_item=False, franchise=franchise_code)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -468,8 +462,8 @@ class TestTransaction(TestCase):
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item1 = baker.make(InventoryItem, item=item1, franchise=franchise_code)
-        inventory_item2 = baker.make(InventoryItem, item=item2, franchise=franchise_code)
+        inventory_item1 = InventoryItem.objects.get(item=item1, franchise=franchise_code)
+        inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
             quantity_recorded=15, unit_price=300, franchise=franchise_code)

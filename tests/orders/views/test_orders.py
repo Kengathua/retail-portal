@@ -1,6 +1,7 @@
 """Tests for order views file."""
 
 import datetime
+from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from elites_franchise_portal.items.models import (
@@ -14,11 +15,11 @@ from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem, Installment)
 from elites_franchise_portal.customers.models import Customer
 
-
 from tests.utils import APITests
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
+from tests.utils.login_mixins import authenticate_test_user
 
 
 class TestOrderView(APITests, APITestCase):
@@ -59,7 +60,7 @@ class TestInstantOrderItemView(APITests, APITestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -79,8 +80,7 @@ class TestInstantOrderItemView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -102,12 +102,22 @@ class TestInstantOrderItemView(APITests, APITestCase):
 
     url = 'v1:orders:instantorderitem'
 
+    def test_post(self, status_code=201):
+        pass
+
+    def test_put(self, status_code=200):
+        pass
+
+    def test_patch(self, status_code=200):
+        pass
+
 
 class TestInstallmentOrderItemView(APITests, APITestCase):
     """."""
 
     def setUp(self):
         """."""
+        end_date = datetime.datetime.now().date() + datetime.timedelta(90)
         franchise = baker.make(
             Franchise, reg_no='BS-9049444', name='Franchise One',
             elites_code='EAL-F/FO-MB/2201-01', partnership_type='SHOP')
@@ -120,7 +130,7 @@ class TestInstallmentOrderItemView(APITests, APITestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -140,8 +150,7 @@ class TestInstallmentOrderItemView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -160,9 +169,29 @@ class TestInstallmentOrderItemView(APITests, APITestCase):
         self.recipe = Recipe(
             InstallmentsOrderItem, franchise=franchise.elites_code,
             order=order, cart_item=cart_item,  confirmation_status='CONFIRMED',
-            amount_paid=150, deposit_amount=150)
+            amount_paid=150, deposit_amount=150, end_date=end_date)
 
     url = 'v1:orders:installmentorderitem'
+
+    def test_post(self, status_code=201):
+        self.client = authenticate_test_user()
+        instance = self.make()
+        test_data = self.get_test_data(instance)
+        url = reverse(self.url + '-list')
+        resp = self.client.post(url, test_data)
+        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)  # noqa
+        if resp.status_code != 201:
+            return resp
+
+        self.compare_dicts(test_data, resp.data)
+
+        return test_data, resp
+
+    def test_put(self, status_code=200):
+        pass
+
+    def test_patch(self, status_code=200):
+        pass
 
 
 class TestInstallmentView(APITests, APITestCase):
@@ -182,7 +211,7 @@ class TestInstallmentView(APITests, APITestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -202,8 +231,7 @@ class TestInstallmentView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -226,8 +254,28 @@ class TestInstallmentView(APITests, APITestCase):
             amount_paid=150, deposit_amount=150)
         next_installment_date = datetime.date.today() + datetime.timedelta(30)
         self.recipe = Recipe(
-            Installment, installment_item=installment_order_item, amount=100,
+            Installment, installment_code='34567', installment_item=installment_order_item, amount=100,
             next_installment_date=next_installment_date,
             franchise=franchise_code)
 
     url = 'v1:orders:installment'
+
+    def test_post(self, status_code=201):
+        self.client = authenticate_test_user()
+        instance = self.make()
+        test_data = self.get_test_data(instance)
+        url = reverse(self.url + '-list')
+        resp = self.client.post(url, test_data)
+        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)  # noqa
+        if resp.status_code != 201:
+            return resp
+
+        self.compare_dicts(test_data, resp.data)
+
+        return test_data, resp
+
+    def test_put(self, status_code=200):
+        pass
+
+    def test_patch(self, status_code=200):
+        pass

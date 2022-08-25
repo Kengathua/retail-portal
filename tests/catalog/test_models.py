@@ -53,14 +53,14 @@ class TestCatalogItem(TestCase):
         franchise = baker.make(Franchise, name='Elites Age Supermarket')
         franchise_code = franchise.elites_code
         cat = baker.make(
-            Category, category_name='Cat One',
+            Category, category_name='ELECTRONICS',
             franchise=franchise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -68,7 +68,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -80,8 +80,7 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
 
@@ -100,7 +99,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -108,7 +107,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -120,8 +119,7 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         catalog_item_recipe = Recipe(
@@ -147,7 +145,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -155,7 +153,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -167,8 +165,7 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         customer = baker.make(
@@ -190,7 +187,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -198,7 +195,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -210,8 +207,7 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         customer = baker.make(
@@ -238,7 +234,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -246,7 +242,7 @@ class TestCatalogItem(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -258,8 +254,7 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         customer = baker.make(

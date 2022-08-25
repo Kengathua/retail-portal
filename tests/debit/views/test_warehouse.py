@@ -50,7 +50,7 @@ class TestWarehouseItemView(APITests, APITestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         self.recipe = Recipe(WarehouseItem, item=item, franchise=franchise_code)
 
     url = 'v1:debit:warehouseitem'
@@ -78,7 +78,7 @@ class TestWarehouseWarehouseItemView(APITests, APITestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         warehouse_item = baker.make(WarehouseItem, item=item, franchise=franchise_code)
@@ -114,7 +114,7 @@ class TestWarehouseRecordView(APITests, APITestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         warehouse_item = baker.make(WarehouseItem, item=item, franchise=franchise_code)

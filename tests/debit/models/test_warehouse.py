@@ -46,7 +46,7 @@ class TestWarehouseItem(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         warehouse_item = baker.make(WarehouseItem, item=item, franchise=franchise_code)
@@ -83,7 +83,7 @@ class TestwarehouseRecord(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         warehouse_item = baker.make(WarehouseItem, item=item, franchise=franchise_code)
@@ -115,7 +115,7 @@ class TestwarehouseRecord(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -168,7 +168,7 @@ class TestwarehouseRecord(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         warehouse_item = baker.make(WarehouseItem, item=item, franchise=franchise_code)
@@ -203,7 +203,7 @@ class TestwarehouseRecord(TestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])

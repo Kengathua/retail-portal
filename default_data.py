@@ -89,69 +89,70 @@ if settings.DEBUG:
 
     item1, _ = Item.objects.update_or_create(
         item_model=item_model1, barcode=12345678,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item2, _ = Item.objects.update_or_create(
         item_model=item_model2, barcode=765433346,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item3, _ = Item.objects.update_or_create(
         item_model=item_model3, barcode=6655443456,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item4, _ = Item.objects.update_or_create(
         item_model=item_model4, barcode=9988776546,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item5, _ = Item.objects.update_or_create(
         item_model=item_model5, barcode=4556483833,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item6, _ = Item.objects.update_or_create(
         item_model=item_model6, barcode=88363636373,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item7, _ = Item.objects.update_or_create(
         item_model=item_model7, barcode=83764545622,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item8, _ = Item.objects.update_or_create(
         item_model=item_model8, barcode=988474747646,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item9, _ = Item.objects.update_or_create(
         item_model=item_model9, barcode=77376353533,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item10, _ = Item.objects.update_or_create(
         item_model=item_model10, barcode=9837365534,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
 
     item11, _ = Item.objects.update_or_create(
         item_model=item_model11, barcode=92828373664,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item12, _ = Item.objects.update_or_create(
         item_model=item_model12, barcode=948474645333,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item13, _ = Item.objects.update_or_create(
         item_model=item_model13, barcode=938736363533,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item14, _ = Item.objects.update_or_create(
         item_model=item_model14, barcode=847474646444,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item15, _ = Item.objects.update_or_create(
         item_model=item_model15, barcode=948474746464,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item16, _ = Item.objects.update_or_create(
         item_model=item_model16, barcode=4747464646484,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item17, _ = Item.objects.update_or_create(
         item_model=item_model17, barcode=84847494039373,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item18, _ = Item.objects.update_or_create(
         item_model=item_model18, barcode=8746453537494,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item19, _ = Item.objects.update_or_create(
         item_model=item_model19, barcode=8373635484998,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
     item20, _ = Item.objects.update_or_create(
         item_model=item_model20, barcode=73736363636353,
-        make_year=2021, create_inventory_item=False, **audit_fields)
+        make_year=2021, **audit_fields)
 
     inventory, _ = Inventory.objects.update_or_create(
         inventory_name='Elites Age Supermarket Working Stock Inventory',
-        inventory_type='WORKING STOCK', **audit_fields)
+        is_master=True, is_active=True, inventory_type='WORKING STOCK',
+        **audit_fields)
 
     inventory_item1, _ = InventoryItem.objects.update_or_create(item=item1, **audit_fields)
     inventory_item2, _ = InventoryItem.objects.update_or_create(item=item2, **audit_fields)

@@ -182,6 +182,12 @@ class APITests(LoggedInMixin, object):
         for field in self.recipe._model._meta.fields:
             if not field.name in self.ignore_fields:
                 data[field.name] = getattr(instance, field.name)
+                if field.null:
+                    value = getattr(instance, field.name, None)
+                    if value and not isinstance(field, ForeignKey) and not isinstance(field, OneToOneField):
+                        data[field.name] = value
+                    continue
+
                 if isinstance(field, OneToOneField):
                     f_instance = getattr(instance, field.name)
                     data[field.name] = getattr(f_instance, self.id_field)

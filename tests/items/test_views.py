@@ -136,10 +136,12 @@ class TestItemView(APITests, APITestCase):
             franchise=franchise_code)
         self.recipe = Recipe(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
 
-    # write_only_fields = ['item_model']
     url = 'v1:items:item'
+
+    def test_delete(self, status_code=204):
+        pass
 
 
 class TestItemAttributeView(APITests, APITestCase):
@@ -166,7 +168,7 @@ class TestItemAttributeView(APITests, APITestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         self.recipe = Recipe(
             ItemAttribute, item=item, attribute_type='DESCRIPTION',
             attribute_value='Description', franchise=franchise_code)
@@ -211,7 +213,7 @@ class TestItemUnitsView(APITests, APITestCase):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         sales_units_recipe = baker.make(
             Units, units_name='230 L', franchise=franchise_code)
         purchases_units_recipe = baker.make(
@@ -257,7 +259,7 @@ class TestItemImages(APITests, APITestCase, LoggedInMixin):
             franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code, create_inventory_item=False)
+            franchise=franchise_code)
         test_image = temporary_image()
         self.recipe = Recipe(
             ItemImage, item=item, image=test_image,

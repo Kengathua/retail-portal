@@ -219,10 +219,10 @@ class Item(AbstractBase):
     item_name = models.CharField(
         null=True, blank=True, max_length=250)
     item_code = models.CharField(
-         null=True, blank=True, max_length=250, validators=[items_elites_code_validator])
+        null=True, blank=True, max_length=250,
+        validators=[items_elites_code_validator])
     make_year = models.IntegerField(null=True, blank=True)
     pushed_to_edi = models.BooleanField(default=False)
-    create_inventory_item = models.BooleanField(default=False)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
@@ -252,16 +252,32 @@ class Item(AbstractBase):
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on the Item model."""
         super().save(*args, **kwargs)
-        from elites_franchise_portal.debit.models import InventoryItem
-        if self.create_inventory_item:
-            InventoryItem.objects.create(
-                item=self, description=None,
-                created_by=self.created_by, updated_by=self.updated_by, franchise=self.franchise)
+        from elites_franchise_portal.debit.models import (
+            Inventory, InventoryItem, InventoryInventoryItem)
+        audit_fields = {
+            'created_by':self.created_by,
+            'updated_by':self.updated_by,
+            'franchise':self.franchise,
+        }
+        inventory_item = InventoryItem.objects.filter(item=self)
+        inventory_item = inventory_item.first()
+
+        if not inventory_item:
+            inventory_item = InventoryItem.objects.create(item=self, description=None, **audit_fields)
+
+        inventory = Inventory.objects.filter(is_master=True, is_active=True, franchise=self.franchise)
+        if inventory.exists():
+            inventory = inventory.first()
+            InventoryInventoryItem.objects.update_or_create(
+                inventory=inventory, inventory_item=inventory_item, **audit_fields)
 
     class Meta:
         """Meta class for items."""
 
         ordering = ['-item_name']
+
+    # TODO Push item to master inventory on item create (item -> InventoryItem & MaterInventory -> InventoryInventoryItem)
+    # Validate Franchise has a master Inventory Registered.
 
 
 class ItemAttribute(AbstractBase):
@@ -272,6 +288,7 @@ class ItemAttribute(AbstractBase):
     attribute_type = models.CharField(
         max_length=300, choices=ITEM_ATTRIBUTE_TYPES)
     attribute_value = models.TextField()
+    is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 

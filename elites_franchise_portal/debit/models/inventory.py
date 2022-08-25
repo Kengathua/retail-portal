@@ -1,5 +1,6 @@
 """Inventory models file."""
 
+from tokenize import Triple
 from django.db import models
 from django.db.models import PROTECT
 from django.core.exceptions import ValidationError
@@ -106,19 +107,20 @@ class InventoryItem(AbstractBase):
     def check_item_in_catalog_items(self, section):
         """Check that item exists in catalog items."""
         from elites_franchise_portal.catalog.models import CatalogItem
-        catalog_item = CatalogItem.objects.filter(inventory_item=self, franchise=self.franchise)
-        if not catalog_item.exists():
-            data = {
-                'updated_by': self.updated_by,
-                'created_by': self.created_by,
-                'franchise': self.franchise,
-                'inventory_item': self,
-                'marked_price': self.unit_price,
-                'selling_price': self.unit_price,
-                'quantity': self.summary['available_quantity'],
-                'section': section,
-                }
-            CatalogItem.objects.create(**data)
+        data = {
+            'updated_by': self.updated_by,
+            'created_by': self.created_by,
+            'franchise': self.franchise,
+            'marked_price': self.unit_price,
+            'selling_price': self.unit_price,
+            'quantity': self.summary['available_quantity'],
+            'section': section,
+            }
+        defaults = {
+            'inventory_item': self,
+            'franchise': self.franchise,
+            }
+        CatalogItem.objects.update_or_create(defaults=defaults, **data)
 
     def __str__(self):
         """Str representation for the inventory_item."""
@@ -127,6 +129,17 @@ class InventoryItem(AbstractBase):
     def save(self, *args, **kwargs):
         """Super save to perform pre and post save."""
         super().save(*args, **kwargs)
+        inventory = Inventory.objects.filter(
+            is_master=True, is_active=True, franchise=self.franchise)
+        inventory = inventory.first()
+        if inventory:
+            audit_fields = {
+                'updated_by': self.updated_by,
+                'created_by': self.created_by,
+                'franchise': self.franchise
+                }
+
+            InventoryInventoryItem.objects.filter(inventory=inventory, inventory_item=self, **audit_fields)
 
     class Meta:
         """Meta class for inventory model."""
@@ -143,9 +156,22 @@ class Inventory(AbstractBase):
         max_length=300, choices=INVENTORY_TYPE_CHOICES, default=WORKING_STOCK)
     inventory_items =  models.ManyToManyField(
         InventoryItem, through='InventoryInventoryItem', related_name='inventoryinventoryitems')
+    is_master = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
 
+    def validate_unique_active_master_inventory_for_franchise(self):
+        inventory = self.__class__.objects.filter(id=self.id)
+        if not inventory.exists():
+            # It is a new inventory being created
+            if self.__class__.objects.filter(
+                is_active=True, is_master=True, franchise=self.franchise).exists():
+                msg = 'You can only have one active master inventory'
+                raise ValidationError({'inventory': msg})
+
+    def clean(self) -> None:
+        self.validate_unique_active_master_inventory_for_franchise()
+        return super().clean()
 
 class InventoryInventoryItem(AbstractBase):
     """Inventory Invetory Item model."""

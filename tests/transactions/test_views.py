@@ -65,7 +65,7 @@ class TestMpesaCheckoutView(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -85,8 +85,7 @@ class TestMpesaCheckoutView(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)

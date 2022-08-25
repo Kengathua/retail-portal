@@ -1,4 +1,6 @@
 from django.test import TestCase
+from elites_franchise_portal.debit.models.inventory import (
+    Inventory, InventoryItem, InventoryInventoryItem)
 
 from elites_franchise_portal.franchises.models import Franchise
 from elites_franchise_portal.items.models import (
@@ -134,14 +136,21 @@ class TestItem(TestCase):
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
-        item = baker.make(
-            Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
+        inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            inventory_type='WORKING STOCK', is_master=True, is_active=True, franchise=franchise_code)
+
+        item = baker.make(Item, item_model=item_model, barcode='83838388383', make_year=2020, franchise=franchise_code)
 
         assert item
         assert item.item_name == 'Samsung GE731K-B SUT Cooker'
         assert item.item_code == 'EAS-MB/I-SGSC/2201'
         assert Item.objects.count() == 1
+
+        inventory_inventory_item = InventoryInventoryItem.objects.get(
+            inventory=inventory, inventory__is_master=True, inventory__is_active=True)
+        assert inventory_inventory_item.inventory_item.item == item
+        assert inventory.inventory_items.filter(item=item)
 
 
 class TestItemAttribute(TestCase):

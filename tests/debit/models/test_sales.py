@@ -87,16 +87,16 @@ class TestSaleRecord(TestCase):
             franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='838383885673', make_year=2020,
-            create_inventory_item=False, franchise=franchise_code)
+            franchise=franchise_code)
         item2 = baker.make(
             Item, item_model=item_model2, barcode='838380987383', make_year=2020,
-            create_inventory_item=False, franchise=franchise_code)
+            franchise=franchise_code)
         item3 = baker.make(
             Item, item_model=item_model3, barcode='678838383883', make_year=2020,
-            create_inventory_item=False, franchise=franchise_code)
+            franchise=franchise_code)
         item4 = baker.make(
             Item, item_model=item_model4, barcode='838383887654', make_year=2020,
-            create_inventory_item=False, franchise=franchise_code)
+            franchise=franchise_code)
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -117,14 +117,15 @@ class TestSaleRecord(TestCase):
         baker.make(
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item1 = baker.make(
-            InventoryItem, item=item1, description=item1.item_name, franchise=franchise_code)
-        inventory_item2 = baker.make(
-            InventoryItem, item=item2, description=item2.item_name, franchise=franchise_code)
-        inventory_item3 = baker.make(
-            InventoryItem, item=item3, description=item3.item_name, franchise=franchise_code)
-        inventory_item4 = baker.make(
-            InventoryItem, item=item4, description=item3.item_name, franchise=franchise_code)
+        inventory_item1 = InventoryItem.objects.get(
+            item=item1, franchise=franchise_code)
+        inventory_item2 = InventoryItem.objects.get(
+            item=item2, franchise=franchise_code)
+        inventory_item3 = InventoryItem.objects.get(
+            item=item3, franchise=franchise_code)
+        inventory_item4 = InventoryItem.objects.get(
+            item=item4, franchise=franchise_code)
+
         baker.make(
             InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
             quantity_recorded=20, unit_price=350,
