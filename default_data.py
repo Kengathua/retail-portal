@@ -4,7 +4,8 @@ from django.core.exceptions import ValidationError
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.franchises.models import Franchise
 from elites_franchise_portal.items.models import (
-    Category, ItemType, Brand, BrandItemType, ItemModel, Item)
+    Category, ItemType, Brand, BrandItemType, ItemModel,
+    Item, Units, UnitsItemType, ItemUnits)
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord)
 from elites_franchise_portal.catalog.models import (
@@ -148,6 +149,76 @@ if settings.DEBUG:
     item20, _ = Item.objects.update_or_create(
         item_model=item_model20, barcode=73736363636353,
         make_year=2021, **audit_fields)
+
+    s_units, _ = Units.objects.update_or_create(units_name='32 Inch', **audit_fields)
+    p_units, _ = Units.objects.update_or_create(units_name='32 Inch', **audit_fields)
+
+    UnitsItemType.objects.update_or_create(item_type=item_type1, units=s_units, **audit_fields)
+    UnitsItemType.objects.update_or_create(item_type=item_type2, units=s_units, **audit_fields)
+    UnitsItemType.objects.update_or_create(item_type=item_type1, units=p_units, **audit_fields)
+    UnitsItemType.objects.update_or_create(item_type=item_type2, units=p_units, **audit_fields)
+
+
+    ItemUnits.objects.update_or_create(
+        item=item1, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item2, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item3, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item4, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item5, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item6, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item7, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item8, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item9, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item10, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item11, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item12, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item13, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item14, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item15, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item16, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item17, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item18, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item19, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
+    ItemUnits.objects.update_or_create(
+        item=item20, sales_units=s_units, purchases_units=p_units,
+        items_per_purchase_unit=1, **audit_fields)
 
     inventory, _ = Inventory.objects.update_or_create(
         inventory_name='Elites Age Supermarket Working Stock Inventory',

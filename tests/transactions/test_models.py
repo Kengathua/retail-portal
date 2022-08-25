@@ -44,7 +44,7 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -105,7 +105,7 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -168,7 +168,7 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -297,7 +297,7 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -362,7 +362,7 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -433,7 +433,7 @@ class TestTransaction(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(

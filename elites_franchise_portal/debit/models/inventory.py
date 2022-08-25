@@ -160,6 +160,11 @@ class Inventory(AbstractBase):
     is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
 
+    @property
+    def summary():
+        import pdb
+        pdb.set_trace()
+
     def validate_unique_active_master_inventory_for_franchise(self):
         inventory = self.__class__.objects.filter(id=self.id)
         if not inventory.exists():

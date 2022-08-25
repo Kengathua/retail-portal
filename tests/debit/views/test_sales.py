@@ -13,7 +13,8 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord, Sale, SaleRecord)
+    Inventory, InventoryItem, InventoryInventoryItem,
+    InventoryRecord, Sale, SaleRecord)
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem)
 from elites_franchise_portal.franchises.models import Franchise
@@ -70,7 +71,6 @@ class TestSaleView(APITests, APITestCase):
         self.client = authenticate_test_user()
         sale = self.recipe.make()
         franchise_code = sale.franchise
-        #   TODO Create a catalog item and Serialize it
         cat = baker.make(
             Category, category_name='Cat One',
             franchise=franchise_code)
@@ -79,7 +79,7 @@ class TestSaleView(APITests, APITestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model1 = baker.make(
@@ -108,6 +108,10 @@ class TestSaleView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
+        baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
         inventory_item1 = InventoryItem.objects.get(item=item1, franchise=franchise_code)
         inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
         baker.make(
@@ -126,6 +130,9 @@ class TestSaleView(APITests, APITestCase):
             CatalogItem, inventory_item=inventory_item1, franchise=franchise_code)
         catalog_item2 = baker.make(
             CatalogItem, inventory_item=inventory_item2, franchise=franchise_code)
+
+        import pdb
+        pdb.set_trace()
         customer_serializer = CustomerSerializer(self.customer)
         billing = [
             {
