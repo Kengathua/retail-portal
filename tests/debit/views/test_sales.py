@@ -16,7 +16,9 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem,
     InventoryRecord, Sale, SaleRecord)
 from elites_franchise_portal.orders.models import (
-    Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem)
+    Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem,
+    Installment, OrderTransaction)
+from elites_franchise_portal.transactions.models import Transaction, Payment
 from elites_franchise_portal.franchises.models import Franchise
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.catalog.models import (
@@ -108,18 +110,20 @@ class TestSaleView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        baker.make(
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
             franchise=franchise_code)
         inventory_item1 = InventoryItem.objects.get(item=item1, franchise=franchise_code)
         inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
-            quantity_recorded=20, unit_price=1500,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item1, record_type='ADD',
+            quantity_recorded=25, unit_price=1500,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item2, record_type='ADD',
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item2, record_type='ADD',
             quantity_recorded=20, unit_price=2000,
             franchise=franchise_code)
         baker.make(
@@ -131,8 +135,6 @@ class TestSaleView(APITests, APITestCase):
         catalog_item2 = baker.make(
             CatalogItem, inventory_item=inventory_item2, franchise=franchise_code)
 
-        import pdb
-        pdb.set_trace()
         customer_serializer = CustomerSerializer(self.customer)
         billing = [
             {
@@ -164,7 +166,6 @@ class TestSaleView(APITests, APITestCase):
         encounter = json.loads(json.dumps(encounter))
         url = reverse(self.url + '-new-sale', kwargs={'pk': sale.id})
 
-        # resp = self.client.post(url, encounter)
         resp = self.client.post(url, encounter, format='json')
         record1 = SaleRecord.objects.filter(sale_type='INSTANT').first()
         record2 = SaleRecord.objects.filter(sale_type='INSTALLMENT').first()
@@ -190,5 +191,30 @@ class TestSaleView(APITests, APITestCase):
         assert instant_item.amount_paid == 3200
 
         installment_item = InstallmentsOrderItem.objects.first()
+        assert installment_item.total_amount == 6600
         assert installment_item.deposit_amount == 1800
         assert installment_item.amount_due == 4800
+
+        assert not Installment.objects.all()
+
+        assert Payment.objects.count() == 1
+        assert Transaction.objects.count() == 1
+        assert OrderTransaction.objects.count() == 1
+
+        order = installment_item.order = instant_item.order
+        order_summary = order.summary
+        assert order_summary['paid_total'] == 5000
+        assert order_summary['amount_due'] == 4800
+        assert order_summary['order_total'] == 9800
+        assert instant_item in [instant_items['item'] for instant_items in order_summary['instant_items']]
+        assert installment_item in [installment_items['item'] for installment_items in order_summary['installment_items']]
+
+        payment = Payment.objects.first()
+        transaction = Transaction.objects.first()
+        order_transaction = OrderTransaction.objects.first()
+
+        assert payment.paid_amount == 5000
+        assert transaction.amount == 5000
+        assert transaction.balance == 0
+        assert order_transaction.amount == 5000
+        assert order_transaction.balance == 0

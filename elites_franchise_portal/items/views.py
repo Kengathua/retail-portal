@@ -22,7 +22,7 @@ class CategoryViewSet(BaseViewMixin):
     serializer_class = serializers.CategorySerializer
     filterset_class = filters.CategoryFilter
     search_fields = (
-        'sections__section_name', 'category_name', 'category_code')
+        'category_name', 'category_code')
 
 
 class ItemTypeViewSet(BaseViewMixin):
@@ -32,8 +32,7 @@ class ItemTypeViewSet(BaseViewMixin):
     serializer_class = serializers.ItemTypeSerializer
     filterset_class = filters.ItemTypeFilter
     search_fields = (
-        'category_section__category__category_name', 'category_section__category__category_code',
-        'category_section__section__section_name', 'category_section__section__section_code',
+        'category__category_name', 'category__category_code',
         'type_name', 'type_code',
     )
 
