@@ -67,9 +67,9 @@ class ItemModelViewSet(BaseViewMixin):
     serializer_class = serializers.ItemModelSerializer
     filterset_class = filters.ItemModelTypeFilter
     search_fields = (
-        'brand__brand_name', 'brand__brand_code',
-        'item_type__type_name', 'item_type__item_code',
-        'model_name', 'model_code',
+        'brand__brand_name', 'brand__brand_code', 'item_type__type_name',
+        'item_type__type_code', 'item_type__category__category_name',
+        'item_type__category__category_code', 'model_name', 'model_code',
     )
 
 
