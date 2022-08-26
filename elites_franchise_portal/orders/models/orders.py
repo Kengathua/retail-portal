@@ -10,7 +10,9 @@ from django.core.validators import MinValueValidator
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.orders.models import CartItem, Cart
-from elites_franchise_portal.debit.models import Warehouse, WarehouseItem, WarehouseRecord
+from elites_franchise_portal.debit.models import (
+    Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
+    Warehouse, WarehouseItem, WarehouseRecord)
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
@@ -521,6 +523,13 @@ class OrderTransaction(AbstractBase):
             order=self.order, is_cleared=False)
         installment_order_items = InstallmentsOrderItem.objects.filter(
             order=self.order, is_cleared=False)
+        available_inventory = Inventory.objects.get(
+            is_active=True, inventory_type='AVAILABLE', franchise=self.franchise)
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'franchise': self.franchise
+            }
 
         if instant_order_items.exists():
             instant_order_items_totals = instant_order_items.values_list(
@@ -551,6 +560,16 @@ class OrderTransaction(AbstractBase):
                     instant_order_item.save()
                     self.balance = new_balance
                     self.__class__.objects.filter(id=self.id).update(balance=new_balance)
+
+            for instant_order_item in instant_order_items:
+                instant_order_item.refresh_from_db()
+                inventory_item = instant_order_item.cart_item.catalog_item.inventory_item
+                InventoryRecord.objects.create(
+                    inventory=available_inventory, inventory_item=inventory_item,
+                    quantity_recorded=instant_order_item.no_of_items_cleared,
+                    unit_price=instant_order_item.unit_price,
+                    quantity_sold=instant_order_item.no_of_items_cleared,
+                    record_type='REMOVE', removal_type='SALES', **audit_fields)
 
         if installment_order_items.exists():
             installment_order_items_totals = installment_order_items.values_list(
@@ -607,13 +626,25 @@ class OrderTransaction(AbstractBase):
                             }
                             Installment.objects.create(**installment_data)
 
+
+            for installment_order_item in installment_order_items:
+                installment_order_item.refresh_from_db()
+                inventory_item = installment_order_item.cart_item.catalog_item.inventory_item
+                InventoryRecord.objects.create(
+                    inventory=available_inventory, inventory_item=inventory_item,
+                    quantity_recorded=installment_order_item.no_of_items_cleared,
+                    unit_price=installment_order_item.unit_price,
+                    record_type='REMOVE', removal_type='SALES', **audit_fields)
+
+            available_inventory.summary
+
         else:
             # Order is present but there are no order items
             # TODO Push the balance to Customer's wallet.
 
             pass
 
-        order_transaction = self.__class__.objects.filter(id=self.id).first()
+        order_transaction = self.__class__.objects.get(id=self.id)
         self.transaction._meta.model.objects.filter(
             id=self.transaction.id).update(balance=order_transaction.balance)
 

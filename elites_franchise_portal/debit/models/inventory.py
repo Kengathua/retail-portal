@@ -8,15 +8,12 @@ from django.core.exceptions import ValidationError
 from elites_franchise_portal.items.models import Item
 from elites_franchise_portal.common.models import AbstractBase
 
-REMOVE_FROM_STOCK_CHOICES = (
+REMOVE_FROM_INVENTORY_CHOICES = (
     ('SALES', 'SALES'),
     ('DAMAGES', 'DAMAGES'),
-)
-
-REMOVE_FROM_warehouse_CHOICES = (
-    ('INVENTORY', 'INVENTORY'),
-    ('DAMAGES', 'DAMAGES'),
+    ('RETURNS', 'RETURNS'),
     ('SUPPLIES', 'SUPPLIES'),
+    ('INVENTORY', 'INVENTORY'),
 )
 
 RECORD_TYPE_CHOICES = (
@@ -40,14 +37,15 @@ INVENTORY_TYPE_CHOICES = (
     ('PSYCHIC STOCK', 'PSYCHIC STOCK'),
     ('PACKING MATERIALS', 'PACKING MATERIALS'),
     ('IN TRANSIT STOCK', 'IN TRANSIT STOCK'),
-    ('WORK IN PROGRESS', 'WORK IN PROGRESS'),
+    ('WORK IN PROCESS', 'WORK IN PROCESS'),
 )
 
 SALES = 'SALES'
 ADD = 'ADD'
 REMOVE = 'REMOVE'
 INVENTORY = 'INVENTORY'
-
+AVAILABLE = 'AVAILABLE'
+ALLOCATED = 'ALLOCATED'
 WORKING_STOCK = 'WORKING STOCK'
 
 class InventoryItem(AbstractBase):
@@ -163,19 +161,24 @@ class Inventory(AbstractBase):
     @property
     def summary(self):
         inventory_items = self.inventory_items.all()
-        inventory_records = InventoryRecord.objects.filter(inventory=self, franchise=self.franchise)
+        inventory_records = InventoryRecord.objects.filter(
+            inventory=self, inventory_item__in=inventory_items, franchise=self.franchise)
 
         summary = []
-        for inventory_item in inventory_items:
-            latest_inventory_item_record = inventory_records.filter(inventory_item=inventory_item).latest('updated_on')
-            quantity = latest_inventory_item_record.closing_stock_quantity
-            total_amount = latest_inventory_item_record.closing_stock_total_amount
-            data = {
-                'inventory_item': inventory_item,
-                'quantity':quantity,
-                'total_amount':total_amount,
-                }
-            summary.append(data)
+        if inventory_records.exists():
+            for inventory_item in inventory_items:
+                try:
+                    latest_inventory_item_record = inventory_records.filter(inventory_item=inventory_item).latest('updated_on')
+                    quantity = latest_inventory_item_record.closing_stock_quantity
+                    total_amount = latest_inventory_item_record.closing_stock_total_amount
+                    data = {
+                        'inventory_item': inventory_item,
+                        'quantity':quantity,
+                        'total_amount':total_amount,
+                        }
+                    summary.append(data)
+                except Exception:
+                    pass
 
         return summary
 
@@ -183,13 +186,33 @@ class Inventory(AbstractBase):
         inventory = self.__class__.objects.filter(id=self.id)
         if not inventory.exists():
             # It is a new inventory being created
-            if self.__class__.objects.filter(
+            if self.is_master and self.__class__.objects.filter(
                 is_active=True, is_master=True, franchise=self.franchise).exists():
                 msg = 'You can only have one active master inventory'
                 raise ValidationError({'inventory': msg})
 
+    def validate_unique_active_available_inventory_for_franchise(self):
+        inventory = self.__class__.objects.filter(id=self.id)
+        if not inventory.exists():
+            # It is a new inventory being created
+            if self.__class__.objects.filter(
+                is_active=True, inventory_type=AVAILABLE, franchise=self.franchise).exists():
+                msg = 'You can only have one active available inventory'
+                raise ValidationError({'inventory': msg})
+
+    def validate_unique_active_allocated_inventory_for_franchise(self):
+        inventory = self.__class__.objects.filter(id=self.id)
+        if not inventory.exists():
+            # It is a new inventory being created
+            if self.__class__.objects.filter(
+                is_active=True, inventory_type=ALLOCATED, franchise=self.franchise).exists():
+                msg = 'You can only have one active allocated inventory'
+                raise ValidationError({'inventory': msg})
+
     def clean(self) -> None:
         self.validate_unique_active_master_inventory_for_franchise()
+        self.validate_unique_active_available_inventory_for_franchise()
+        self.validate_unique_active_allocated_inventory_for_franchise()
         return super().clean()
 
 class InventoryInventoryItem(AbstractBase):
@@ -207,27 +230,49 @@ class InventoryRecord(AbstractBase):
     inventory = models.ForeignKey(Inventory, on_delete=models.PROTECT)
     inventory_item = models.ForeignKey(
         InventoryItem, null=False, blank=False, on_delete=PROTECT)
+    record_code = models.CharField(max_length=300, null=True, blank=True)
     opening_stock_quantity = models.FloatField(null=True, blank=True, default=0)
     opening_stock_total_amount = models.FloatField(null=True, blank=True, default=0)
-    record_type = models.CharField(max_length=300, choices=RECORD_TYPE_CHOICES)
+    record_type = models.CharField(max_length=300, choices=RECORD_TYPE_CHOICES, default=ADD)
     quantity_recorded = models.FloatField(null=False, blank=False)
     unit_price = models.FloatField(null=False, blank=False)
     total_amount_recorded = models.FloatField(null=True, blank=True)
     removal_type = models.CharField(
-        max_length=300, null=True, blank=True, choices=REMOVE_FROM_STOCK_CHOICES)
+        max_length=300, null=True, blank=True, choices=REMOVE_FROM_INVENTORY_CHOICES)
     closing_stock_quantity = models.FloatField(null=True, blank=True, default=0)
     closing_stock_total_amount = models.FloatField(null=True, blank=True, default=0)
-    quantity_of_stock_on_display = models.FloatField()
+    quantity_of_stock_on_display = models.FloatField(null=True, blank=True)
     quantity_of_stock_in_warehouse = models.FloatField(null=True, blank=True)
     quantity_of_stock_on_sale = models.FloatField(null=True, blank=True)
     quantity_sold = models.FloatField(null=True, blank=True)
     remaining_stock_total_amount = models.FloatField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
+    def get_latest_record(self, record_type=None):
+        record = None
+        record_type = record_type if record_type else self.record_type
+        records = InventoryRecord.objects.filter(
+            inventory=self.inventory, inventory_item=self.inventory_item, record_type=record_type,
+            franchise=self.franchise)
+        if records:
+            record = records.latest('updated_on')
+
+        return record
+
+    def validate_inventory_item_exists_in_inventory(self):
+        if not InventoryInventoryItem.objects.filter(
+            inventory=self.inventory, inventory_item=self.inventory_item,
+            is_active=True).exists():
+            inventory = self.inventory.inventory_type.title()
+            inventory_item = self.inventory_item.item.item_name
+            raise ValidationError(
+                {'inventory_item': f'{inventory_item} is not hooked up to an active instance '
+                 'of the {inventory} Inventory. Please set that up first'})
+
     def get_opening_stock(self):
         """Initialize opening stock."""
-        records = self.__class__.objects.filter(inventory_item=self.inventory_item)
-        # .latest('updated_on')
+        records = self.__class__.objects.filter(
+            inventory=self.inventory, inventory_item=self.inventory_item)
         if records.exists():
             latest_record = records.latest('updated_on')
             self.opening_stock_quantity = latest_record.closing_stock_quantity
@@ -250,18 +295,17 @@ class InventoryRecord(AbstractBase):
 
     def calculate_closing_stock_quantity(self):
         """Calculate quantity of closing stock."""
-        closing_stock = 0
-        total_amount = 0
         if self.record_type == ADD:
-            closing_stock += self.quantity_recorded
-            total_amount += self.total_amount_recorded
+            recorded_quantity = self.quantity_recorded
+            recorded_total_amount = self.total_amount_recorded
 
         if self.record_type == REMOVE:
-            closing_stock -= self.quantity_recorded
-            total_amount -= self.total_amount_recorded
+            recorded_quantity = -(self.quantity_recorded)
+            latest_add = self.get_latest_record('ADD')
+            recorded_total_amount = -(latest_add.unit_price * self.quantity_recorded)
 
-        self.closing_stock_quantity = self.opening_stock_quantity + closing_stock
-        self.closing_stock_total_amount = self.opening_stock_total_amount + total_amount
+        self.closing_stock_quantity = self.opening_stock_quantity + recorded_quantity
+        self.closing_stock_total_amount = self.opening_stock_total_amount + recorded_total_amount
 
     def validate_quantity_of_stock_in_warehouse(self):
         """Validate quantity of stock in store."""
@@ -296,8 +340,7 @@ class InventoryRecord(AbstractBase):
 
     def validate_cannot_remove_more_than_existing_items(self):
         """Validate removal quantity not more than available quantity."""
-        summary = self.inventory_item.summary
-        available_quantity = summary['available_quantity']
+        available_quantity = self.opening_stock_quantity
         if self.record_type == REMOVE and self.quantity_recorded > available_quantity:
             raise ValidationError(
                 {'quantity': f'You are trying to remove {self.quantity_recorded} items and the inventory has {available_quantity} items'})  # noqa
@@ -309,14 +352,21 @@ class InventoryRecord(AbstractBase):
                 raise ValidationError(
                     {'removal_type': 'Please specify where to the items are being taken to from the inventory'})    # noqa
 
+    def validate_unique_record_code(self):
+        """Validate record code is unique for the inventory."""
+        record = self.__class__.objects.filter(inventory=self.inventory, record_code=self.record_code)
+        if record.exclude(id=self.id).exists():
+            import pdb
+            pdb.set_trace()
+            raise ValidationError(
+                {'record_code': 'A record with this record code already exists. Please supply a unique record code'})
+
     def clean(self) -> None:
         """Clean Inventory Record."""
-        # note the order
-        self.get_opening_stock()
-        self.calculate_total_amount_recorded()
-        self.calculate_closing_stock_quantity()
+        self.validate_inventory_item_exists_in_inventory()
         self.validate_cannot_remove_more_than_existing_items()
         self.validate_removal_item_has_removal_type()
+        self.validate_unique_record_code()
         return super().clean()
 
     def update_catalog_item(self):
@@ -341,10 +391,44 @@ class InventoryRecord(AbstractBase):
                 return catalog_items.update(
                     marked_price=marked_price, quantity=quantity, **filters)
 
+    def update_master_inventory(self):
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'franchise': self.franchise}
+        if self.inventory.inventory_type == AVAILABLE:
+            master_inventory = Inventory.objects.get(is_master=True, is_active=True, franchise=self.franchise)
+            record = self.__class__.objects.get(id=self.id)
+            data = {
+                'inventory': master_inventory,
+                'record_code':record.record_code,
+                'quantity_recorded': record.quantity_recorded,
+                'inventory_item': record.inventory_item,
+                'record_type': record.record_type,
+                'unit_price': record.unit_price,
+                'removal_type': record.removal_type,
+                'quantity_sold': record.quantity_sold,
+                'total_amount_recorded': record.total_amount_recorded,
+            }
+            if InventoryRecord.objects.filter(
+                inventory=master_inventory, record_code=record.record_code,
+                franchise=record.franchise).exists():
+                return self.__class__.objects.update(**data, **audit_fields)
+
+            return self.__class__.objects.create(**data, **audit_fields)
+
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on Catalog Item."""
+        # NOTE the order
+        if not self.record_code:
+            from random import randint
+            self.record_code = str(randint(10000, 10000000))
+        self.get_opening_stock()
+        self.calculate_total_amount_recorded()
+        self.calculate_closing_stock_quantity()
         super().save(*args, **kwargs)
         self.update_catalog_item()
+        self.update_master_inventory()
 
     class Meta:
         """Meta class for Base Inventory class."""
