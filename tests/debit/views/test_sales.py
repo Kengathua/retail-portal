@@ -90,6 +90,13 @@ class TestSaleView(APITests, APITestCase):
         item_model2 = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='WRTHY46-G DAT',
             franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='83838388383', make_year=2020,
             franchise=franchise_code)
@@ -110,20 +117,16 @@ class TestSaleView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
         inventory_item1 = InventoryItem.objects.get(item=item1, franchise=franchise_code)
         inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
-        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
-        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
-        baker.make(
-            InventoryRecord, inventory=inventory, inventory_item=inventory_item1, record_type='ADD',
+        baker.make(InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item1)
+        baker.make(InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item2)
+        inventory_record1 = baker.make(
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1, record_type='ADD',
             quantity_recorded=25, unit_price=1500,
             franchise=franchise_code)
-        baker.make(
-            InventoryRecord, inventory=inventory, inventory_item=inventory_item2, record_type='ADD',
+        inventory_record2 = baker.make(
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2, record_type='ADD',
             quantity_recorded=20, unit_price=2000,
             franchise=franchise_code)
         baker.make(
@@ -218,3 +221,12 @@ class TestSaleView(APITests, APITestCase):
         assert transaction.balance == 0
         assert order_transaction.amount == 5000
         assert order_transaction.balance == 0
+
+        quantity1 = None
+        quantity2 = None
+        for data in available_inventory.summary:
+            quantity1 = data['quantity'] if data['inventory_item'] == inventory_item1 else quantity1
+            quantity2 = data['quantity'] if data['inventory_item'] == inventory_item2 else quantity2
+
+        assert quantity1 == inventory_record1.quantity_recorded - instant_item.no_of_items_cleared == 25-2 ==23
+        assert quantity2 == inventory_record2.quantity_recorded - installment_item.no_of_items_cleared == 20-0 == 20

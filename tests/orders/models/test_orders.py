@@ -11,7 +11,7 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    Inventory,
+    Inventory, InventoryInventoryItem,
     InventoryItem, InventoryRecord, Warehouse, WarehouseItem,
     WarehouseWarehouseItem, WarehouseRecord)
 from elites_franchise_portal.catalog.models import CatalogItem
@@ -45,6 +45,9 @@ class TestOrder(TestCase):
         """."""
         franchise = baker.make(Franchise, name='Elites Age Supermarket')
         franchise_code = franchise.elites_code
+        baker.make(
+            Inventory, inventory_name='Elites Working Inventory', is_master=True,
+            inventory_type='WORKING STOCK', franchise=franchise_code)
         cat = baker.make(
             Category, category_name='Cat One',
             franchise=franchise_code)
@@ -104,21 +107,28 @@ class TestOrder(TestCase):
         inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
         inventory_item3 = InventoryItem.objects.get(item=item3, franchise=franchise_code)
         inventory_item4 = InventoryItem.objects.get(item=item4, franchise=franchise_code)
+        inventory = baker.make(
+            Inventory, inventory_name='Elites Available Inventory', inventory_type='AVAILABLE',
+            franchise=franchise_code)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item3)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item4)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item1, record_type='ADD',
             quantity_recorded=20, unit_price=350,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item2, record_type='ADD',
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item2, record_type='ADD',
             quantity_recorded=10, unit_price=1000,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item3, record_type='ADD',
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item3, record_type='ADD',
             quantity_recorded=5, unit_price=2750,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item4, record_type='ADD',
-            quantity_recorded=5, unit_price=2750,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item4, record_type='ADD',
+            quantity_recorded=5, unit_price=2950,
             franchise=franchise_code)
         catalog_item1 = baker.make(
             CatalogItem, inventory_item=inventory_item1, franchise=franchise_code)

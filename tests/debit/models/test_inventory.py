@@ -1,3 +1,5 @@
+"""."""
+from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
 import pytest
 from django.test import TestCase
 from django.core.exceptions import ValidationError
@@ -44,6 +46,34 @@ class TestInventory(TestCase):
         with pytest.raises(ValidationError) as ve:
             inventory.make()
         msg = 'You can only have one active master inventory'
+        assert msg in ve.value.messages
+
+    def test_validate_unique_active_available_inventory_for_franchise(self):
+        franchise = baker.make(Franchise, name='Elites Age Supermarket')
+        franchise_code = franchise.elites_code
+        baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory = Recipe(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        with pytest.raises(ValidationError) as ve:
+            inventory.make()
+        msg = 'You can only have one active available inventory'
+        assert msg in ve.value.messages
+
+    def test_validate_unique_active_allocated_inventory_for_franchise(self):
+        franchise = baker.make(Franchise, name='Elites Age Supermarket')
+        franchise_code = franchise.elites_code
+        baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Allocated Inventory',
+            is_active=True, inventory_type='ALLOCATED', franchise=franchise_code)
+        inventory = Recipe(
+            Inventory, inventory_name='Elites Age Supermarket Allocated Inventory',
+            is_active=True, inventory_type='ALLOCATED', franchise=franchise_code)
+        with pytest.raises(ValidationError) as ve:
+            inventory.make()
+        msg = 'You can only have one active allocated inventory'
         assert msg in ve.value.messages
 
 
@@ -435,3 +465,85 @@ class TestInventoryRecord(TestCase):
             record2_recipe.make()
         msg = 'Please specify where to the items are being taken to from the inventory'
         assert msg in ve.value.messages
+
+    def test_create_inventory_record_add_to_available_inventory_and_update_master(self):
+        franchise = baker.make(Franchise, name='Elites Age Supermarket')
+        franchise_code = franchise.elites_code
+        cat = baker.make(
+            Category, category_name='Cat One',
+            franchise=franchise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            franchise=franchise_code)
+        brand = baker.make(
+            Brand, brand_name='Samsung', franchise=franchise_code)
+        baker.make(
+            BrandItemType, brand=brand, item_type=item_type,
+            franchise=franchise_code)
+        item_model = baker.make(
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
+            franchise=franchise_code)
+        master_inventory= baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        item = baker.make(
+            Item, item_model=item_model, barcode='83838388383', make_year=2020,
+            franchise=franchise_code)
+        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+        s_units.item_types.set([item_type])
+        s_units.save()
+        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units.item_types.set([item_type])
+        p_units.save()
+        baker.make(
+            ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
+            items_per_purchase_unit=12, franchise=franchise_code)
+        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        baker.make(InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item)
+
+        record1 = baker.make(
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item, record_code='EAS-001',
+            record_type='ADD', quantity_recorded=15, unit_price=300, franchise=franchise_code)
+
+        master_inventory_record1 = InventoryRecord.objects.filter(
+            inventory=master_inventory, inventory_item=inventory_item,
+            record_type='ADD').latest('updated_on')
+
+        assert master_inventory_record1.opening_stock_quantity == 0
+        assert master_inventory_record1.opening_stock_total_amount == 0
+        assert master_inventory_record1.quantity_recorded == record1.quantity_recorded == 15
+        assert master_inventory_record1.record_type == record1.record_type == 'ADD'
+        assert master_inventory_record1.unit_price == record1.unit_price == 300
+        assert master_inventory_record1.total_amount_recorded == record1.total_amount_recorded
+        assert master_inventory_record1.closing_stock_quantity == 15
+
+        assert InventoryRecord.objects.count() == 2
+
+        record2 = baker.make(
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item, record_code='EAS-002',
+            record_type='REMOVE', removal_type = 'SALES', quantity_recorded=9, unit_price=320,
+            franchise=franchise_code)
+
+        master_inventory_record2 = InventoryRecord.objects.filter(
+            inventory=master_inventory, inventory_item=inventory_item,
+            record_type='REMOVE').latest('updated_on')
+
+        assert master_inventory_record2.opening_stock_quantity == 15
+        assert master_inventory_record2.opening_stock_total_amount == 4500
+        assert master_inventory_record2.quantity_recorded == record2.quantity_recorded == 9
+        assert master_inventory_record2.record_type == record2.record_type == 'REMOVE'
+        assert master_inventory_record2.removal_type == record2.removal_type == 'SALES'
+        assert master_inventory_record2.unit_price == record2.unit_price == 320
+        assert master_inventory_record2.total_amount_recorded == record2.total_amount_recorded
+        assert master_inventory_record2.closing_stock_quantity == 6
+        assert master_inventory_record2.closing_stock_total_amount == 1800
+
+        master_inventory.summary[0]['quantity'] == 6
+        master_inventory.summary[0]['total_amount'] == 1800
+        assert InventoryRecord.objects.count() == 4

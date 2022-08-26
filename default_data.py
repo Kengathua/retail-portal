@@ -247,6 +247,9 @@ if settings.DEBUG:
     inventory_item19, _ = InventoryItem.objects.update_or_create(item=item19, **audit_fields)
     inventory_item20, _ = InventoryItem.objects.update_or_create(item=item20, **audit_fields)
 
+    for inventory_item in InventoryItem.objects.all():
+        inventory.inventory_items.add(inventory_item)
+
     InventoryRecord.objects.update_or_create(
         inventory=inventory,
         inventory_item=inventory_item1, record_type='ADD', quantity_of_stock_on_display=7,
