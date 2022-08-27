@@ -15,6 +15,8 @@ from elites_franchise_portal.items.models import (
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem,
     InventoryRecord, Sale, SaleRecord)
+from elites_franchise_portal.debit.models import (
+    Warehouse)
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem,
     Installment, OrderTransaction)
@@ -90,6 +92,9 @@ class TestSaleView(APITests, APITestCase):
         item_model2 = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='WRTHY46-G DAT',
             franchise=franchise_code)
+        private_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', warehouse_type='PRIVATE',
+            franchise=franchise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
@@ -97,12 +102,18 @@ class TestSaleView(APITests, APITestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        catalog = baker.make(
+            Catalog, name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True,
+            franchise=franchise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='83838388383', make_year=2020,
             franchise=franchise_code)
+        item1.activate()
         item2 = baker.make(
             Item, item_model=item_model2, barcode='83838388383', make_year=2020,
             franchise=franchise_code)
+        item2.activate()
         s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
         s_units.item_types.set([item_type])
@@ -123,15 +134,15 @@ class TestSaleView(APITests, APITestCase):
         baker.make(InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item2)
         inventory_record1 = baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1, record_type='ADD',
-            quantity_recorded=25, unit_price=1500,
+            quantity_recorded=2, unit_price=1500,
             franchise=franchise_code)
         inventory_record2 = baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2, record_type='ADD',
-            quantity_recorded=20, unit_price=2000,
+            quantity_recorded=2, unit_price=2000,
             franchise=franchise_code)
         baker.make(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard_catalog=True,
+            description='Standard Catalog', is_standard=True,
             franchise=franchise_code)
         catalog_item1 = baker.make(
             CatalogItem, inventory_item=inventory_item1, franchise=franchise_code)
@@ -228,5 +239,5 @@ class TestSaleView(APITests, APITestCase):
             quantity1 = data['quantity'] if data['inventory_item'] == inventory_item1 else quantity1
             quantity2 = data['quantity'] if data['inventory_item'] == inventory_item2 else quantity2
 
-        assert quantity1 == inventory_record1.quantity_recorded - instant_item.no_of_items_cleared == 25-2 ==23
-        assert quantity2 == inventory_record2.quantity_recorded - installment_item.no_of_items_cleared == 20-0 == 20
+        assert quantity1 == inventory_record1.quantity_recorded - instant_item.no_of_items_cleared
+        assert quantity2 == inventory_record2.quantity_recorded - installment_item.no_of_items_cleared

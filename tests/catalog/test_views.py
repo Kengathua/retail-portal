@@ -12,6 +12,8 @@ from elites_franchise_portal.debit.models import (
     InventoryItem, InventoryRecord, Sale, SaleRecord)
 from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
+from elites_franchise_portal.debit.models import (
+    Inventory, InventoryItem, InventoryInventoryItem)
 from elites_franchise_portal.franchises.models import Franchise
 from tests.utils.login_mixins import authenticate_test_user
 
@@ -40,7 +42,7 @@ class TestCatalogView(APITests, APITestCase):
         franchise_code = franchise.elites_code
         self.recipe = Recipe(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard_catalog=True, franchise=franchise_code)
+            description='Standard Catalog', is_standard=True, franchise=franchise_code)
 
     url = 'v1:catalog:catalog'
 
@@ -82,9 +84,20 @@ class TestCatalogItemView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item, record_type='ADD',
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=15, unit_price=300, franchise=franchise_code)
         section = baker.make(
             Section, section_name='Section A', franchise=franchise_code)
@@ -157,7 +170,7 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Samsung', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
@@ -177,12 +190,23 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         section = baker.make(
             Section, section_name='Section A', franchise=franchise_code)
         catalog = baker.make(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard_catalog=True, franchise=franchise_code)
+            description='Standard Catalog', is_standard=True, franchise=franchise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, section=section, franchise=franchise_code)
         self.recipe = Recipe(

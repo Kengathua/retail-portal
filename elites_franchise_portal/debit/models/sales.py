@@ -5,6 +5,7 @@ from xml.dom import ValidationErr
 from django.db import models
 from django.db.models import Q
 from django.core.validators import MinValueValidator
+from django.contrib.postgres.fields import ArrayField
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.catalog.models import CatalogItem
@@ -16,6 +17,15 @@ SALE_TYPE_CHOICES = (
     ('INSTALLMENT', 'INSTALLMENT'),
 )
 
+SALE_RECORD_PROCESSING_STATUS_CHOICES = (
+    ('PENDING', 'PENDING'),
+    ('CANCELED', 'CANCELED'),
+    ('REJECTED', 'REJECTED'),
+    ('CONFIRMED', 'CONFIRMED'),
+    ('PROCESSED', 'PROCESSED'),
+)
+
+PENDING = 'PENDING'
 INSTANT = 'INSTANT'
 INSTALLMENT = 'INSTALLMENT'
 
@@ -107,6 +117,9 @@ class SaleRecord(AbstractBase):
     closing_stock_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
+    processing_status = models.CharField(
+        max_length=300, choices=SALE_RECORD_PROCESSING_STATUS_CHOICES,
+        default=PENDING)
     is_cleared = models.BooleanField(default=False)
 
     @property
@@ -147,6 +160,7 @@ class SaleRecord(AbstractBase):
             'franchise': self.franchise,
             'is_installment': True if self.sale_type == INSTALLMENT else False
         }
+
         CartItem.objects.create(**cart_item_payload)
         Cart.objects.filter(id=cart.id).update(is_empty=False)
 

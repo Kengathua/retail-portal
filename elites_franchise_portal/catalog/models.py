@@ -239,7 +239,7 @@ class Catalog(AbstractBase):
     # TODO Add a short name field
     name = models.CharField(max_length=300, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
-    is_standard_catalog = models.BooleanField(default=False)
+    is_standard = models.BooleanField(default=False)
     deactivated_on = models.DateTimeField(null=True, blank=True)
     deactivation_reason = models.TextField(null=True, blank=True)
     catalog_items = models.ManyToManyField(

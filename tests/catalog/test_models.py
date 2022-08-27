@@ -7,7 +7,7 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord, Sale, SaleRecord)
+    InventoryItem, Inventory, InventoryInventoryItem, Sale, SaleRecord)
 from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.orders.models import Cart, CartItem
@@ -40,7 +40,7 @@ class TestCatalog(TestCase):
         franchise_code = franchise.elites_code
         catalog = baker.make(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard_catalog=True, franchise=franchise_code)
+            description='Standard Catalog', is_standard=True, franchise=franchise_code)
         assert catalog
         assert Catalog.objects.count() == 1
 
@@ -80,7 +80,18 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
 
@@ -119,7 +130,18 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         catalog_item_recipe = Recipe(
@@ -165,7 +187,18 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         customer = baker.make(
@@ -207,7 +240,18 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         customer = baker.make(
@@ -254,7 +298,18 @@ class TestCatalogItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
         customer = baker.make(
@@ -268,53 +323,53 @@ class TestCatalogItem(TestCase):
         assert cart_item.opening_quantity == 0
         assert cart_item.quantity_added == 1
         assert cart_item.closing_quantity == 1
-        assert cart_item.is_installment == False # noqa
-        assert cart_item.order_now == False # noqa
+        assert not cart_item.is_installment
+        assert not cart_item.order_now
 
         catalog_item.add_to_cart(customer)
         cart_item.refresh_from_db()
         assert cart_item.opening_quantity == 1
         assert cart_item.quantity_added == 1
         assert cart_item.closing_quantity == 2
-        assert cart_item.is_installment == False # noqa
-        assert cart_item.order_now == False # noqa
+        assert not cart_item.is_installment
+        assert not cart_item.order_now
 
         catalog_item.add_to_cart(customer)
         cart_item.refresh_from_db()
         assert cart_item.opening_quantity == 2
         assert cart_item.quantity_added == 1
         assert cart_item.closing_quantity == 3
-        assert cart_item.is_installment == False # noqa
-        assert cart_item.order_now == False # noqa
+        assert not cart_item.is_installment
+        assert not cart_item.order_now
 
         catalog_item.add_to_cart(customer, None, 5)
         cart_item.refresh_from_db()
         assert cart_item.opening_quantity == 3
         assert cart_item.quantity_added == 5
         assert cart_item.closing_quantity == 8
-        assert cart_item.is_installment == False # noqa
-        assert cart_item.order_now == False # noqa
+        assert not cart_item.is_installment
+        assert not cart_item.order_now
 
         catalog_item.add_to_cart(customer, None, 2)
         cart_item.refresh_from_db()
         assert cart_item.opening_quantity == 8
         assert cart_item.quantity_added == 2
         assert cart_item.closing_quantity == 10
-        assert cart_item.is_installment == False # noqa
-        assert cart_item.order_now == False # noqa
+        assert not cart_item.is_installment
+        assert not cart_item.order_now
 
         catalog_item.add_to_cart(customer, None, 3, is_installment=True)
         cart_item.refresh_from_db()
         assert cart_item.opening_quantity == 10
         assert cart_item.quantity_added == 3
         assert cart_item.closing_quantity == 13
-        assert cart_item.is_installment == True    # noqa
-        assert cart_item.order_now == False     # noqa
+        assert cart_item.is_installment
+        assert not cart_item.order_now
 
         catalog_item.add_to_cart(customer, None, 4, is_installment=True, order_now=True)
         cart_item.refresh_from_db()
         assert cart_item.opening_quantity == 13
         assert cart_item.quantity_added == 4
         assert cart_item.closing_quantity == 17
-        assert cart_item.is_installment == True    # noqa
-        assert cart_item.order_now == True      # noqa
+        assert cart_item.is_installment
+        assert cart_item.order_now

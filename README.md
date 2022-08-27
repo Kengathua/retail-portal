@@ -14,6 +14,8 @@ If you have a virtual environment set up.
 
 Once the shell has loaded enter
 
+    exec(open('setup_data.py').read())
+
     exec(open('default_data.py').read())
 
     exit()

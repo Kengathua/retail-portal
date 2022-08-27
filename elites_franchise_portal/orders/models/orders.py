@@ -12,7 +12,7 @@ from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.orders.models import CartItem, Cart
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
-    Warehouse, WarehouseItem, WarehouseRecord)
+    Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
@@ -88,6 +88,7 @@ class Order(AbstractBase):
     instant_order_total = models.FloatField(null=True, blank=True)
     installment_order_total = models.FloatField(null=True, blank=True)
     order_total = models.FloatField(null=True, blank=True)
+    sale_guid = models.UUIDField(null=True, blank=True)
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
@@ -156,7 +157,7 @@ class Order(AbstractBase):
             })
 
         self.__class__.objects.filter(id=order.id).update(is_processed = True)
-        cart = Cart.objects.filter(cart_code=self.cart_code)
+        cart = Cart.objects.filter(cart_code=self.cart_code, franchise=self.franchise)
         if cart.exists():
             cart.update(is_active = False)
 
@@ -219,12 +220,24 @@ class Order(AbstractBase):
         """Clean order."""
         self.compose_order_name()
         self.get_order_total()
-        return super().clean()
+        super().clean()
 
     def __str__(self) -> str:
         """Represent an order in string format."""
         order_representation = f'{self.customer.full_name} {self.order_name} {self.order_number}'
         return order_representation
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        new_order = self.__class__.objects.filter(id=self.id)
+        if new_order.exists() and new_order.filter(sale_guid=None).exists():
+            audit_fields = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'franchise': self.franchise,
+                }
+            sale = Sale.objects.create(customer=self.customer, **audit_fields)
+            new_order.update(sale_guid=sale.id)
 
     class Meta:
         """Meta class for order model."""
@@ -273,12 +286,18 @@ class AbstractOrderItem(AbstractBase):
         if self.quantity > quantity_in_inventory:
             # Check quantity in store.
             order_item = self.cart_item.catalog_item.inventory_item.item
-            warehouse_item = WarehouseItem.objects.get(item=order_item, franchise=self.franchise)
-            warehouse_item_summary = warehouse_item.summary
-            quantity_in_warehouse = warehouse_item_summary['total_quantity']
-            if self.quantity > quantity_in_warehouse:
-                raise ValidationError(
-                    {'quantity': 'There are not enough items in warehouse to fulfil this order'})
+            warehouse_item = WarehouseItem.objects.filter(item=order_item, franchise=self.franchise)
+            # warehouse_item_summary = warehouse_item.summary
+            # quantity_in_warehouse = warehouse_item_summary['total_quantity']
+            # if self.quantity > quantity_in_warehouse:
+            #     raise ValidationError(
+            #         {'quantity': 'There are not enough items in warehouse to fulfil this order'})
+
+    def validate_no_of_items_cleared_less_than_or_equal_to_quantity(self):
+        if not self.no_of_items_cleared <= self.quantity:
+            raise ValidationError(
+                {'quantity': 'The number of items cleared {} cannot be more than the ordered quantity {}'.format(
+                    self.no_of_items_cleared, int(self.quantity))})
 
     def get_total_amount(self):
         """Get total for the order item."""
@@ -286,7 +305,7 @@ class AbstractOrderItem(AbstractBase):
 
     def get_quantity(self):
         """Get the quantity being ordered."""
-        if self.quantity == 0:
+        if not self.quantity:
             self.quantity = self.cart_item.closing_quantity
 
     def get_no_of_items_awaiting_clearance(self):
@@ -296,6 +315,7 @@ class AbstractOrderItem(AbstractBase):
     def clean(self) -> None:
         """Clean Order Item."""
         self.validate_item_exists_in_inventory_or_cleared_from_store()
+        self.validate_no_of_items_cleared_less_than_or_equal_to_quantity()
         return super().clean()
 
     def save(self, *args, **kwargs):
@@ -304,6 +324,9 @@ class AbstractOrderItem(AbstractBase):
         self.get_total_amount()
         self.get_no_of_items_awaiting_clearance()
         super().save(*args, **kwargs)
+        order = self.order
+        order.refresh_from_db()
+        sale = Sale.objects.get(id=order.sale_guid)
 
     class Meta:
         """Meta class for order items."""
@@ -539,7 +562,7 @@ class OrderTransaction(AbstractBase):
                 for instant_order_item in instant_order_items:
                     updates = {
                         'no_of_items_awaiting_clearance': 0,
-                        'no_of_items_cleared': instant_order_item.no_of_items_awaiting_clearance,
+                        'no_of_items_cleared': instant_order_item.quantity,
                         'is_cleared': True,
                         'payment_status': 'PAID',
                         'amount_paid': instant_order_item.total_amount,
@@ -552,11 +575,11 @@ class OrderTransaction(AbstractBase):
 
             else:
                 for instant_order_item in instant_order_items:
-                    no_of_clearable_items = int(
-                        float(self.balance) / instant_order_item.unit_price)
+                    no_of_clearable_items = int(float(self.balance) / instant_order_item.unit_price)
+                    no_of_items_cleared = instant_order_item.quantity if no_of_clearable_items >= 1 else 0
                     deficit = Decimal(instant_order_item.total_amount) - Decimal(self.balance)  # noqa
                     new_balance = float(self.balance) % instant_order_item.unit_price
-                    instant_order_item.no_of_items_cleared = no_of_clearable_items
+                    instant_order_item.no_of_items_cleared = no_of_items_cleared
                     instant_order_item.save()
                     self.balance = new_balance
                     self.__class__.objects.filter(id=self.id).update(balance=new_balance)
@@ -635,8 +658,6 @@ class OrderTransaction(AbstractBase):
                     quantity_recorded=installment_order_item.no_of_items_cleared,
                     unit_price=installment_order_item.unit_price,
                     record_type='REMOVE', removal_type='SALES', **audit_fields)
-
-            available_inventory.summary
 
         else:
             # Order is present but there are no order items

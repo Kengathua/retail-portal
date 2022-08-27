@@ -1,11 +1,18 @@
+"""."""
+
+import pytest
 from django.test import TestCase
-from elites_franchise_portal.debit.models.inventory import (
+from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
+from elites_franchise_portal.debit.models import (
+    Warehouse, WarehouseItem, WarehouseWarehouseItem)
+from elites_franchise_portal.catalog.models import Catalog
 
 from elites_franchise_portal.franchises.models import Franchise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
     ItemModel, ItemType, ItemUnits, UnitsItemType, Units)
+from django.core.exceptions import ValidationError
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -136,21 +143,82 @@ class TestItem(TestCase):
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
-        inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            inventory_type='WORKING STOCK', is_master=True, is_active=True, franchise=franchise_code)
 
-        item = baker.make(Item, item_model=item_model, barcode='83838388383', make_year=2020, franchise=franchise_code)
+        item = baker.make(
+            Item, item_model=item_model, barcode='83838388383', make_year=2020,
+            franchise=franchise_code)
 
         assert item
         assert item.item_name == 'Samsung GE731K-B SUT Cooker'
         assert item.item_code == 'EAS-MB/I-SGSC/2201'
         assert Item.objects.count() == 1
 
-        inventory_inventory_item = InventoryInventoryItem.objects.get(
-            inventory=inventory, inventory__is_master=True, inventory__is_active=True)
-        assert inventory_inventory_item.inventory_item.item == item
-        assert inventory.inventory_items.filter(item=item)
+    def test_activate_item(self):
+        """."""
+        franchise = baker.make(Franchise, name='Elites Age Supermarket')
+        franchise_code = franchise.elites_code
+        cat = baker.make(
+            Category, category_name='Cat One',
+            franchise=franchise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            franchise=franchise_code)
+        brand = baker.make(
+            Brand, brand_name='Samsung', franchise=franchise_code)
+        baker.make(
+            BrandItemType, brand=brand, item_type=item_type,
+            franchise=franchise_code)
+        item_model = baker.make(
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
+            franchise=franchise_code)
+
+        item = baker.make(
+            Item, item_model=item_model, barcode='83838388383', make_year=2020,
+            franchise=franchise_code)
+        assert not item.is_active
+
+        with pytest.raises(ValidationError) as ve:
+            item.activate()
+        msg = 'You do not have an activate private warehouse set up. ' \
+            'Please set that up to activate your products'
+        assert msg in ve.value.messages
+        baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', warehouse_type='PRIVATE',
+            franchise=franchise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            item.activate()
+        msg = 'You do not have an active master inventory for your entity. '\
+            'Please set that up to activate your products'
+        assert msg in ve.value.messages
+        baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            item.activate()
+        msg = 'You do not have an active available inventory set up. '\
+            'Please set that up to activate your products'
+        assert msg in ve.value.messages
+        baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            item.activate()
+        msg = 'You do not have an active standard catalog set up. '\
+            'Please set that up to activate your products'
+        assert msg in ve.value.messages
+        baker.make(
+            Catalog, name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, franchise=franchise_code)
+        item.activate()
+
+        assert item.is_active
+        assert Inventory.objects.count() == 2
+        assert InventoryItem.objects.count() == 1
+        assert InventoryInventoryItem.objects.count() == 2
 
 
 class TestItemAttribute(TestCase):
