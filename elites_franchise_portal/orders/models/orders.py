@@ -228,6 +228,7 @@ class Order(AbstractBase):
         return order_representation
 
     def save(self, *args, **kwargs):
+        """."""
         super().save(*args, **kwargs)
         new_order = self.__class__.objects.filter(id=self.id)
         if new_order.exists() and new_order.filter(sale_guid=None).exists():

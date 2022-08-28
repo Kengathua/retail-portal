@@ -102,12 +102,17 @@ class Cart(AbstractBase):
                 cart_code=self.cart_code, customer=self.customer, order_name="#{}".format(
                     self.franchise),
                 order_number='#{}'.format(random.randint(1001, 9999)), **audit_fields_data)
+            if self.sale:
+                Order.objects.filter(id=order.id).update(sale_guid=self.sale.id)
 
         else:
             update_data = {
                 'is_franchise': self.is_franchise,
             }
             customer_orders.filter(cart_code=self.cart_code).update(**update_data)
+            if self.sale:
+                customer_orders.filter(
+                    cart_code=self.cart_code).update(sale_guid=self.sale.id, **update_data)
             order = customer_orders.first()
 
         for cart_item in cart_items:
