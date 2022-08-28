@@ -76,6 +76,7 @@ class InventoryRecordSerializer(BaseSerializerMixin):
     """Inventory record serializer class."""
 
     item = SerializerMethodField()
+    all_data = SerializerMethodField()
 
     def get_item(self, record):
         """Serialize details of the business partner that a user is linked to."""
@@ -84,6 +85,10 @@ class InventoryRecordSerializer(BaseSerializerMixin):
             'id': item.id,
             'item_name': item.item_name,
         }
+
+    def get_all_data(self, instance):
+        """Override all data field to return None.(Optimizing response)."""
+        return None
 
     class Meta:
         """Inventory record Meta class."""

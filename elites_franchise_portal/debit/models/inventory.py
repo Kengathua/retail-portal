@@ -263,11 +263,11 @@ class InventoryRecord(AbstractBase):
         if not InventoryInventoryItem.objects.filter(
             inventory=self.inventory, inventory_item=self.inventory_item,
             is_active=True).exists():
-            inventory = self.inventory.inventory_type.title()
             inventory_item = self.inventory_item.item.item_name
+            inventory_type = self.inventory.inventory_type.title()
             raise ValidationError(
-                {'inventory_item': f'{inventory_item} is not hooked up to an active instance '
-                 'of the {inventory} Inventory. Please set that up first'})
+                {'inventory_item': '{} is not hooked up to an active {} Inventory. '
+                 'Please set that up first'.format(inventory_item, inventory_type)})
 
     def get_opening_stock(self):
         """Initialize opening stock."""
@@ -302,7 +302,8 @@ class InventoryRecord(AbstractBase):
         if self.record_type == REMOVE:
             recorded_quantity = -(self.quantity_recorded)
             latest_add = self.get_latest_record('ADD')
-            recorded_total_amount = -(latest_add.unit_price * self.quantity_recorded)
+            unit_price = latest_add.unit_price if latest_add else self.unit_price
+            recorded_total_amount = -(unit_price * self.quantity_recorded)
 
         self.closing_stock_quantity = self.opening_stock_quantity + recorded_quantity
         self.closing_stock_total_amount = self.opening_stock_total_amount + recorded_total_amount
@@ -340,7 +341,7 @@ class InventoryRecord(AbstractBase):
 
     def validate_cannot_remove_more_than_existing_items(self):
         """Validate removal quantity not more than available quantity."""
-        available_quantity = self.opening_stock_quantity
+        available_quantity = int(self.opening_stock_quantity)
         if self.record_type == REMOVE and self.quantity_recorded > available_quantity:
             raise ValidationError(
                 {'quantity': f'You are trying to remove {self.quantity_recorded} items and the inventory has {available_quantity} items'})  # noqa
@@ -380,28 +381,31 @@ class InventoryRecord(AbstractBase):
                     'id': catalog_item.id,
                     'franchise': catalog_item.franchise,
                 }
-            if self.record_type == ADD:
+            if self.record_type == ADD and self.inventory.is_master:
                 quantity = catalog_item.quantity + self.quantity_recorded
                 return catalog_items.update(
                     marked_price=self.unit_price, quantity=quantity, **filters)
 
-            if self.record_type == REMOVE:
+            if self.record_type == REMOVE and self.inventory.is_master:
                 marked_price = catalog_item.marked_price
                 quantity = catalog_item.quantity - self.quantity_recorded
                 return catalog_items.update(
                     marked_price=marked_price, quantity=quantity, **filters)
 
     def update_master_inventory(self):
+        """Update master inventory."""
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,
             'franchise': self.franchise}
+
         if self.inventory.inventory_type == AVAILABLE:
-            master_inventory = Inventory.objects.get(is_master=True, is_active=True, franchise=self.franchise)
+            master_inventory = Inventory.objects.get(
+                is_master=True, is_active=True, franchise=self.franchise)
             record = self.__class__.objects.get(id=self.id)
             data = {
                 'inventory': master_inventory,
-                'record_code':record.record_code,
+                'record_code': record.record_code,
                 'quantity_recorded': record.quantity_recorded,
                 'inventory_item': record.inventory_item,
                 'record_type': record.record_type,

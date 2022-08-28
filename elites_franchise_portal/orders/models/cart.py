@@ -10,7 +10,6 @@ from django.core.validators import MinValueValidator
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.catalog.models import CatalogItem
-# from elites_age_group.shop.orders.sensors import clean_cart_of_multiple_similar_item
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.debit.models.sales import Sale
 from django.contrib.auth import get_user_model
@@ -28,6 +27,7 @@ class Cart(AbstractBase):
         Sale, blank=True, null=True, on_delete=models.CASCADE)
     cart_code = models.CharField(
         null=True, blank=True, max_length=250)
+    order_guid = models.UUIDField(null=True, blank=True)
     is_empty = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_checked_out = models.BooleanField(default=False)
@@ -115,16 +115,15 @@ class Cart(AbstractBase):
             prices.append(float(cart_item.selling_price)*quantity)
 
             if cart_item.is_installment:
-                # create an installment order item
-                InstallmentsOrderItem.objects.get_or_create(
+                InstallmentsOrderItem.objects.create(
                     order=order, cart_item=cart_item, confirmation_status='PENDING',
                     quantity=quantity, **audit_fields_data)
             else:
-                InstantOrderItem.objects.get_or_create(
+                InstantOrderItem.objects.create(
                     order=order, cart_item=cart_item, confirmation_status='PENDING',
                     quantity=quantity, **audit_fields_data)
 
-        self.__class__.objects.filter(id=self.id).update(is_checked_out=True)
+        self.__class__.objects.filter(id=self.id).update(order_guid=order.id, is_checked_out=True)
 
     def checkout_specific_items_in_cart(self, cart_items=[]):
         """Checkout a specific item in cart."""

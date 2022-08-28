@@ -222,6 +222,7 @@ class Item(AbstractBase):
         null=True, blank=True, max_length=250,
         validators=[items_elites_code_validator])
     make_year = models.IntegerField(null=True, blank=True)
+    is_active = models.BooleanField(default=False)
     pushed_to_edi = models.BooleanField(default=False)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
@@ -249,35 +250,107 @@ class Item(AbstractBase):
         """Str representation for item model."""
         return f'{self.item_name}'
 
+    def activate(self):
+        """Activate a product by setting it up in inventory and catalog."""
+        from elites_franchise_portal.debit.models import (
+            Inventory, InventoryItem, InventoryInventoryItem)
+        from elites_franchise_portal.debit.models import (
+            Warehouse, WarehouseItem, WarehouseWarehouseItem)
+        from elites_franchise_portal.catalog.models import Catalog
+
+        private_warehouse = Warehouse.objects.filter(
+            is_active=True, warehouse_type='PRIVATE', franchise=self.franchise)
+        master_inventory = Inventory.objects.filter(
+            is_master=True, is_active=True, franchise=self.franchise)
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'franchise': self.franchise,
+            }
+
+        if not private_warehouse.exists():
+            raise ValidationError(
+                {'private_warehouse': 'You do not have an activate private warehouse set up. '
+                 'Please set that up to activate your products'})
+
+        if not master_inventory.exists():
+            raise ValidationError(
+                {'master_inventory': 'You do not have an active master inventory for your entity.'
+                 ' Please set that up to activate your products'})
+
+        available_inventory = Inventory.objects.filter(
+            inventory_type='AVAILABLE', is_active=True, franchise=self.franchise)
+        if not available_inventory.exists():
+            raise ValidationError(
+                {'available inventory': 'You do not have an active available inventory set up. '
+                 'Please set that up to activate your products'})
+
+        catalog = Catalog.objects.filter(
+            is_active=True, is_standard=True, franchise=self.franchise)
+        if not catalog.exists():
+            raise ValidationError(
+                {'catalog': 'You do not have an active standard catalog set up. '
+                 'Please set that up to activate your products'})
+
+        private_warehouse = private_warehouse.first()
+        master_inventory = master_inventory.first()
+        available_inventory = available_inventory.first()
+        catalog = catalog.first()
+
+        if not WarehouseItem.objects.filter(item=self).exists():
+            payload = {
+                'item': self,
+                'description': self.item_name,
+            }
+            warehouse_item = WarehouseItem.objects.create(**payload, **audit_fields)
+            WarehouseWarehouseItem.objects.create(
+                warehouse=private_warehouse, warehouse_item=warehouse_item, **audit_fields)
+
+        else:
+            defaults = {'warehouse': private_warehouse}
+            warehouse_item = WarehouseItem.objects.get(item=self)
+            WarehouseWarehouseItem.objects.update_or_create(
+                defaults=defaults, warehouse_item=warehouse_item, **audit_fields)
+
+        if not InventoryItem.objects.filter(item=self).exists():
+            payload = {
+                'item': self,
+                'description': self.item_name,
+                }
+            inventory_item = InventoryItem.objects.create(**payload, **audit_fields)
+            InventoryInventoryItem.objects.create(
+                inventory=master_inventory, inventory_item=inventory_item, **audit_fields)
+            InventoryInventoryItem.objects.create(
+                inventory=available_inventory, inventory_item=inventory_item, **audit_fields)
+
+        else:
+            inventory_item = InventoryItem.objects.get(item=self)
+            master_payload = {
+                'inventory': master_inventory,
+                'inventory_item': inventory_item,
+                }
+            available_payload = {
+                'inventory': available_inventory,
+                'inventory_item': inventory_item,
+                }
+
+            if not InventoryInventoryItem.objects.filter(**master_payload).exists():
+                InventoryInventoryItem.objects.create(**master_payload, **audit_fields)
+
+            if not InventoryInventoryItem.objects.filter(**available_payload).exists():
+                InventoryInventoryItem.objects.create(**available_payload, **audit_fields)
+
+        self.is_active = True
+        self.save()
+
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on the Item model."""
         super().save(*args, **kwargs)
-        from elites_franchise_portal.debit.models import (
-            Inventory, InventoryItem, InventoryInventoryItem)
-        audit_fields = {
-            'created_by':self.created_by,
-            'updated_by':self.updated_by,
-            'franchise':self.franchise,
-        }
-        inventory_item = InventoryItem.objects.filter(item=self)
-        inventory_item = inventory_item.first()
-
-        if not inventory_item:
-            inventory_item = InventoryItem.objects.create(item=self, description=None, **audit_fields)
-
-        inventory = Inventory.objects.filter(is_master=True, is_active=True, franchise=self.franchise)
-        if inventory.exists():
-            inventory = inventory.first()
-            InventoryInventoryItem.objects.update_or_create(
-                inventory=inventory, inventory_item=inventory_item, **audit_fields)
 
     class Meta:
         """Meta class for items."""
 
         ordering = ['-item_name']
-
-    # TODO Push item to master inventory on item create (item -> InventoryItem & MaterInventory -> InventoryInventoryItem)
-    # Validate Franchise has a master Inventory Registered.
 
 
 class ItemAttribute(AbstractBase):

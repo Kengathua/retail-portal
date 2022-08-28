@@ -14,7 +14,6 @@ from elites_franchise_portal.debit.tasks import process_sale
 from elites_franchise_portal.transactions.models import (
     Transaction, Payment)
 
-
 class SaleViewSet(BaseViewMixin):
     """Sale View class."""
 

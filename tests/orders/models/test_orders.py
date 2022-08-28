@@ -222,7 +222,18 @@ class TestInsantOrderItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, franchise=franchise_code)
@@ -912,7 +923,7 @@ class TestInstallment(TestCase):
             franchise=franchise_code)
         brand = baker.make(
             Brand, brand_name='Ford', franchise=franchise_code)
-        brand_item_type = baker.make(
+        baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             franchise=franchise_code)
         item_model = baker.make(
