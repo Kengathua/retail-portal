@@ -12,6 +12,8 @@ from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.customers.models import Customer
 from django.contrib.auth import get_user_model
 
+from elites_franchise_portal.orders.models.orders import Order
+
 SALE_TYPE_CHOICES = (
     ('INSTANT', 'INSTANT'),
     ('INSTALLMENT', 'INSTALLMENT'),
@@ -36,9 +38,11 @@ class Sale(AbstractBase):
     customer = models.ForeignKey(
         Customer, null=True, blank=True, on_delete=models.PROTECT)
     sale_code = models.CharField(null=True, blank=True, max_length=300)
+    order = models.ForeignKey(Order, null=True, blank=True, on_delete=models.PROTECT)
     total_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
+    encounter = models.JSONField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
 
@@ -89,7 +93,7 @@ class Sale(AbstractBase):
         """Perform pre save and post save actions."""
         self.check_customer()
         super().save(*args, **kwargs)
-        self.check_cart()
+        # self.check_cart()
 
 
 class SaleRecord(AbstractBase):
