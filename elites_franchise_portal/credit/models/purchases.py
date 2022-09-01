@@ -80,7 +80,8 @@ class Purchase(AbstractBase):
                 item=self.item, **audit_fields)
 
         warehouse_item = WarehouseItem.objects.get(item=self.item, franchise=self.franchise)
-        warehouse = Warehouse.objects.get(is_default=True, franchise=self.franchise, is_active=True)
+        warehouse = Warehouse.objects.get(
+            warehouse_type='PRIVATE', is_default=True, franchise=self.franchise, is_active=True)
         if not self.move_in_bulk:
             quantity_recorded = self.sale_units_purchased
         else:

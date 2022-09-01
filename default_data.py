@@ -155,7 +155,7 @@ if settings.DEBUG:
 
     private_warehouse = Warehouse.objects.update_or_create(
         warehouse_name='Elites Private Warehouse', warehouse_type='PRIVATE',
-        is_active=True, **audit_fields)
+        is_default=True, is_active=True, **audit_fields)
     master_inventory, _ = Inventory.objects.update_or_create(
         inventory_name='Elites Age Supermarket Working Stock Inventory',
         is_master=True, is_active=True, inventory_type='WORKING STOCK',
