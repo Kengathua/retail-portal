@@ -63,10 +63,11 @@ LOCAL_APPS = [
     'elites_franchise_portal.wallet',
     'elites_franchise_portal.catalog',
     'elites_franchise_portal.adapters',
-    'elites_franchise_portal.adapters.mobile_money.mpesa',
     'elites_franchise_portal.customers',
     'elites_franchise_portal.franchises',
+    'elites_franchise_portal.encounters',
     'elites_franchise_portal.transactions',
+    'elites_franchise_portal.adapters.mobile_money.mpesa',
 ]
 
 INSTALLED_APPS += LOCAL_APPS
@@ -266,6 +267,17 @@ SESSION_CACHE_ALIAS = "default"
 
 CACHE_TTL = 60 * 1
 # @method_decorator(cache_page(CACHE_TTL))
+
+CELERY_BROKER_URL = "redis://localhost:6379"
+CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_TASK_RESULT_EXPIRES = 30  # in seconds
+# CELERY_TASK_RESULT_EXPIRES = 300  # in seconds
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_TIME_LIMIT = int(60 * 60 * 12)  # 12 hours in seconds
+CELERY_TASK_IGNORE_RESULT = True
 
 # Email address: adminuser@email.com
 # First name: Admin

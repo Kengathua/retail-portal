@@ -10,9 +10,7 @@ from django.core.validators import MinValueValidator
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.orders.models import CartItem, Cart
-from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
-    Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
+
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
@@ -88,7 +86,6 @@ class Order(AbstractBase):
     instant_order_total = models.FloatField(null=True, blank=True)
     installment_order_total = models.FloatField(null=True, blank=True)
     order_total = models.FloatField(null=True, blank=True)
-    sale_guid = models.UUIDField(null=True, blank=True)
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
@@ -230,15 +227,18 @@ class Order(AbstractBase):
     def save(self, *args, **kwargs):
         """."""
         super().save(*args, **kwargs)
-        new_order = self.__class__.objects.filter(id=self.id)
-        if new_order.exists() and new_order.filter(sale_guid=None).exists():
+        from elites_franchise_portal.debit.models import Sale
+        order = self.__class__.objects.filter(id=self.id).first()
+        if order:
             audit_fields = {
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
                 'franchise': self.franchise,
                 }
-            sale = Sale.objects.create(customer=self.customer, **audit_fields)
-            new_order.update(sale_guid=sale.id)
+
+            defaults = {'order': order}
+
+            Sale.objects.update_or_create(defaults=defaults, customer=self.customer, **audit_fields)
 
     class Meta:
         """Meta class for order model."""
@@ -281,6 +281,9 @@ class AbstractOrderItem(AbstractBase):
 
     def validate_item_exists_in_inventory_or_cleared_from_store(self):
         """Validate that item exists in catalog, inventory and store."""
+        from elites_franchise_portal.debit.models import (
+            Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
+            Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
         inventory_item = self.cart_item.catalog_item.inventory_item
         inventory_summary = inventory_item.summary
         quantity_in_inventory = inventory_summary['available_quantity']
@@ -325,9 +328,12 @@ class AbstractOrderItem(AbstractBase):
         self.get_total_amount()
         self.get_no_of_items_awaiting_clearance()
         super().save(*args, **kwargs)
+        from elites_franchise_portal.debit.models import (
+            Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
+            Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
         order = self.order
         order.refresh_from_db()
-        sale = Sale.objects.get(id=order.sale_guid)
+        sale = Sale.objects.filter(order=order).first()
 
     class Meta:
         """Meta class for order items."""
@@ -543,6 +549,9 @@ class OrderTransaction(AbstractBase):
 
     def process_order_transaction(self):
         """Process a transaction for an order."""
+        from elites_franchise_portal.debit.models import (
+            Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
+            Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
         instant_order_items = InstantOrderItem.objects.filter(
             order=self.order, is_cleared=False)
         installment_order_items = InstallmentsOrderItem.objects.filter(

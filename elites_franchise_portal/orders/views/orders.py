@@ -1,6 +1,8 @@
 """Order views file."""
 
+from sys import audit
 from elites_franchise_portal.debit.models.sales import PENDING
+from elites_franchise_portal.orders.models.cart import CartItem
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -52,24 +54,24 @@ class OrderViewSet(BaseViewMixin):
             cart = Cart.objects.get(cart_code = order.cart_code)
             Cart.objects.filter(
                 id=cart.id).update(customer=order.customer, is_active=True, is_checked_out=False)
-            sale = cart.sale
-            if not sale:
-                sale = Sale.objects.create(customer=order.customer, **audit_fields)
+            sale = Sale.objects.get(order=order)
             for catalog_item_data in new_catalog_items_data:
                 catalog_item = CatalogItem.objects.get(
                     id=catalog_item_data['catalog_item'])
                 quantity = catalog_item_data['quantity']
-                sale_type = catalog_item_data['sale_type']
+                order_type = catalog_item_data['sale_type']
                 selling_price = catalog_item_data['unit_price']
-                sale_record_payload = {
+                payload = {
                     'catalog_item': catalog_item,
-                    'sale': sale,
-                    'quantity_sold': quantity,
+                    'cart': cart,
+                    'quantity_added': quantity,
                     'selling_price': selling_price,
-                    'sale_type': sale_type,
+                    'is_installment': True if order_type == 'INSTALLMENT' else False,
                 }
-                SaleRecord.objects.create(**sale_record_payload, **audit_fields)
-            process_sale(sale, order)
+                CartItem.objects.create(**payload, **audit_fields)
+
+            cart.checkout_cart()
+            order.process_order()
 
         if additional_payments:
             for payment in additional_payments:
@@ -77,17 +79,14 @@ class OrderViewSet(BaseViewMixin):
                 amount = payment['amount']
                 if amount:
                     payment_payload = {
-                        'created_by': sale.created_by,
-                        'updated_by': sale.updated_by,
-                        'franchise': sale.franchise,
                         'paid_amount': amount,
-                        'customer': sale.customer,
+                        'customer': order.customer,
                         'payment_method': means,
                         'is_confirmed': True,
                         'is_processed': True,
                         'required_amount': amount,
                     }
-                    Payment.objects.create(**payment_payload)
+                    Payment.objects.create(**payment_payload, **audit_fields)
 
         refresh_order(order)
 

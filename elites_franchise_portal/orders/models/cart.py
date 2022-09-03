@@ -3,6 +3,7 @@
 import random
 import logging
 from decimal import Decimal
+from celery import shared_task
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -11,7 +12,7 @@ from django.core.validators import MinValueValidator
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.debit.models.sales import Sale
+from elites_franchise_portal.encounters.models import Encounter
 from django.contrib.auth import get_user_model
 
 
@@ -23,8 +24,8 @@ class Cart(AbstractBase):
 
     customer = models.ForeignKey(
         Customer, null=True, blank=True, on_delete=models.PROTECT)
-    sale = models.ForeignKey(
-        Sale, blank=True, null=True, on_delete=models.CASCADE)
+    encounter = models.ForeignKey(
+        Encounter, blank=True, null=True, on_delete=models.PROTECT)
     cart_code = models.CharField(
         null=True, blank=True, max_length=250)
     order_guid = models.UUIDField(null=True, blank=True)
@@ -102,17 +103,12 @@ class Cart(AbstractBase):
                 cart_code=self.cart_code, customer=self.customer, order_name="#{}".format(
                     self.franchise),
                 order_number='#{}'.format(random.randint(1001, 9999)), **audit_fields_data)
-            if self.sale:
-                Order.objects.filter(id=order.id).update(sale_guid=self.sale.id)
 
         else:
             update_data = {
                 'is_franchise': self.is_franchise,
             }
             customer_orders.filter(cart_code=self.cart_code).update(**update_data)
-            if self.sale:
-                customer_orders.filter(
-                    cart_code=self.cart_code).update(sale_guid=self.sale.id, **update_data)
             order = customer_orders.first()
 
         for cart_item in cart_items:
@@ -193,7 +189,7 @@ class Cart(AbstractBase):
     def validate_one_empty_active_cart_per_customer(self):
         """Validate one active cart per customer."""
         carts = self.__class__.objects.filter(
-            sale=self.sale, customer=self.customer, is_active=True,
+            encounter=self.encounter, customer=self.customer, is_active=True,
             is_checked_out=False, is_empty=True)
         if carts.exists() and not carts.filter(id=self.id).exists():
             raise ValidationError(
