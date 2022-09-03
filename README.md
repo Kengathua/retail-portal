@@ -34,6 +34,8 @@ You should be set now
 
 #### On Ubuntu
 
+    sudo apt install redis
+
     brew install redis
 
 <!-- Run redis server -->
@@ -44,6 +46,13 @@ You should be set now
 
     redis-cli monitor
 
+<!-- Start Celery -->
+### Celery
+
+    python -m celery -A elites_franchise_portal.config worker
+
+    python -m celery -A elites_franchise_portal.config worker -l info
+
 #### On Windows
 
 https://developer.redis.com/create/windows/
@@ -52,3 +61,4 @@ https://developer.redis.com/create/windows/
 
     echo 'export PATH="/home/gathua/.ebcli-virtual-env/executables:$PATH"' >> ~/.bash_profile && source ~/.bash_profile
 
+    git branch | grep -v "master" | xargs git branch -D

@@ -33,6 +33,8 @@ class TestSale(TestCase):
             is_franchise=True, franchise_user=test_user, phone_no='+254712345678',
             email='johnwick@parabellum.com', franchise=franchise_code)
         sale = baker.make(Sale, customer=customer, franchise=franchise_code)
+        import pdb
+        pdb.set_trace()
 
         assert sale
         assert Sale.objects.count() == 1

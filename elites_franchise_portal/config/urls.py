@@ -42,6 +42,8 @@ v1_patterns = [
         ('elites_franchise_portal.adapters.urls', 'adapters'), namespace='adapters')),
     path(r'customers/', include(
         ('elites_franchise_portal.customers.urls', 'customers'), namespace='customers')),
+    path(r'encounters/', include(
+        ('elites_franchise_portal.encounters.urls', 'encounters'), namespace='encounters')),
     path(r'franchises/', include(
         ('elites_franchise_portal.franchises.urls', 'franchises'), namespace='franchises')),
     path(r'transactions/', include(
