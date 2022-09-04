@@ -1,5 +1,6 @@
 """Debit side serializers."""
 
+from rest_framework.fields import CharField
 from rest_framework.fields import SerializerMethodField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
@@ -75,16 +76,9 @@ class InventoryInventoryItemSerializer(BaseSerializerMixin):
 class InventoryRecordSerializer(BaseSerializerMixin):
     """Inventory record serializer class."""
 
-    item = SerializerMethodField()
     all_data = SerializerMethodField()
-
-    def get_item(self, record):
-        """Serialize details of the business partner that a user is linked to."""
-        item = Item.objects.get(id=record.inventory_item.item.id)
-        return {
-            'id': item.id,
-            'item_name': item.item_name,
-        }
+    item_name = CharField(source='inventory_item.item.item_name', read_only=True)
+    inventory_name = CharField(source='inventory.inventory_name', read_only=True)
 
     def get_all_data(self, instance):
         """Override all data field to return None.(Optimizing response)."""
