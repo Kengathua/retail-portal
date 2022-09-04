@@ -161,15 +161,41 @@ class TestInventoryRecordView(APITests, APITestCase):
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item = baker.make(
+            InventoryItem, item=item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory,
+            inventory_item=inventory_item, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory,
+            inventory_item=inventory_item, franchise=franchise_code)
         self.recipe = Recipe(
-            InventoryRecord, inventory_item=inventory_item, record_type='ADD',
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=15, unit_price=300, franchise=franchise_code)
 
     url = 'v1:debit:inventoryrecord'
 
     def test_post(self, status_code=201):
-        pass
+        self.client = authenticate_test_user()
+        instance = self.make()
+        test_data = self.get_test_data(instance)
+        instance.delete()
+        url = reverse(self.url + '-list')
+        resp = self.client.post(url, test_data)
+        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)  # noqa
+        if resp.status_code != 201:
+            return resp
+
+        self.compare_dicts(test_data, resp.data)
+
+        return test_data, resp
 
     def test_put(self, status_code=200):
         pass
