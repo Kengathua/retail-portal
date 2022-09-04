@@ -1,7 +1,8 @@
 """Encounters tasks file."""
 
 from elites_franchise_portal.encounters.models import Encounter
-from elites_franchise_portal.catalog.models import CatalogItem
+from elites_franchise_portal.catalog.models import (
+    CatalogItem)
 from elites_franchise_portal.orders.models import (
     CartItem, Cart, Order)
 from elites_franchise_portal.transactions.models import Payment
