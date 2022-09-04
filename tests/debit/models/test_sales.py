@@ -4,15 +4,14 @@ import uuid
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from elites_franchise_portal.customers.models import Customer
+from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
 
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord, Sale, SaleRecord)
+    Inventory, InventoryItem, InventoryRecord, Sale, SaleRecord)
 from elites_franchise_portal.catalog.models import CatalogItem
-from elites_franchise_portal.orders.models import (
-    Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem)
 from elites_franchise_portal.franchises.models import Franchise
 from elites_franchise_portal.customers.models import Customer
 
@@ -33,12 +32,9 @@ class TestSale(TestCase):
             is_franchise=True, franchise_user=test_user, phone_no='+254712345678',
             email='johnwick@parabellum.com', franchise=franchise_code)
         sale = baker.make(Sale, customer=customer, franchise=franchise_code)
-        import pdb
-        pdb.set_trace()
 
         assert sale
         assert Sale.objects.count() == 1
-        assert Cart.objects.count() == 1
 
     def test_create_sale_default_franchise_customer(self):
         franchise = baker.make(Franchise, name='Elites Age Supermarket')
@@ -53,9 +49,10 @@ class TestSale(TestCase):
         sale = baker.make(
             Sale, franchise=franchise_code, created_by=test_user.id, updated_by=test_user.id)
 
+        sale.refresh_from_db()
         assert sale
         assert Sale.objects.count() == 1
-        assert Cart.objects.count() == 1
+        assert sale.customer == customer
 
 class TestSaleRecord(TestCase):
     """."""
@@ -119,29 +116,61 @@ class TestSaleRecord(TestCase):
         baker.make(
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item1 = InventoryItem.objects.get(
-            item=item1, franchise=franchise_code)
-        inventory_item2 = InventoryItem.objects.get(
-            item=item2, franchise=franchise_code)
-        inventory_item3 = InventoryItem.objects.get(
-            item=item3, franchise=franchise_code)
-        inventory_item4 = InventoryItem.objects.get(
-            item=item4, franchise=franchise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            franchise=franchise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
+        inventory_item1 = baker.make(
+            InventoryItem, item=item1, franchise=franchise_code)
+        inventory_item2 = baker.make(
+            InventoryItem, item=item2, franchise=franchise_code)
+        inventory_item3 = baker.make(
+            InventoryItem, item=item3, franchise=franchise_code)
+        inventory_item4 = baker.make(
+            InventoryItem, item=item4, franchise=franchise_code)
 
         baker.make(
-            InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
+            InventoryInventoryItem, inventory=master_inventory,
+            inventory_item=inventory_item1, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory,
+            inventory_item=inventory_item1, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory,
+            inventory_item=inventory_item2, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory,
+            inventory_item=inventory_item2, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory,
+            inventory_item=inventory_item3, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory,
+            inventory_item=inventory_item3, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=master_inventory,
+            inventory_item=inventory_item4, franchise=franchise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory,
+            inventory_item=inventory_item4, franchise=franchise_code)
+
+        baker.make(
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1, record_type='ADD',
             quantity_recorded=20, unit_price=350,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item2, record_type='ADD',
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2, record_type='ADD',
             quantity_recorded=10, unit_price=1000,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item3, record_type='ADD',
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item3, record_type='ADD',
             quantity_recorded=5, unit_price=2750,
             franchise=franchise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item4, record_type='ADD',
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item4, record_type='ADD',
             quantity_recorded=5, unit_price=2750,
             franchise=franchise_code)
         catalog_item1 = baker.make(

@@ -12,8 +12,6 @@ REMOVE_FROM_INVENTORY_CHOICES = (
     ('SALES', 'SALES'),
     ('DAMAGES', 'DAMAGES'),
     ('RETURNS', 'RETURNS'),
-    ('SUPPLIES', 'SUPPLIES'),
-    ('INVENTORY', 'INVENTORY'),
 )
 
 RECORD_TYPE_CHOICES = (
@@ -54,7 +52,6 @@ class InventoryItem(AbstractBase):
     item = models.OneToOneField(
         Item, null=False, blank=False, unique=True, on_delete=models.PROTECT)
     description = models.TextField(null=True, blank=True)
-    check_warehouse = models.BooleanField(default=True)
 
     @property
     def summary(self):
@@ -152,7 +149,7 @@ class Inventory(AbstractBase):
     inventory_code = models.CharField(max_length=300, null=True, blank=True)
     inventory_type = models.CharField(
         max_length=300, choices=INVENTORY_TYPE_CHOICES, default=WORKING_STOCK)
-    inventory_items =  models.ManyToManyField(
+    inventory_items = models.ManyToManyField(
         InventoryItem, through='InventoryInventoryItem', related_name='inventoryinventoryitems')
     is_master = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -160,6 +157,7 @@ class Inventory(AbstractBase):
 
     @property
     def summary(self):
+        """Summary."""
         inventory_items = self.inventory_items.all()
         inventory_records = InventoryRecord.objects.filter(
             inventory=self, inventory_item__in=inventory_items, franchise=self.franchise)
@@ -168,13 +166,14 @@ class Inventory(AbstractBase):
         if inventory_records.exists():
             for inventory_item in inventory_items:
                 try:
-                    latest_inventory_item_record = inventory_records.filter(inventory_item=inventory_item).latest('updated_on')
+                    latest_inventory_item_record = inventory_records.filter(
+                        inventory_item=inventory_item).latest('updated_on')
                     quantity = latest_inventory_item_record.closing_stock_quantity
                     total_amount = latest_inventory_item_record.closing_stock_total_amount
                     data = {
                         'inventory_item': inventory_item,
-                        'quantity':quantity,
-                        'total_amount':total_amount,
+                        'quantity': quantity,
+                        'total_amount': total_amount,
                         }
                     summary.append(data)
                 except Exception:
@@ -357,8 +356,6 @@ class InventoryRecord(AbstractBase):
         """Validate record code is unique for the inventory."""
         record = self.__class__.objects.filter(inventory=self.inventory, record_code=self.record_code)
         if record.exclude(id=self.id).exists():
-            import pdb
-            pdb.set_trace()
             raise ValidationError(
                 {'record_code': 'A record with this record code already exists. Please supply a unique record code'})
 

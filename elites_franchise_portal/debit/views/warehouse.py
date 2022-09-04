@@ -31,7 +31,7 @@ class WarehouseWarehouseItemViewSet(BaseViewMixin):
     queryset = WarehouseWarehouseItem.objects.all().order_by('warehouse__warehouse_name')
     serializer_class = serializers.WarehouseWarehouseItemSerializer
     filterset_class = filters.WarehouseWarehouseItemFilter
-    search_fields = ('')
+    search_fields = ('warehouse__warehouse_name')
 
 
 class WarehouseRecordViewSet(BaseViewMixin):
