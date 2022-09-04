@@ -1,7 +1,6 @@
 """Sales model file."""
 
 from decimal import Decimal
-from xml.dom import ValidationErr
 from django.db import models
 from django.db.models import Q
 from django.core.validators import MinValueValidator
@@ -142,32 +141,6 @@ class SaleRecord(AbstractBase):
         self.closing_stock_quantity = self.opening_stock_quantity + self.quantity_sold
         self.closing_stock_amount = self.opening_stock_amount + item_sold_total
 
-    def create_cart_item(self):
-        """Create order item."""
-        from elites_franchise_portal.orders.models import (
-            Cart, CartItem)
-        cart = Cart.objects.filter(
-            sale=self.sale, customer=self.sale.customer, is_active=True,
-            is_checked_out=False).first()
-
-        if not cart:
-            raise ValidationErr(
-                {'sale': 'This sale has already been processed. Please initiate a new sale'})
-
-        cart_item_payload = {
-            'cart': cart,
-            'catalog_item': self.catalog_item,
-            'quantity_added': self.quantity_sold,
-            'selling_price': self.selling_price,
-            'created_by': self.created_by,
-            'updated_by': self.updated_by,
-            'franchise': self.franchise,
-            'is_installment': True if self.sale_type == INSTALLMENT else False
-        }
-
-        CartItem.objects.create(**cart_item_payload)
-        Cart.objects.filter(id=cart.id).update(is_empty=False)
-
     def clean(self) -> None:
         """Clean sale model."""
         super().clean()
@@ -177,4 +150,3 @@ class SaleRecord(AbstractBase):
         self.get_opening_stock()
         self.get_closing_stock()
         super().save(*args, **kwargs)
-        self.create_cart_item()

@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.urls import resolve
 from django.db.models import ForeignKey, OneToOneField
 from django.db.models.base import ModelBase
+from django.db.models import CharField, DecimalField, FloatField, IntegerField
 
 from .login_mixins import LoggedInMixin, authenticate_test_user
 
@@ -184,8 +185,18 @@ class APITests(LoggedInMixin, object):
                 data[field.name] = getattr(instance, field.name)
                 if field.null:
                     value = getattr(instance, field.name, None)
+                    data[field.name] = value if value else ''
+                    if isinstance(field, CharField):
+                        data[field.name] = value if value else ''
+
+                    if isinstance(
+                            field, FloatField) or isinstance(
+                                field, DecimalField) or isinstance(
+                                    field, IntegerField):
+                        data[field.name] = value if value else 0
+
                     if value and not isinstance(field, ForeignKey) and not isinstance(field, OneToOneField):
-                        data[field.name] = value
+                        data[field.name] = value if value else ''
                     continue
 
                 if isinstance(field, OneToOneField):
