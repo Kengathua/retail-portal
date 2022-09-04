@@ -1,7 +1,6 @@
 """Catalog model file."""
 
 from decimal import Decimal
-from email.policy import default
 from django.db import models
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -142,24 +141,18 @@ class CatalogItem(AbstractBase):
             self.threshold_price = self.selling_price
 
     def get_quantity(self):
-        """Get quantity."""
         inventories = Inventory.objects.filter(is_active=True, franchise=self.franchise)
         if not inventories.filter(is_master=True).exists():
-            raise ValidationError(
-                {'inventory':
-                    'Your entity does not have a master Inventory. Please set up one first'})
+            raise ValidationError({'inventory': 'Your entity does not have a master Inventory. Please set up one first'})
 
         quantity = 0
         for inventory in inventories:
             for data in inventory.summary:
-                quantity += data[
-                    'quantity'] if data['inventory_item'] == self.inventory_item else 0
+                quantity += data['quantity'] if data['inventory_item'] == self.inventory_item else 0
 
         self.quantity = quantity
 
-    def add_to_cart(
-            self, customer=None, price=None,
-            quantity=None, is_installment=False, order_now=False):
+    def add_to_cart(self, customer=None, price=None, quantity=None, is_installment=False, order_now=False): # noqa
         """Add item to cart."""
         from elites_franchise_portal.orders.models import Cart, CartItem
         if not customer:
@@ -227,22 +220,6 @@ class CatalogItem(AbstractBase):
         self.get_quantity()
         self.get_threshold_price()
         super().save(*args, **kwargs)
-        # Update Reference Catalog
-        catalog_items = self.__class__.objects.filter(id=self.id)
-        catalog_item = catalog_items.first()
-        if catalog_item:
-            filters = {
-                'catalog_item': catalog_item,
-                'franchise': self.franchise,
-                }
-            reference_catalog = ReferenceCatalog.objects.filter(**filters)
-            if not reference_catalog.exists():
-                ReferenceCatalog.objects.create(
-                    catalog_item=catalog_item, quantity=self.quantity,
-                    created_by=self.created_by, updated_by=self.updated_by,
-                    franchise=self.franchise)
-            reference_catalog.update(quantity=self.quantity)
-
         cache.delete('catalog_items_objects')
 
     class Meta:
@@ -291,29 +268,3 @@ class CatalogCatalogItem(AbstractBase):
         related_name='catalog_item_catalogcatalogitem')
     is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
-
-
-class ReferenceCatalog(AbstractBase):
-    """Reference Catalog for quick sales."""
-
-    catalog_item = models.ForeignKey(
-        CatalogItem, on_delete=models.PROTECT)
-    quantity = models.FloatField()
-    quantity_on_deposit = models.FloatField(null=True, blank=True)
-
-    @property
-    def available_quantity(self):
-        """Get quantity of available inventory."""
-        inventory = Inventory.objects.get(
-            is_active=True, inventory_type='AVAILABLE', franchise=self.franchise)
-        if self.catalog_item.inventory_item not in inventory.inventory_items.all():
-            raise ValidationError(
-                {'inventory_item': '{} is not in the Available Inventory. '
-                 'Please hook that up first'.format(
-                     self.catalog_item.inventory_item.item.item_name)})
-
-        quantity = [
-            data['quantity'] for data in inventory.summary
-            if data['inventory_item'] == self.catalog_item.inventory_item][0]
-
-        return quantity

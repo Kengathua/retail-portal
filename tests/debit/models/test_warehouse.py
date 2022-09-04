@@ -7,9 +7,8 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
-    Warehouse, WarehouseItem, WarehouseRecord)
-from elites_franchise_portal.catalog.models import Catalog
+    InventoryItem, InventoryRecord, Warehouse, WarehouseItem, WarehouseRecord)
+from elites_franchise_portal.catalog.models import CatalogItem, Section
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -114,8 +113,6 @@ class TestwarehouseRecord(TestCase):
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             franchise=franchise_code)
-        warehouse = baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             franchise=franchise_code)
@@ -130,21 +127,7 @@ class TestwarehouseRecord(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             items_per_purchase_unit=12, franchise=franchise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
-        available_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(
-            InventoryItem, item=item, franchise=franchise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
-            inventory_item=inventory_item, franchise=franchise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory,
-            inventory_item=inventory_item, franchise=franchise_code)
+
         warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', franchise=franchise_code)
         warehouse_item = baker.make(WarehouseItem, item=item, franchise=franchise_code)
