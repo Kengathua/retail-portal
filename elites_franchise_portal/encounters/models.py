@@ -3,8 +3,7 @@
 from django.db import models
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.catalog.models import (
-    CatalogItem, ReferenceCatalog)
+from elites_franchise_portal.catalog.models import CatalogItem
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -41,8 +40,8 @@ class Encounter(AbstractBase):
     processing_status = models.CharField(
         max_length=300, choices=ENCOUNTER_PROCESSING_STATUS_CHOICES,
         default=PENDING)
-    stalling_reason = models.TextField(null=True, blank=True)
-    note = models.TextField(null=True, blank=True)
+    stalling_reason = models.TextField()
+    note = models.TextField()
 
     def validate_billing(self):
         """Valdiate new sale encounter data."""
@@ -53,10 +52,8 @@ class Encounter(AbstractBase):
                     {'catalog_item': f"This item {bill['item_name']} does not exist"})
 
             catalog_item = catalog_item.first()
-            reference_catalog = ReferenceCatalog.objects.get(catalog_item=catalog_item)
             if bill['sale_type'] == 'INSTANT':
-                if bill['quantity'] > catalog_item.quantity \
-                        or bill['quantity'] > reference_catalog.quantity:
+                if bill['quantity'] > catalog_item.quantity:
                     quantity = bill['quantity']
                     item_name = catalog_item.inventory_item.item.item_name
                     raise ValidationError(
@@ -88,16 +85,6 @@ class Encounter(AbstractBase):
         if encounter and not self.processing_status == 'STALLED':
             process_customer_encounter.delay(encounter.id)
             # process_customer_encounter(encounter.id)
-            for bill in encounter.billing:
-                if bill['sale_type'] == 'INSTANT':
-                    catalog_item = CatalogItem.objects.get(id=bill['catalog_item'])
-                    reference_catalogs = ReferenceCatalog.objects.filter(catalog_item=catalog_item)
-                    reference_catalog = reference_catalogs.first()
-                    available_quantity = reference_catalog.available_quantity
-                    staged_quantity = reference_catalog.quantity - bill['quantity']
-                    quantity = staged_quantity \
-                        if staged_quantity <= available_quantity else available_quantity
-                    reference_catalogs.update(quantity=quantity)
 
     # TODO Create a stall button to stall an encounter.
     # NOTE Add a fuctionality to send feedback to the customer advising them
