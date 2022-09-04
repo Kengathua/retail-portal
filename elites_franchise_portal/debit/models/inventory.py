@@ -1,8 +1,6 @@
 """Inventory models file."""
 
-from tokenize import Triple
 from django.db import models
-from django.db.models import PROTECT
 from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.items.models import Item
@@ -228,7 +226,7 @@ class InventoryRecord(AbstractBase):
 
     inventory = models.ForeignKey(Inventory, on_delete=models.PROTECT)
     inventory_item = models.ForeignKey(
-        InventoryItem, null=False, blank=False, on_delete=PROTECT)
+        InventoryItem, null=False, blank=False, on_delete=models.PROTECT)
     record_code = models.CharField(max_length=300, null=True, blank=True)
     opening_stock_quantity = models.FloatField(null=True, blank=True, default=0)
     opening_stock_total_amount = models.FloatField(null=True, blank=True, default=0)

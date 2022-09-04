@@ -228,7 +228,7 @@ class WarehouseRecord(AbstractBase):
             return
 
         inventories = Inventory.objects.filter(
-            franchise=self.franchise, inventory_type='WORKING STOCK', is_active=True)
+            franchise=self.franchise, inventory_type='AVAILABLE', is_active=True)
         inventory = inventories.first()
 
         if self.removal_type == INVENTORY:
@@ -246,9 +246,9 @@ class WarehouseRecord(AbstractBase):
             if not inventory_inventory_items.exists():
                 if not inventories.exists():
                     franchise = Franchise.objects.get(elites_code=self.franchise)
-                    inventory_name = f'{franchise.name} WORKING INVENTORY'
+                    inventory_name = f'{franchise.name} AVAILABLE'
                     inventory = Inventory.objects.create(
-                        inventory_name=inventory_name, inventory_type='WORKING STOCK',
+                        inventory_name=inventory_name, inventory_type='AVAILABLE',
                         created_by=self.created_by, updated_by=self.updated_by,
                         franchise=self.franchise)
 
