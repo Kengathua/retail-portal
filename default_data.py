@@ -161,7 +161,7 @@ if settings.DEBUG:
         is_master=True, is_active=True, inventory_type='WORKING STOCK',
         **audit_fields)
     available_inventory, _ = Inventory.objects.update_or_create(
-        inventory_name='Elites Age Supermarket Working Stock Inventory',
+        inventory_name='Elites Age Supermarket Available Inventory',
         is_active=True, inventory_type='AVAILABLE', **audit_fields)
     catalog, _ = Catalog.objects.update_or_create(
         name='Elites Age Standard Catalog', is_standard=True, **audit_fields)
