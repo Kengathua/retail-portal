@@ -35,7 +35,7 @@ class MpesaCheckout(APIView):
         """."""
         data = request.data
         mpesa_authorization = MpesaAuthorization.objects.filter(
-            franchise=data['franchise'])
+            enterprise=data['franchise'])
         mpesa_authorization
         serializer = self.serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):

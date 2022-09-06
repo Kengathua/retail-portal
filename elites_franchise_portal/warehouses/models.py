@@ -1,7 +1,5 @@
 """Store models file."""
 
-from re import I
-from secrets import choice
 from django.db import models
 from django.db.models import PROTECT
 from django.core.exceptions import ValidationError
@@ -10,7 +8,7 @@ from elites_franchise_portal.items.models import Item
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.debit.models import (
     Inventory ,InventoryItem, InventoryInventoryItem, InventoryRecord)
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 
 REMOVE_FROM_STOCK_CHOICES = (
     ('SALES', 'SALES'),
@@ -57,7 +55,7 @@ class WarehouseItem(AbstractBase):
     @property
     def summary(self):
         """Get summary."""
-        store_records = WarehouseRecord.objects.filter(warehouse_item=self, franchise=self.franchise)
+        store_records = WarehouseRecord.objects.filter(warehouse_item=self, enterprise=self.enterprise)
         total_quantity = 0
         total_amount = 0
         for store_record in store_records:
@@ -228,29 +226,29 @@ class WarehouseRecord(AbstractBase):
             return
 
         inventories = Inventory.objects.filter(
-            franchise=self.franchise, inventory_type='AVAILABLE', is_active=True)
+            enterprise=self.enterprise, inventory_type='AVAILABLE', is_active=True)
         inventory = inventories.first()
 
         if self.removal_type == INVENTORY:
             inventory_items = InventoryItem.objects.filter(
-                item=self.warehouse_item.item, franchise=self.franchise)
+                item=self.warehouse_item.item, enterprise=self.enterprise)
             inventory_item = inventory_items.first()
             if not inventory_items.exists():
                 inventory_item = InventoryItem.objects.create(
                     item=self.warehouse_item.item, created_by=self.created_by, updated_by=self.updated_by,
-                    franchise=self.franchise)
+                    enterprise=self.enterprise)
 
             inventory_inventory_items = InventoryInventoryItem.objects.filter(
                 inventory_item=inventory_item, is_active=True)
 
             if not inventory_inventory_items.exists():
                 if not inventories.exists():
-                    franchise = Franchise.objects.get(elites_code=self.franchise)
+                    franchise = Enterprise.objects.get(enterprise_code=self.enterprise)
                     inventory_name = f'{franchise.name} AVAILABLE'
                     inventory = Inventory.objects.create(
                         inventory_name=inventory_name, inventory_type='AVAILABLE',
                         created_by=self.created_by, updated_by=self.updated_by,
-                        franchise=self.franchise)
+                        enterprise=self.enterprise)
 
             else:
                 inventory_inventory_item = inventory_inventory_items.first()
@@ -261,7 +259,7 @@ class WarehouseRecord(AbstractBase):
                 quantity_recorded=self.quantity_recorded, unit_price=self.unit_price,
                 record_type=ADD, quantity_of_stock_on_display=self.removal_quantity_leaving_warehouse,
                 quantity_of_stock_in_warehouse=self.removal_quantity_remaining_in_warehouse,
-                created_by=self.created_by, updated_by=self.updated_by, franchise=self.franchise)
+                created_by=self.created_by, updated_by=self.updated_by, enterprise=self.enterprise)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""

@@ -57,7 +57,7 @@ class Sale(AbstractBase):
                     guid=self.created_by)| Q(guid=self.updated_by))
             if user.exists():
                 user = user.first()
-                customer = Customer.objects.filter(franchise_user=user)
+                customer = Customer.objects.filter(enterprise_user=user)
                 if customer.exists():
                     customer = customer.first()
                     self.customer = customer
@@ -82,7 +82,7 @@ class Sale(AbstractBase):
                 'is_checked_out': False,
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.franchise,
+                'franchise': self.enterprise,
                 'sale': self,
                 'is_empty':True,
             }

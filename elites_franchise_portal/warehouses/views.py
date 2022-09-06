@@ -1,10 +1,10 @@
-"""Inventory views file."""
+"""Warehouse views file."""
 
 from elites_franchise_portal.common.views import BaseViewMixin
-from elites_franchise_portal.debit.models import (
+from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseWarehouseItem, WarehouseRecord)
-from elites_franchise_portal.debit import serializers
-from elites_franchise_portal.debit import filters
+from elites_franchise_portal.warehouses import serializers
+from elites_franchise_portal.warehouses import filters
 
 
 class WarehouseViewSet(BaseViewMixin):
@@ -13,7 +13,8 @@ class WarehouseViewSet(BaseViewMixin):
     queryset = Warehouse.objects.all().order_by('warehouse_name')
     serializer_class = serializers.WarehouseSerializer
     filterset_class = filters.WarehouseFilter
-    search_fields = ('warehouse_name', 'warehouse_code', 'warehouse_type')
+    search_fields = (
+        'warehouse_name', 'warehouse_code', 'warehouse_type')
 
 
 class WarehouseItemViewSet(BaseViewMixin):
@@ -22,7 +23,8 @@ class WarehouseItemViewSet(BaseViewMixin):
     queryset = WarehouseItem.objects.all().order_by('item__item_name')
     serializer_class = serializers.WarehouseItemSerializer
     filterset_class = filters.WarehouseItemFilter
-    search_fields = ('')
+    search_fields = (
+        'warehouse_item__item__item_name', 'warehouse_item__item__barcode')
 
 
 class WarehouseWarehouseItemViewSet(BaseViewMixin):
@@ -43,3 +45,5 @@ class WarehouseRecordViewSet(BaseViewMixin):
     search_fields = (
         'warehouse__warehouse_name', 'warehouse__warehouse_code',
         'warehouse__warehouse_type')
+
+'RS64R5111M9'

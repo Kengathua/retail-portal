@@ -1,6 +1,8 @@
 """Customer Encounters models file."""
 
 from django.db import models
+from django.db.models import Q
+from django.contrib.auth import get_user_model
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.catalog.models import (
@@ -44,6 +46,19 @@ class Encounter(AbstractBase):
     stalling_reason = models.TextField(null=True, blank=True)
     note = models.TextField(null=True, blank=True)
 
+    def check_customer(self):
+        if not self.customer:
+            user = get_user_model().objects.filter(
+                Q(id=self.created_by)| Q(id=self.updated_by) | Q(
+                    guid=self.created_by)| Q(guid=self.updated_by))
+            if user.exists():
+                user = user.first()
+                customer = Customer.objects.filter(
+                    enterprise_user=user, enterprise=self.enterprise)
+                if customer.exists():
+                    customer = customer.first()
+                    self.customer = customer
+
     def validate_billing(self):
         """Valdiate new sale encounter data."""
         for bill in self.billing:
@@ -67,7 +82,7 @@ class Encounter(AbstractBase):
             if bill['sale_type'] == 'INSTALLMENT':
                 pass
 
-            if bill['unit_price'] < catalog_item.threshold_price:
+            if float(bill['unit_price']) < float(catalog_item.threshold_price):
                 item_name = catalog_item.inventory_item.item.item_name
                 raise ValidationError(
                     {'price': 'The threshold price for {} is {}'.format(
@@ -81,6 +96,7 @@ class Encounter(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actins."""
+        self.check_customer()
         super().save(*args, **kwargs)
         from elites_franchise_portal.encounters.tasks import (
             process_customer_encounter)

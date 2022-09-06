@@ -8,41 +8,6 @@ from elites_franchise_portal.debit import models
 from elites_franchise_portal.items.models import Item
 
 
-class WarehouseSerializer(BaseSerializerMixin):
-    """Warehouse serializer class."""
-
-    class Meta:
-        """Warehouse Meta class."""
-
-        model = models.Warehouse
-        fields = '__all__'
-
-class WarehouseItemSerializer(BaseSerializerMixin):
-    """Warehouse Item serializer class."""
-
-    class Meta:
-        """Warehouse Item Meta class."""
-        model = models.WarehouseItem
-        fields = '__all__'
-
-class WarehouseWarehouseItemSerializer(BaseSerializerMixin):
-    """Warehouse Warehouse Item serializer class."""
-
-    class Meta:
-        """Meta class."""
-        model = models.WarehouseWarehouseItem
-        fields = '__all__'
-
-class WarehouseRecordSerializer(BaseSerializerMixin):
-    """Store record serializer class."""
-
-    class Meta:
-        """Store record Meta class."""
-
-        model = models.WarehouseRecord
-        fields = '__all__'
-
-
 class InventorySerializer(BaseSerializerMixin):
     """Inventory serializer class."""
 

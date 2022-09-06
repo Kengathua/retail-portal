@@ -77,6 +77,8 @@ class MpesaGateWay:
                 self.access_token_url,
                 auth=HTTPBasicAuth(self.consumer_key, self.consumer_secret),
             )
+            token = res.json()["access_token"]
+            self.headers = {"Authorization": "Bearer %s" % token}
         except Exception as err:
             logging.error("Error {}".format(err))
             raise err
@@ -174,6 +176,9 @@ class MpesaGateWay:
             "AccountReference": "Test",
             "TransactionDesc": "Test",
         }
+
+        import pdb
+        pdb.set_trace()
 
         res = requests.post(
             STK_PUSH_URL, json=req_data, headers=self.headers, timeout=30
@@ -311,7 +316,7 @@ class MpesaGateWay:
             "CommandID": "CustomerPayBillOnline",
             "Amount": "20",
             "Msisdn": +254708374149,
-            "BillRefNumber": "+254712345678",
+            "BillRefNumber": "+254718488252",
         }
 
         response = requests.post(api_url, json=payload, headers=headers)

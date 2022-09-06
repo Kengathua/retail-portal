@@ -1,7 +1,7 @@
 """Transactions helpers file."""
 
 
-def add_order_transaction(transaction, customer_orders):
+def create_order_transaction(transaction, customer_orders):
     """Add and order transaction."""
     from elites_franchise_portal.orders.models import OrderTransaction
     for customer_order in customer_orders:
@@ -10,7 +10,7 @@ def add_order_transaction(transaction, customer_orders):
         order_transaction_data = {
             'amount': transaction.balance,
             'created_by': transaction.created_by,
-            'franchise': transaction.franchise,
+            'enterprise': transaction.enterprise,
             'order': customer_order,
             'transaction': transaction,
             'updated_by': transaction.updated_by,

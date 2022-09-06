@@ -21,12 +21,13 @@ def refresh_order(order):
     InstallmentsOrderItem.objects.filter(order=order)
     carts = Cart.objects.filter(
         Q(order_guid=order.id) | Q(cart_code=order.cart_code),
-        franchise=order.franchise)
+        enterprise=order.enterprise)
 
-    if not customer.is_franchise:
+    if not customer.is_enterprise:
         carts.update(customer=customer)
     import pdb
-    pdb.set_trace()
+    # pdb.set_trace()
+    pass
     # Get all sales attached to this order
     # Get all the order items
     # Get all Order Transactions

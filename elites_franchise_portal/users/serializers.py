@@ -4,7 +4,7 @@ from rest_framework.fields import ReadOnlyField, SerializerMethodField, CharFiel
 from rest_framework.serializers import ModelSerializer
 
 from elites_franchise_portal.users.models import User
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 
 
 class UserSerializer(ModelSerializer):
@@ -22,21 +22,21 @@ class UserSerializer(ModelSerializer):
             'id', 'first_name', 'last_name', 'other_names',
             'full_name', 'phone_no', 'email', 'date_of_birth',
             'date_joined', 'is_staff', 'is_admin', 'is_active',
-            'guid', 'roles', 'permissions', 'franchise', 'updated_on',)
+            'guid', 'roles', 'permissions', 'enterprise', 'updated_on',)
 
 
 class MeSerializer(UserSerializer):
     """A special serializer used to serialize the details of the logged in user."""
 
-    franchise = SerializerMethodField()
+    enterprise = SerializerMethodField()
 
-    def get_franchise(self, user):
+    def get_enterprise(self, user):
         """Serialize details of the business partner that a user is linked to."""
-        franchise = Franchise.objects.get(elites_code=user.franchise)
+        enterprise = Enterprise.objects.get(enterprise_code=user.enterprise)
         return {
-            'id': franchise.id,
-            'name': franchise.name,
-            'elites_code': franchise.elites_code
+            'id': enterprise.id,
+            'name': enterprise.name,
+            'enterprise_code': enterprise.enterprise_code
         }
 
     class Meta(UserSerializer.Meta):

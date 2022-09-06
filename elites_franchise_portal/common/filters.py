@@ -5,16 +5,16 @@ from django_filters import rest_framework as filters
 from rest_framework.filters import BaseFilterBackend, SearchFilter
 
 
-class FranchiseFilterBackend(BaseFilterBackend):
+class EnterpriseFilterBackend(BaseFilterBackend):
     """Limit users to viewing records in their organisation."""
 
     def filter_queryset(self, request, queryset, view):
         """Filter all querysets by the logged in user's organization, where possible."""
         try:
             return queryset.filter(
-                franchise=request.user.franchise)
+                enterprise=request.user.enterprise)
         except exceptions.FieldError:
-            # if the model does not have a 'franchise' field, skip
+            # if the model does not have an 'enterprise' field, skip
             return queryset
 
 

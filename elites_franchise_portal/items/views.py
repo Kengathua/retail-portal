@@ -138,7 +138,7 @@ class ItemImageViewSet(BaseViewMixin):
             data = {
                 'created_by': item.created_by,
                 'updated_by': item.created_by,
-                'franchise': item.franchise,
+                'enterprise': item.enterprise,
                 'item': item,
                 'image': file,
                 'is_hero_image': request.data['is_hero_image']

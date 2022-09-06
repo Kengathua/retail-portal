@@ -52,23 +52,22 @@ def abbreviate_name(name):
 
 
 def generate_branch_code():
-    """Generate a code for a franchise's branch."""
+    """Generate a code for a enterprise's branch."""
     code = '01'
     return code
 
 
-def get_franchise_abbreviations(object):
-    """Generate an abbreviation to the franchise."""
-    if object.__class__.__name__ == "Franchise":
-        franchise_abbrv = abbreviate_name(object.name)
-        if object.is_main:
-            return franchise_abbrv, 'MB', '01'
+def get_enterprise_abbreviations(object):
+    """Generate an abbreviation to the enterprise."""
+    enterprise_abbrv = abbreviate_name(object.name)
+    if object.is_main_branch:
+        return enterprise_abbrv, 'MB', '01'
 
-        else:
-            # GET NAME OF BRANCH LOCATION
-            branch_abbrv = 'LB'
-            branch_code = generate_branch_code()
-            return franchise_abbrv, branch_abbrv, branch_code
+    else:
+        # GET NAME OF BRANCH LOCATION
+        branch_abbrv = 'OB'
+        branch_code = generate_branch_code()
+        return enterprise_abbrv, branch_abbrv, branch_code
 
 
 def return_year_and_id(id):
@@ -79,19 +78,19 @@ def return_year_and_id(id):
     return id
 
 
-def generate_franchise_code_id(object):
-    """Generate franchise code id."""
+def generate_enterprise_code_id(object):
+    """Generate enterprise code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
-    last_franchise_code = object.__class__.objects.all().order_by(
-        'created_on')[count-1].elites_code
-    last_franchise_code = int(last_franchise_code.split('/')[2].split('-')[0])
-    id += last_franchise_code
+    last_enterprise_code = object.__class__.objects.all().latest(
+        'created_on').enterprise_code
+    last_enterprise_code = int(last_enterprise_code.split('/')[2].split('-')[0])
+    id += last_enterprise_code
 
     return id
 
@@ -99,9 +98,9 @@ def generate_franchise_code_id(object):
 def generate_section_code_id(object):
     """Generate section code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -116,9 +115,9 @@ def generate_section_code_id(object):
 def generate_type_code_id(object):
     """Generate type code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -133,9 +132,9 @@ def generate_type_code_id(object):
 def generate_category_code_id(object):
     """Generate Category code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -150,9 +149,9 @@ def generate_category_code_id(object):
 def generate_brand_code_id(object):
     """Generate brand code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -167,9 +166,9 @@ def generate_brand_code_id(object):
 def generate_model_code_id(object):
     """Generate model code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -184,9 +183,9 @@ def generate_model_code_id(object):
 def generate_item_code_id(object):
     """Generate item code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -201,9 +200,9 @@ def generate_item_code_id(object):
 def generate_units_code_id(object):
     """Generate units code id."""
     id = 1
-    franchise_exists = object.__class__.objects.all().exists()
+    enterprise_exists = object.__class__.objects.all().exists()
 
-    if not franchise_exists:
+    if not enterprise_exists:
         return return_year_and_id(id)
 
     count = object.__class__.objects.all().count()
@@ -215,85 +214,85 @@ def generate_units_code_id(object):
     return id
 
 
-def get_franchise_code(object):
-    """Get franchise code."""
+def get_enterprise_code(object):
+    """Get enterprise code."""
     try:
-        franchise_code = object.franchise.split('/')[1]
+        enterprise_code = object.enterprise.split('/')[1]
     except IndexError:
-        franchise_code = object.franchise[0]
+        enterprise_code = object.enterprise[0]
 
-    return franchise_code
+    return enterprise_code
 
 
-def generate_elites_code(object):
+def generate_enterprise_code(object):
     """Auto generate elites code."""
-    if object.__class__.__name__ == "Franchise":
-        franchise_abbrv, brach_abbrv, branch_code = get_franchise_abbreviations(object)
-        franchise_code_id = generate_franchise_code_id(object)
-        franchise_code = 'EAL-F/{}-{}/{}-{}'.format(
-            franchise_abbrv, brach_abbrv, franchise_code_id, branch_code)
+    if object.__class__.__name__ == "Enterprise":
+        enterprise_abbrv, brach_abbrv, branch_code = get_enterprise_abbreviations(object)
+        enterprise_code_id = generate_enterprise_code_id(object)
+        enterprise_code = 'EAL-E/{}-{}/{}-{}'.format(
+            enterprise_abbrv, brach_abbrv, enterprise_code_id, branch_code)
 
-        return franchise_code
+        return enterprise_code
 
     if object.__class__.__name__ == "Section":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         section_abbrv = abbreviate_name(object.section_name)
         section_code_id = generate_section_code_id(object)
         section_code = '{}/S-{}/{}'.format(
-            franchise_code, section_abbrv, section_code_id)
+            enterprise_code, section_abbrv, section_code_id)
 
         return section_code
 
     if object.__class__.__name__ == "Category":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         category_abbrv = abbreviate_name(object.category_name)
         category_code_id = generate_category_code_id(object)
         category_code = '{}/C-{}/{}'.format(
-            franchise_code, category_abbrv, category_code_id)
+            enterprise_code, category_abbrv, category_code_id)
 
         return category_code
 
     if object.__class__.__name__ == "ItemType":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         item_type_abbrv = abbreviate_name(object.type_name)
         type_code_id = generate_type_code_id(object)
         type_code = '{}/T-{}/{}'.format(
-            franchise_code, item_type_abbrv, type_code_id)
+            enterprise_code, item_type_abbrv, type_code_id)
 
         return type_code
 
     if object.__class__.__name__ == "Brand":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         brand_abbrv = abbreviate_name(object.brand_name)
         brand_code_id = generate_brand_code_id(object)
         brand_code = '{}/B-{}/{}'.format(
-            franchise_code, brand_abbrv, brand_code_id)
+            enterprise_code, brand_abbrv, brand_code_id)
 
         return brand_code
 
     if object.__class__.__name__ == "ItemModel":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         model_abbrv = abbreviate_name(object.model_name)
         model_code_id = generate_model_code_id(object)
         model_code = '{}/M-{}/{}'.format(
-            franchise_code, model_abbrv, model_code_id)
+            enterprise_code, model_abbrv, model_code_id)
 
         return model_code
 
     if object.__class__.__name__ == "Item":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         item_abbrv = abbreviate_name(object.item_name)
         item_code_id = generate_item_code_id(object)
         item_code = '{}/I-{}/{}'.format(
-            franchise_code, item_abbrv, item_code_id)
+            enterprise_code, item_abbrv, item_code_id)
 
         return item_code
 
     if object.__class__.__name__ == "Units":
-        franchise_code = get_franchise_code(object)
+        enterprise_code = get_enterprise_code(object)
         units_abbrv = abbreviate_name(object.units_name)
         units_code_id = generate_units_code_id(object)
         units_code = '{}/U-{}/{}'.format(
-            franchise_code, units_abbrv, units_code_id)
+            enterprise_code, units_abbrv, units_code_id)
 
         return units_code

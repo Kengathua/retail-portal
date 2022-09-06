@@ -48,7 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_of_birth = models.DateField(
         null=True, blank=True, default='1900-01-01')
     updated_on = models.DateTimeField(db_index=True, default=timezone.now)
-    franchise = models.CharField(max_length=250)
+    enterprise = models.CharField(max_length=250)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)

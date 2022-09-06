@@ -14,7 +14,7 @@ from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import authenticate_test_user
 
 from model_bakery import baker
@@ -25,11 +25,11 @@ class TestSectionView(APITests, APITestCase):
         # using the Setup function helps avoid using recipes for foregn keys
         # or the django db mark error
         franchise = baker.make(
-            Franchise, name='Franchise One', elites_code='EAL-F/FO-MB/2201-01',
-            partnership_type='SHOP')
-        franchise_code = franchise.elites_code
+            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            business_type='SHOP')
+        enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
-            Section, section_name='Section A', franchise=franchise_code)
+            Section, section_name='Section A', enterprise=enterprise_code)
 
     url = 'v1:catalog:section'
 
@@ -37,12 +37,12 @@ class TestSectionView(APITests, APITestCase):
 class TestCatalogView(APITests, APITestCase):
     def setUp(self):
         franchise = baker.make(
-            Franchise, name='Franchise One', elites_code='EAL-F/FO-MB/2201-01',
-            partnership_type='SHOP')
-        franchise_code = franchise.elites_code
+            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            business_type='SHOP')
+        enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard=True, franchise=franchise_code)
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
 
     url = 'v1:catalog:catalog'
 
@@ -53,56 +53,56 @@ class TestCatalogItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Franchise, name='Franchise One', elites_code='EAL-F/FO-MB/2201-01',
-            partnership_type='SHOP')
-        franchise_code = franchise.elites_code
+            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            business_type='SHOP')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=15, unit_price=300, franchise=franchise_code)
+            quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
         section = baker.make(
-            Section, section_name='Section A', franchise=franchise_code)
+            Section, section_name='Section A', enterprise=enterprise_code)
         self.recipe = Recipe(
-            CatalogItem, inventory_item=inventory_item, section=section, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, section=section, enterprise=enterprise_code)
 
     url = 'v1:catalog:catalogitem'
 
@@ -159,58 +159,58 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Franchise, name='Franchise One', elites_code='EAL-F/FO-MB/2201-01',
-            partnership_type='SHOP')
-        franchise_code = franchise.elites_code
+            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            business_type='SHOP')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         section = baker.make(
-            Section, section_name='Section A', franchise=franchise_code)
+            Section, section_name='Section A', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard=True, franchise=franchise_code)
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, section=section, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, section=section, enterprise=enterprise_code)
         self.recipe = Recipe(
-            CatalogCatalogItem, catalog_item=catalog_item, catalog=catalog, franchise=franchise_code)
+            CatalogCatalogItem, catalog_item=catalog_item, catalog=catalog, enterprise=enterprise_code)
 
     url = 'v1:catalog:catalogcatalogitem'
 

@@ -5,10 +5,10 @@ from django.db.models import CASCADE, PROTECT
 from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.common.models import AbstractBase
-from elites_franchise_portal.common.code_generators import generate_elites_code
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.common.code_generators import generate_enterprise_code
+from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.common.validators import (
-    items_elites_code_validator, units_elites_code_validator)
+    items_enterprise_code_validator, units_enterprise_code_validator)
 from elites_franchise_portal.users.models import retrieve_user_email
 
 
@@ -19,15 +19,6 @@ ITEM_ATTRIBUTE_TYPES = (
     ('SPECIFICATION', 'SPECIFICATION'),
     ('DESCRIPTION', 'DESCRIPTION')
 )
-
-
-def validate_franchise_exists(object):
-    """Validate franchise code."""
-    franchise_exists = Franchise.objects.filter(elites_code=object.franchise).exists()
-    if not franchise_exists:
-        raise ValidationError([{
-            'franchise': f'Franchise with franchise code {object.franchise} does not exist'
-        }])
 
 
 def captalize_field(field_names):
@@ -44,18 +35,17 @@ class Category(AbstractBase):
     category_name = models.CharField(max_length=300)
     category_code = models.CharField(
         max_length=250, null=True, blank=True,
-        validators=[items_elites_code_validator])
+        validators=[items_enterprise_code_validator])
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
     def create_category_code(self):
         """Create a code for the category."""
         if not self.category_code:
-            self.category_code = generate_elites_code(self)
+            self.category_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean the category."""
-        # validate_franchise_exists(self)
         self.create_category_code()
         return super().clean()
 
@@ -78,18 +68,17 @@ class ItemType(AbstractBase):
         Category, null=False, blank=False, on_delete=CASCADE)
     type_name = models.CharField(max_length=250)
     type_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_elites_code_validator])
+        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
     def create_type_code(self):
         """Create a code for the item type."""
         if not self.type_code:
-            self.type_code = generate_elites_code(self)
+            self.type_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean the item type model."""
-        # validate_franchise_exists(self)
         self.create_type_code()
         return super().clean()
 
@@ -113,14 +102,14 @@ class Brand(AbstractBase):
         ItemType, through='BrandItemType', related_name='branditemtypes')
     brand_name = models.CharField(max_length=250)
     brand_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_elites_code_validator])
+        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
     def create_brand_code(self):
         """Create a code for the brand."""
         if not self.brand_code:
-            self.brand_code = generate_elites_code(self)
+            self.brand_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean the brand model."""
@@ -182,18 +171,17 @@ class ItemModel(AbstractBase):
         ItemType, null=False, blank=False, on_delete=models.PROTECT)
     model_name = models.CharField(max_length=250)
     model_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_elites_code_validator])
+        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
     def create_model_code(self):
         """Create a code for the item model."""
         if not self.model_code:
-            self.model_code = generate_elites_code(self)
+            self.model_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean the ItemModel model."""
-        # validate_franchise_exists(self)
         self.create_model_code()
         return super().clean()
 
@@ -220,7 +208,7 @@ class Item(AbstractBase):
         null=True, blank=True, max_length=250)
     item_code = models.CharField(
         null=True, blank=True, max_length=250,
-        validators=[items_elites_code_validator])
+        validators=[items_enterprise_code_validator])
     make_year = models.IntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=False)
     pushed_to_edi = models.BooleanField(default=False)
@@ -237,11 +225,10 @@ class Item(AbstractBase):
     def create_item_code(self):
         """Create a code for the item."""
         if not self.item_code:
-            self.item_code = generate_elites_code(self)
+            self.item_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean the item model."""
-        # validate_franchise_exists(self)
         self.get_item_name()
         self.create_item_code()
         return super().clean()
@@ -254,18 +241,18 @@ class Item(AbstractBase):
         """Activate a product by setting it up in inventory and catalog."""
         from elites_franchise_portal.debit.models import (
             Inventory, InventoryItem, InventoryInventoryItem)
-        from elites_franchise_portal.debit.models import (
+        from elites_franchise_portal.warehouses.models import (
             Warehouse, WarehouseItem, WarehouseWarehouseItem)
         from elites_franchise_portal.catalog.models import Catalog
 
         private_warehouse = Warehouse.objects.filter(
-            is_active=True, warehouse_type='PRIVATE', franchise=self.franchise)
+            is_active=True, warehouse_type='PRIVATE', enterprise=self.enterprise)
         master_inventory = Inventory.objects.filter(
-            is_master=True, is_active=True, franchise=self.franchise)
+            is_master=True, is_active=True, enterprise=self.enterprise)
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,
-            'franchise': self.franchise,
+            'enterprise': self.enterprise,
             }
 
         if not private_warehouse.exists():
@@ -279,14 +266,14 @@ class Item(AbstractBase):
                  ' Please set that up to activate your products'})
 
         available_inventory = Inventory.objects.filter(
-            inventory_type='AVAILABLE', is_active=True, franchise=self.franchise)
+            inventory_type='AVAILABLE', is_active=True, enterprise=self.enterprise)
         if not available_inventory.exists():
             raise ValidationError(
                 {'available inventory': 'You do not have an active available inventory set up. '
                  'Please set that up to activate your products'})
 
         catalog = Catalog.objects.filter(
-            is_active=True, is_standard=True, franchise=self.franchise)
+            is_active=True, is_standard=True, enterprise=self.enterprise)
         if not catalog.exists():
             raise ValidationError(
                 {'catalog': 'You do not have an active standard catalog set up. '
@@ -415,7 +402,6 @@ class ItemAttribute(AbstractBase):
 
     def clean(self) -> None:
         """Add excel uploads for item attributes."""
-        # validate_franchise_exists(self)
         return super().clean()
 
     class Meta:
@@ -432,18 +418,17 @@ class Units(AbstractBase):
     units_name = models.CharField(
         null=False, blank=False, max_length=300)
     units_code = models.CharField(
-        null=True, blank=True, max_length=250, validators=[units_elites_code_validator])
+        null=True, blank=True, max_length=250, validators=[units_enterprise_code_validator])
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
     def create_units_code(self):
         """Create a code for the units."""
         if not self.units_code:
-            self.units_code = generate_elites_code(self)
+            self.units_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean the units model."""
-        # validate_franchise_exists(self)
         self.create_units_code()
         return super().clean()
 
@@ -505,7 +490,7 @@ class ItemUnits(AbstractBase):
     purchases_units = models.ForeignKey(
         Units, null=False, blank=False,
         related_name='purchasing_units', on_delete=PROTECT)  # eg Pieces
-    items_per_purchase_unit = models.FloatField()           # eg 12
+    quantity_of_sale_units_per_purchase_unit = models.FloatField()  # eg 12
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 

@@ -12,12 +12,12 @@ class AuditFieldsMixin(ModelSerializer):
     """Handle audit fields.
 
     * Audit field are `id`, `created_by`, `updated_by`, `created_on`,
-    *`updated_on` and `franchise`.
+    *`updated_on` and `enterprise`.
     * When creating a new record, an `id` should not be supplied
-    * `created_by`, `franchise` and `updated_by` are
+    * `created_by`, `enterprise` and `updated_by` are
       auto-filled when creating new records
     * `updated_by` is auto-filled when updating new records
-    * `franchise` is stripped from all requests
+    * `enterprise` is stripped from all requests
     * when creating or updating records, supplied audit fields
       (`created_by`, `updated_by`, `created`, `updated`) are ignored
     """
@@ -26,7 +26,7 @@ class AuditFieldsMixin(ModelSerializer):
         """Initialize an audit fields and business partner aware serializer."""
         super().__init__(*args, **kwargs)
         exclude_fields = ['created', 'created_by', 'updated', 'updated_by']
-        exclude_fields_all_methods = ['franchise']
+        exclude_fields_all_methods = ['enterprise']
         context = getattr(self, 'context', {})
         self.request = context.get('request', {})
         include_in_methods = ['get', 'head', 'options']
@@ -50,8 +50,8 @@ class AuditFieldsMixin(ModelSerializer):
 
         if is_create:
             data['created_by'] = self.user.pk
-            if not self.__class__.__name__ == 'FranchiseSerializer':
-                data['franchise'] = self.user.franchise
+            if not self.__class__.__name__ == 'EnterpriseSerializer':
+                data['enterprise'] = self.user.enterprise
 
         return data
 
@@ -82,7 +82,7 @@ class BaseSerializerMixin(AuditFieldsMixin):
         """Serialize a model instance."""
         ignore_fields += [
             'created_by', 'updated_by', 'created_on',
-            'updated_on', 'franchise', 'pushed_to_edi',
+            'updated_on', 'enterprise', 'pushed_to_edi',
         ]
 
         fields = instance._meta.get_fields(include_hidden=True)

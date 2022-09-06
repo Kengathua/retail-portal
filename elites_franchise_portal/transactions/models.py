@@ -96,14 +96,14 @@ class Transaction(AbstractBase):
         from elites_franchise_portal.orders.models import (
             Order)
         from elites_franchise_portal.transactions.helpers.transactions import (
-            add_order_transaction)
+            create_order_transaction)
         if self.transaction_means == CASH:
             if self.transaction_type == DEPOSIT:
                 customer = self.customer
                 customer_orders = Order.objects.filter(
                     customer=customer, is_active=True, is_cleared=False)
                 if customer_orders.exists():
-                    add_order_transaction(self, customer_orders)
+                    create_order_transaction(self, customer_orders)
 
                 else:
                     # TODO Process the transaction into the Customer's wallet
@@ -117,7 +117,7 @@ class Transaction(AbstractBase):
                         customers = Customer.objects.filter(
                             Q(account_number=self.account_number) | Q(
                                 phone_no=self.account_number) | Q(
-                                    customer_number=self.account_number), franchise=self.franchise)
+                                    customer_number=self.account_number), enterprise=self.enterprise)
 
                     elif self.wallet_code:
                         pass
@@ -130,7 +130,7 @@ class Transaction(AbstractBase):
                     customer_orders = Order.objects.filter(
                         customer=customer, is_active=True, is_cleared=False)
                     if customer_orders.exists():
-                        add_order_transaction(self, customer_orders)
+                        create_order_transaction(self, customer_orders)
                     else:
                         # TODO Process the transaction into the Customer's wallet
                         pass
@@ -196,7 +196,7 @@ class Payment(AbstractBase):
                 customers = Customer.objects.filter(
                     Q(account_number=self.account_number) | Q(
                         phone_no=self.account_number) | Q(
-                            customer_number=self.account_number), franchise=self.franchise)
+                            customer_number=self.account_number), enterprise=self.enterprise)
                 if len(customers) == 1:
                     customer = customers.first()
                     phone_number = customer.phone_number
@@ -215,7 +215,7 @@ class Payment(AbstractBase):
             payment_request_data = {
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.franchise,
+                'franchise': self.enterprise,
                 'payment_id': self.id,
                 'client_account_number': client_account_number,
                 'request_from_account_number': phone_number,
@@ -235,7 +235,7 @@ class Payment(AbstractBase):
                 customers = Customer.objects.filter(
                     Q(account_number=self.account_number) | Q(
                         phone_no=self.account_number) | Q(
-                            customer_number=self.account_number), franchise=self.franchise)
+                            customer_number=self.account_number), enterprise=self.enterprise)
                 if customers.exists():
                     customer = customers.first()
 
@@ -245,7 +245,7 @@ class Payment(AbstractBase):
                 'amount': self.paid_amount,
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.franchise,
+                'enterprise': self.enterprise,
                 'transaction_means': self.payment_method,
                 'customer': customer,
             }

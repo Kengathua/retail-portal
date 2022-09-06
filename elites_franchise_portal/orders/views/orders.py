@@ -34,7 +34,7 @@ class OrderViewSet(BaseViewMixin):
         audit_fields = {
             "created_by": self.request.user.id,
             "updated_by": self.request.user.id,
-            "franchise": self.request.user.franchise,
+            "enterprise": self.request.user.enterprise,
             }
         if updated_order_items_data:
             for order_item_data in updated_order_items_data:

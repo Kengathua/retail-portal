@@ -89,7 +89,7 @@ class Order(AbstractBase):
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
-    is_franchise = models.BooleanField(default=False)
+    is_enterprise = models.BooleanField(default=False)
 
     @property
     def summary(self):
@@ -154,7 +154,7 @@ class Order(AbstractBase):
             })
 
         self.__class__.objects.filter(id=order.id).update(is_processed = True)
-        cart = Cart.objects.filter(cart_code=self.cart_code, franchise=self.franchise)
+        cart = Cart.objects.filter(cart_code=self.cart_code, enterprise=self.enterprise)
         if cart.exists():
             cart.update(is_active = False)
 
@@ -229,16 +229,19 @@ class Order(AbstractBase):
         super().save(*args, **kwargs)
         from elites_franchise_portal.debit.models import Sale
         order = self.__class__.objects.filter(id=self.id).first()
+        sales = Sale.objects.filter(order=order)
         if order:
-            audit_fields = {
-                'created_by': self.created_by,
-                'updated_by': self.updated_by,
-                'franchise': self.franchise,
-                }
+            if not sales.exists():
+                audit_fields = {
+                    'created_by': self.created_by,
+                    'updated_by': self.updated_by,
+                    'enterprise': self.enterprise,
+                    }
 
-            defaults = {'order': order}
-
-            Sale.objects.update_or_create(defaults=defaults, customer=self.customer, **audit_fields)
+                Sale.objects.create(
+                    order=order, customer=self.customer, **audit_fields)
+            else:
+                sales.update(updated_by=self.updated_by, enterprise=self.enterprise)
 
     class Meta:
         """Meta class for order model."""
@@ -281,21 +284,25 @@ class AbstractOrderItem(AbstractBase):
 
     def validate_item_exists_in_inventory_or_cleared_from_store(self):
         """Validate that item exists in catalog, inventory and store."""
-        from elites_franchise_portal.debit.models import (
-            Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
-            Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
+        from elites_franchise_portal.warehouses.models import WarehouseItem
         inventory_item = self.cart_item.catalog_item.inventory_item
         inventory_summary = inventory_item.summary
         quantity_in_inventory = inventory_summary['available_quantity']
         if self.quantity > quantity_in_inventory:
             # Check quantity in store.
             order_item = self.cart_item.catalog_item.inventory_item.item
-            warehouse_item = WarehouseItem.objects.filter(item=order_item, franchise=self.franchise)
-            # warehouse_item_summary = warehouse_item.summary
-            # quantity_in_warehouse = warehouse_item_summary['total_quantity']
-            # if self.quantity > quantity_in_warehouse:
-            #     raise ValidationError(
-            #         {'quantity': 'There are not enough items in warehouse to fulfil this order'})
+            warehouse_item = WarehouseItem.objects.filter(
+                item=order_item, enterprise=self.enterprise).first()
+            if warehouse_item:
+                warehouse_item_summary = warehouse_item.summary
+                quantity_in_warehouse = warehouse_item_summary['total_quantity']
+                total_quantity = quantity_in_inventory + quantity_in_warehouse
+                if self.quantity <= total_quantity:
+                    return
+
+                raise ValidationError(
+                    {'quantity': 'There are not enough items in inventory '
+                     'or warehouse to fulfil this order'})
 
     def validate_no_of_items_cleared_less_than_or_equal_to_quantity(self):
         if not self.no_of_items_cleared <= self.quantity:
@@ -328,9 +335,7 @@ class AbstractOrderItem(AbstractBase):
         self.get_total_amount()
         self.get_no_of_items_awaiting_clearance()
         super().save(*args, **kwargs)
-        from elites_franchise_portal.debit.models import (
-            Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
-            Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
+        from elites_franchise_portal.debit.models import Sale
         order = self.order
         order.refresh_from_db()
         sale = Sale.objects.filter(order=order).first()
@@ -550,18 +555,17 @@ class OrderTransaction(AbstractBase):
     def process_order_transaction(self):
         """Process a transaction for an order."""
         from elites_franchise_portal.debit.models import (
-            Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,
-            Warehouse, WarehouseItem, WarehouseRecord, Sale, SaleRecord)
+            Inventory, InventoryRecord)
         instant_order_items = InstantOrderItem.objects.filter(
             order=self.order, is_cleared=False)
         installment_order_items = InstallmentsOrderItem.objects.filter(
             order=self.order, is_cleared=False)
         available_inventory = Inventory.objects.get(
-            is_active=True, inventory_type='AVAILABLE', franchise=self.franchise)
+            is_active=True, inventory_type='AVAILABLE', enterprise=self.enterprise)
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,
-            'franchise': self.franchise
+            'enterprise': self.enterprise
             }
 
         if instant_order_items.exists():
@@ -638,7 +642,7 @@ class OrderTransaction(AbstractBase):
                             installment_data = {
                                 'created_by': installment_order_item.created_by,
                                 'updated_by': installment_order_item.updated_by,
-                                'franchise': installment_order_item.franchise,
+                                'enterprise': installment_order_item.enterprise,
                                 'installment_item': installment_order_item,
                                 'amount': installment_amount,
                             }
@@ -653,7 +657,7 @@ class OrderTransaction(AbstractBase):
                             installment_data = {
                                 'created_by': installment_order_item.created_by,
                                 'updated_by': installment_order_item.updated_by,
-                                'franchise': installment_order_item.franchise,
+                                'enterprise': installment_order_item.enterprise,
                                 'installment_item': installment_order_item,
                                 'amount': installment_amount,
                             }

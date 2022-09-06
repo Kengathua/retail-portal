@@ -3,13 +3,13 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Category, ItemType, Brand, BrandItemType, ItemModel,
     Item, Units, UnitsItemType, ItemUnits)
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord)
-from elites_franchise_portal.debit.models import (
+from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
 from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
@@ -17,7 +17,7 @@ from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.config import settings
 
 if settings.DEBUG:
-    franchise = Franchise.objects.create(
+    enterprise = Enterprise.objects.create(
         name='Elites Supermarket', updated_by=uuid.uuid4(), created_by=uuid.uuid4())
     user = get_user_model().objects.filter(email='adminuser@email.com')
     if user.exists():
@@ -25,12 +25,12 @@ if settings.DEBUG:
     else:
         user = get_user_model().objects.create_superuser(
                 email='adminuser@email.com', first_name='Admin', last_name='User',
-                guid=uuid.uuid4(), password='Hu46!YftP6^l$', franchise=franchise.elites_code)
+                guid=uuid.uuid4(), password='Hu46!YftP6^l$', enterprise=enterprise.enterprise_code)
 
     audit_fields = {
         'created_by': user.id,
         'updated_by': user.id,
-        'franchise': user.franchise
+        'enterprise': user.enterprise
     }
 
     category, _ = Category.objects.update_or_create(
@@ -197,64 +197,64 @@ if settings.DEBUG:
 
     ItemUnits.objects.update_or_create(
         item=item1, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item2, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item3, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item4, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item5, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item6, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item7, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item8, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item9, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item10, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item11, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item12, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item13, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item14, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item15, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item16, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item17, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item18, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item19, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
     ItemUnits.objects.update_or_create(
         item=item20, sales_units=s_units, purchases_units=p_units,
-        items_per_purchase_unit=1, **audit_fields)
+        quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
 
     inventory_item1, _ = InventoryItem.objects.update_or_create(item=item1, **audit_fields)
     inventory_item2, _ = InventoryItem.objects.update_or_create(item=item2, **audit_fields)
@@ -455,9 +455,22 @@ if settings.DEBUG:
 
     default_customer, _ = Customer.objects.update_or_create(
         customer_number=87656, first_name='Jack', last_name='Reacher',
-        other_names='Mbyad', franchise_user=user, is_franchise=True,
+        other_names='Mbyad', enterprise_user=user, is_enterprise=True,
         phone_no='+25478765434', email='jackreacher@reacher.com', **audit_fields)
     customer, _ = Customer.objects.update_or_create(
         customer_number=9876, first_name='John', last_name='Wick', other_names='Baba Yaga',
-        is_franchise=False, phone_no='+254753746372', email='johnwick@parabellum.com',
+        is_enterprise=False, phone_no='+254753746372', email='johnwick@parabellum.com',
         **audit_fields)
+
+    enterprise_audit_fields = {
+        'created_by': user.id,
+        'updated_by': user.id
+    }
+    supplier1, _ = Enterprise.objects.update_or_create(
+        name='LG DEALER', enterprise_type='SUPPLIER', **enterprise_audit_fields)
+    supplier2, _ = Enterprise.objects.update_or_create(
+        name='SAMSUNG DEALER', enterprise_type='SUPPLIER', **enterprise_audit_fields)
+    supplier3, _ = Enterprise.objects.update_or_create(
+        name='SONY DEALER', enterprise_type='SUPPLIER', **enterprise_audit_fields)
+    supplier4, _ = Enterprise.objects.update_or_create(
+        name='TECNO DEALER', enterprise_type='SUPPLIER', **enterprise_audit_fields)

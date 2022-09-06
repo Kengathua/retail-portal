@@ -56,7 +56,7 @@ class BrandSerializer(BaseSerializerMixin):
         audit_fields = {
             'created_by':user.id,
             'updated_by':user.id,
-            'franchise':user.franchise,
+            'enterprise':user.enterprise,
             }
 
         item_types_ids = request.data['item_types'] if 'item_types' in request.data.keys() else []
@@ -73,7 +73,7 @@ class BrandSerializer(BaseSerializerMixin):
         audit_fields = {
             'created_by':user.id,
             'updated_by':user.id,
-            'franchise':user.franchise,
+            'enterprise':user.enterprise,
             }
 
         item_types_ids = request.data['item_types'] if 'item_types' in request.data.keys() else []
@@ -186,5 +186,3 @@ class ItemImageSerializer(BaseSerializerMixin):
 
         model = models.ItemImage
         fields = '__all__'
-
-
