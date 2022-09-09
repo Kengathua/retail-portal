@@ -11,17 +11,17 @@ class DataPartitionMixin(object):
 
     def get_queryset(self):
         """Filter data based on field attribute."""
-        from elites_franchise_portal.franchises.models import Franchise
+        from elites_franchise_portal.enterprises.models import Enterprise
         queryset = super(DataPartitionMixin, self).get_queryset()
 
         partition_spec = getattr(self, 'partition_spec', None)
         if partition_spec is None:
             return queryset
 
-        elites_code = self.request.user.franchise
+        enterprise_code = self.request.user.franchise
 
         try:
-            franchise = Franchise.objects.get(elites_code=elites_code)
+            franchise = Franchise.objects.get(enterprise_code=enterprise_code)
         except Franchise.DoesNotExist:
             return queryset.none()
 
@@ -31,7 +31,7 @@ class DataPartitionMixin(object):
 
         # we want to filter entries by franchise type
         filter_field = "{}".format(franchise_spec)
-        queryset = queryset.filter(**{filter_field: franchise.elites_code})
+        queryset = queryset.filter(**{filter_field: franchise.enterprise_code})
         return queryset
 
 

@@ -42,10 +42,12 @@ v1_patterns = [
         ('elites_franchise_portal.adapters.urls', 'adapters'), namespace='adapters')),
     path(r'customers/', include(
         ('elites_franchise_portal.customers.urls', 'customers'), namespace='customers')),
+    path(r'warehouses/', include(
+        ('elites_franchise_portal.warehouses.urls', 'warehouses'), namespace='warehouses')),
     path(r'encounters/', include(
         ('elites_franchise_portal.encounters.urls', 'encounters'), namespace='encounters')),
-    path(r'franchises/', include(
-        ('elites_franchise_portal.franchises.urls', 'franchises'), namespace='franchises')),
+    path(r'enterprises/', include(
+        ('elites_franchise_portal.enterprises.urls', 'enterprises'), namespace='enterprises')),
     path(r'transactions/', include(
         ('elites_franchise_portal.transactions.urls', 'transactions'), namespace='transactions')),
 ]

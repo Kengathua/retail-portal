@@ -2,7 +2,7 @@ import pytest
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
@@ -22,9 +22,9 @@ class TestSection(TestCase):
 
     def test_create_section(self):
         """."""
-        franchise = baker.make(Franchise, name='Franchise Number One')
+        franchise = baker.make(Enterprise, name='Franchise Number One')
         sec = baker.make(
-            Section, section_name='Section A', franchise=franchise.elites_code)
+            Section, section_name='Section A', enterprise=franchise.enterprise_code)
 
         assert sec
         assert sec.section_code == 'FNO-MB/S-SA/2201'
@@ -36,11 +36,11 @@ class TestCatalog(TestCase):
 
     def test_create_catalog(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         catalog = baker.make(
             Catalog, name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard=True, franchise=franchise_code)
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
         assert catalog
         assert Catalog.objects.count() == 1
 
@@ -50,102 +50,102 @@ class TestCatalogItem(TestCase):
 
     def test_create_catalog_item(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='ELECTRONICS',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
 
         assert catalog_item
         assert CatalogItem.objects.count() == 1
 
     def test_fail_create_catalog_item_exists(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         catalog_item_recipe = Recipe(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
 
         with pytest.raises(ValidationError) as ve:
             catalog_item_recipe.make()
@@ -157,50 +157,50 @@ class TestCatalogItem(TestCase):
 
     def test_add_catalog_item_to_cart(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             phone_no='+254712345678', email='johnwick@parabellum.com')
@@ -210,50 +210,50 @@ class TestCatalogItem(TestCase):
 
     def test_add_item_to_cart_specify_quantity(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             phone_no='+254712345678', email='johnwick@parabellum.com')
@@ -268,50 +268,50 @@ class TestCatalogItem(TestCase):
 
     def test_add_item_to_cart_multiple_times(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', franchise=franchise_code)
-        inventory_item = baker.make(InventoryItem, item=item, franchise=franchise_code)
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             phone_no='+254712345678', email='johnwick@parabellum.com')

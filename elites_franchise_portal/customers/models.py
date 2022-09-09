@@ -28,8 +28,8 @@ class Customer(AbstractBase):
         max_length=24, choices=GENDER_CHOICES, null=True, blank=True)
     join_date = models.DateTimeField(default=timezone.now)
     is_vip = models.BooleanField(default=False)
-    is_franchise = models.BooleanField(default=False)
-    franchise_user = models.ForeignKey(
+    is_enterprise = models.BooleanField(default=False)
+    enterprise_user = models.ForeignKey(
         User, null=True, blank=True, on_delete=models.PROTECT)
     id_no = models.CharField(max_length=256, null=True, blank=True)
     phone_no = models.CharField(max_length=256, null=True, blank=True)
@@ -55,7 +55,7 @@ class Customer(AbstractBase):
         """Validate a customer's customer number."""
         if self.customer_number:
             customer = self.__class__.objects.filter(
-                customer_number=self.customer_number, franchise=self.franchise)
+                customer_number=self.customer_number, enterprise=self.enterprise)
             if customer.exists():
                 raise ValidationError(
                     {'customer_number': 'A customer with this customer number already exists.'})
@@ -64,7 +64,7 @@ class Customer(AbstractBase):
         """Validate a customer's account number."""
         if self.account_number:
             customer = self.__class__.objects.filter(
-                account_number=self.account_number, franchise=self.franchise)
+                account_number=self.account_number, enterprise=self.enterprise)
             if customer.exists():
                 raise ValidationError(
                     {'account_number': 'A customer with this account number already exists.'})
@@ -73,22 +73,22 @@ class Customer(AbstractBase):
         """Validate the phone number used is unique."""
         if self.phone_no:
             customer = self.__class__.objects.filter(
-                phone_no=self.phone_no, franchise=self.franchise)
+                phone_no=self.phone_no, enterprise=self.enterprise)
             if customer.exists():
                 raise ValidationError(
                     {'phone_number': 'A customer with this phone number already exists.'})
 
     def validate_on_site_customer_has_user(self):
         """Validate on site customer has a user assigned to them."""
-        if self.is_franchise:
-            if not self.franchise_user:
+        if self.is_enterprise:
+            if not self.enterprise_user:
                 raise ValidationError(
                     {'user': 'Please assign a user to the customer'})
 
     def process_site_customer(self):
         """Process site customer."""
-        if self.franchise_user:
-            self.is_franchise = True
+        if self.enterprise_user:
+            self.is_enterprise = True
 
     def clean(self) -> None:
         """Clean the customer model."""

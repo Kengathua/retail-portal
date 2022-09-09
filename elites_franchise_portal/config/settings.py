@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-NGROK_BASE_URL = 'http://293e-197-237-137-119.ngrok.io'
+NGROK_BASE_URL = 'http://2028-197-237-137-119.ngrok.io'
 ALLOWED_HOSTS = [
     'kengathua.pythonanywhere.com', '127.0.0.1', 'localhost', '.ngrok.io',
     NGROK_BASE_URL, 'chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop',
@@ -64,7 +64,8 @@ LOCAL_APPS = [
     'elites_franchise_portal.catalog',
     'elites_franchise_portal.adapters',
     'elites_franchise_portal.customers',
-    'elites_franchise_portal.franchises',
+    'elites_franchise_portal.warehouses',
+    'elites_franchise_portal.enterprises',
     'elites_franchise_portal.encounters',
     'elites_franchise_portal.transactions',
     'elites_franchise_portal.adapters.mobile_money.mpesa',
@@ -180,7 +181,7 @@ REST_FRAMEWORK = {
         'rest_framework.ModelSerializer',
     ],
     'DEFAULT_FILTER_BACKENDS': [
-        'elites_franchise_portal.common.filters.FranchiseFilterBackend',
+        'elites_franchise_portal.common.filters.EnterpriseFilterBackend',
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
         'rest_framework.filters.SearchFilter',
@@ -287,12 +288,12 @@ CELERY_TASK_IGNORE_RESULT = True
 """
 import uuid
 from django.contrib.auth import get_user_model
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.config import settings
 if settings.DEBUG:
     franchise = Franchise.objects.create(
         name='Elites Supermarket', updated_by=uuid.uuid4(), created_by=uuid.uuid4())
     user = get_user_model().objects.create_superuser(
             email='adminuser@email.com', first_name='Admin', last_name='User',
-            guid=uuid.uuid4(), password='Hu46!YftP6^l$', franchise=franchise.elites_code)
+            guid=uuid.uuid4(), password='Hu46!YftP6^l$', enterprise=franchise.enterprise_code)
 """

@@ -32,7 +32,7 @@ class Cart(AbstractBase):
     is_empty = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_checked_out = models.BooleanField(default=False)
-    is_franchise = models.BooleanField(default=False)
+    is_enterprise = models.BooleanField(default=False)
 
     @property
     def summary(self):
@@ -77,7 +77,7 @@ class Cart(AbstractBase):
 
     def checkout_cart(self):
         """Checkout all items in cart."""
-        cart_items = CartItem.objects.filter(cart=self, franchise=self.franchise)
+        cart_items = CartItem.objects.filter(cart=self, enterprise=self.enterprise)
         if not cart_items.exists():
             raise ValidationError({
                 'cart item': 'Cart is empty. '
@@ -87,7 +87,7 @@ class Cart(AbstractBase):
         prices = []
 
         audit_fields_data = {
-            'franchise': self.franchise,
+            'enterprise': self.enterprise,
             'created_by': self.created_by,
             'updated_by': self.updated_by,
         }
@@ -101,12 +101,12 @@ class Cart(AbstractBase):
         if not customer_orders.exists():
             order = Order.objects.create(
                 cart_code=self.cart_code, customer=self.customer, order_name="#{}".format(
-                    self.franchise),
+                    self.enterprise),
                 order_number='#{}'.format(random.randint(1001, 9999)), **audit_fields_data)
 
         else:
             update_data = {
-                'is_franchise': self.is_franchise,
+                'is_enterprise': self.is_enterprise,
             }
             customer_orders.filter(cart_code=self.cart_code).update(**update_data)
             order = customer_orders.first()
@@ -129,7 +129,7 @@ class Cart(AbstractBase):
     def checkout_specific_items_in_cart(self, cart_items=[]):
         """Checkout a specific item in cart."""
         order_now_cart_items = CartItem.objects.filter(
-            cart=self, franchise=self.franchise, order_now=True)
+            cart=self, enterprise=self.enterprise, order_now=True)
         if not cart_items and not order_now_cart_items:
             raise ValidationError({
                 'cart item': 'Fast checkout cart is empty. '
@@ -143,7 +143,7 @@ class Cart(AbstractBase):
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,
-            'franchise': self.franchise,
+            'enterprise': self.enterprise,
         }
         from elites_franchise_portal.orders.models import (
             Order, InstantOrderItem, InstallmentsOrderItem)
@@ -153,13 +153,13 @@ class Cart(AbstractBase):
 
         if not customer_orders.exists():
             order = Order.objects.create(
-                order_name="#{}".format(self.franchise), cart_code=self.cart_code,
+                order_name="#{}".format(self.enterprise), cart_code=self.cart_code,
                 order_number='#{}'.format(random.randint(1001, 9999)),
                 customer=self.customer, **audit_fields)
 
         else:
             update_data = {
-                'is_franchise': self.is_franchise,
+                'is_enterprise': self.is_enterprise,
                 'customer': Customer.objects.get(id=self.updated_by)
             }
             customer_orders.filter(cart_code=self.cart_code).update(**update_data)
@@ -183,8 +183,8 @@ class Cart(AbstractBase):
 
     def check_if_on_site_cart(self):
         """Check if item is being processed under the company's default customers."""
-        if self.customer and self.customer.is_franchise:
-            self.is_franchise = True
+        if self.customer and self.customer.is_enterprise:
+            self.is_enterprise = True
 
     def validate_one_empty_active_cart_per_customer(self):
         """Validate one active cart per customer."""
@@ -238,7 +238,7 @@ class CartItem(AbstractBase):
         opening_quantity = 0
         cart_items = self.__class__.objects.filter(
             cart=self.cart, catalog_item=self.catalog_item,
-            franchise=self.franchise).order_by('-closing_quantity')
+            enterprise=self.enterprise).order_by('-closing_quantity')
 
         if cart_items.exists():
             for cart_item in cart_items:
@@ -273,7 +273,7 @@ class CartItem(AbstractBase):
         # create order item
         # prices = []
         audit_fields = {
-            'franchise': self.franchise,
+            'enterprise': self.enterprise,
             'created_by': self.created_by,
             'updated_by': self.updated_by,
         }
@@ -282,7 +282,7 @@ class CartItem(AbstractBase):
         item_name = self.catalog_item.inventory_item.item.item_name
 
         order = Order.objects.create(
-            order_name="#{}".format(self.franchise),
+            order_name="#{}".format(self.enterprise),
             order_number='#{}'.format(random.randint(1001, 9999)),
             customer=self.cart.customer, **audit_fields)
 

@@ -26,16 +26,16 @@ class APITests(LoggedInMixin, object):
     result_id_field = 'id'
     ignore_fields = [
         'updated_by', 'created_by', 'created_on', 'updated_on',
-        'deleted', 'id', 'franchise'
+        'deleted', 'id', 'enterprise'
     ]
     write_only_fields = []
     post_ignore_fields = []
     patch_ignore_fields = []
 
-    def get_franchise_code(self):
+    def get_enterprise_code(self):
         """."""
         prep = self.recipe.prepare()
-        return prep.franchise
+        return prep.enterprise
 
     def process_date(self, date):
         """Process date to the correct format."""

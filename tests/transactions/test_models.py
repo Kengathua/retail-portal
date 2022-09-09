@@ -1,7 +1,7 @@
 """."""
 
 from django.test import TestCase
-from elites_franchise_portal.franchises.models import Franchise
+from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
@@ -24,69 +24,69 @@ class TestTransaction(TestCase):
 
     def test_create_cash_deposit_transaction(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
-            amount=2000, transaction_means='CASH', franchise=franchise_code)
+            amount=2000, transaction_means='CASH', enterprise=enterprise_code)
         assert transaction
         assert Transaction.objects.count() == 1
 
     def test_process_transaction_clear_instant_order_item(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, franchise=franchise_code)
+            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
             phone_no='+254712345678', email='johnwick@parabellum.com')
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, franchise=franchise_code)
+            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         instant_order_item = baker.make(
-            InstantOrderItem, order=order, franchise=franchise.elites_code,
+            InstantOrderItem, order=order, enterprise=franchise.enterprise_code,
             cart_item=cart_item, confirmation_status='CONFIRMED', amount_paid=350)
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             customer=customer, amount=2000, transaction_means='CASH',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         assert instant_order_item.is_cleared == False   # noqa
         instant_order_item.refresh_from_db()
         transaction.refresh_from_db()
@@ -95,59 +95,59 @@ class TestTransaction(TestCase):
 
     def test_process_transaction_clear_few_instant_order_item(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, franchise=franchise_code)
+            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
             phone_no='+254712345678', email='johnwick@parabellum.com')
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, franchise=franchise_code)
+            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         instant_order_item = baker.make(
-            InstantOrderItem, order=order, franchise=franchise.elites_code,
+            InstantOrderItem, order=order, enterprise=franchise.enterprise_code,
             cart_item=cart_item, confirmation_status='CONFIRMED', amount_paid=350)
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             customer=customer, amount=500, transaction_means='CASH',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
 
         assert transaction
         assert Transaction.objects.count() == 1
@@ -158,59 +158,59 @@ class TestTransaction(TestCase):
 
     def test_process_transaction_clear_installment_order_items(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, franchise=franchise_code)
+            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
             phone_no='+254712345678', email='johnwick@parabellum.com')
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, franchise=franchise_code)
+            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         installment_order_item = baker.make(
-            InstallmentsOrderItem, franchise=franchise.elites_code,
+            InstallmentsOrderItem, enterprise=franchise.enterprise_code,
             order=order, cart_item=cart_item,  confirmation_status='CONFIRMED')
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             customer=customer, amount=2000, transaction_means='CASH',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         assert transaction
         assert installment_order_item.amount_paid == 0  # noqa
         assert installment_order_item.deposit_amount == 0  # noqa
@@ -222,59 +222,59 @@ class TestTransaction(TestCase):
 
     def test_process_transaction_as_an_installment(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         brand_item_type = baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, franchise=franchise_code)
+            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
             phone_no='+254712345678', email='johnwick@parabellum.com')
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, franchise=franchise_code)
+            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         installment_order_item = baker.make(
             InstallmentsOrderItem, deposit_amount=150, amount_paid=150, order=order,
-            cart_item=cart_item, confirmation_status='CONFIRMED', franchise=franchise_code)
+            cart_item=cart_item, confirmation_status='CONFIRMED', enterprise=enterprise_code)
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             customer=customer, amount=200, transaction_means='CASH',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
 
         assert transaction
         assert installment_order_item
@@ -287,59 +287,59 @@ class TestTransaction(TestCase):
 
     def test_process_transaction_installment_order_item_deposit(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, franchise=franchise_code)
+            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
             phone_no='+254712345678', email='johnwick@parabellum.com')
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, franchise=franchise_code)
+            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         installment_order_item = baker.make(
             InstallmentsOrderItem, order=order, cart_item=cart_item,
-            confirmation_status='CONFIRMED',  franchise=franchise_code)
+            confirmation_status='CONFIRMED',  enterprise=enterprise_code)
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             customer=customer, amount=600, transaction_means='CASH',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         assert transaction
         assert installment_order_item.amount_paid == 0  # noqa
         assert installment_order_item.deposit_amount == 0  # noqa
@@ -352,59 +352,59 @@ class TestTransaction(TestCase):
 
     def test_clear_item_using_transaction_to_installment(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=1, franchise=franchise_code)
-        inventory_item = InventoryItem.objects.get(item=item, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, franchise=franchise_code)
+            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             other_names='Baba Yaga', phone_no='+254712345678',
-            email='johnwick@parabellum.com', franchise=franchise_code)
+            email='johnwick@parabellum.com', enterprise=enterprise_code)
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, franchise=franchise_code)
+            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         installment_order_item = baker.make(
             InstallmentsOrderItem, order=order, cart_item=cart_item, deposit_amount=150,
-            amount_paid=150, confirmation_status='CONFIRMED',  franchise=franchise_code)
+            amount_paid=150, confirmation_status='CONFIRMED',  enterprise=enterprise_code)
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             customer=customer, amount=600, transaction_means='CASH',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
 
         assert Installment.objects.count() == 1
         assert installment_order_item
@@ -423,79 +423,79 @@ class TestTransaction(TestCase):
     def test_create_mpesa_paybill_deposit_transaction(self):
         """."""
         MPESA_PAYBILL = 'MPESA PAYBILL'
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_type = baker.make(
             ItemType, category=cat, type_name='Cooker',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         brand = baker.make(
-            Brand, brand_name='Samsung', franchise=franchise_code)
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model1 = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='RT26HAR2DSA',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item_model2 = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='HSHHSHS8837',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item1 = baker.make(
             Item, item_model=item_model1, barcode='9876543', make_year=2020,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         item2 = baker.make(
             Item, item_model=item_model2, barcode='23456789', make_year=2020,
-            franchise=franchise_code)
-        s_units = baker.make(Units, units_name='packet', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, franchise=franchise_code)
+            enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='Dozen', franchise=franchise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, franchise=franchise_code)
+        p_units = baker.make(Units, units_name='Dozen', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
             ItemUnits, item=item1, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
-            items_per_purchase_unit=12, franchise=franchise_code)
-        inventory_item1 = InventoryItem.objects.get(item=item1, franchise=franchise_code)
-        inventory_item2 = InventoryItem.objects.get(item=item2, franchise=franchise_code)
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
+        inventory_item1 = InventoryItem.objects.get(item=item1, enterprise=enterprise_code)
+        inventory_item2 = InventoryItem.objects.get(item=item2, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item1, record_type='ADD',
-            quantity_recorded=15, unit_price=300, franchise=franchise_code)
+            quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
         baker.make(
             InventoryRecord, inventory_item=inventory_item2, record_type='ADD',
-            quantity_recorded=10, unit_price=300, franchise=franchise_code)
+            quantity_recorded=10, unit_price=300, enterprise=enterprise_code)
         catalog_item1 = baker.make(
-            CatalogItem, inventory_item=inventory_item1, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item1, enterprise=enterprise_code)
         baker.make(
-            CatalogItem, inventory_item=inventory_item2, franchise=franchise_code)
+            CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             other_names='Baba Yaga', phone_no='+254712345678', account_number=65434598765,
-            email='johnwick@parabellum.com', franchise=franchise_code)
+            email='johnwick@parabellum.com', enterprise=enterprise_code)
         cart = baker.make(Cart, customer=customer)
         cart_item1 = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item1, quantity_added=2,
-            order_now=True, franchise=franchise_code)
+            order_now=True, enterprise=enterprise_code)
         cart_item2 = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item1, quantity_added=1,
-            order_now=True, is_installment=True, franchise=franchise_code)
-        order = baker.make(Order, customer=customer, franchise=franchise_code)
+            order_now=True, is_installment=True, enterprise=enterprise_code)
+        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         installment_order_item = baker.make(
             InstallmentsOrderItem, order=order, cart_item=cart_item1, deposit_amount=150,
-            amount_paid=150, confirmation_status='CONFIRMED',  franchise=franchise_code)
+            amount_paid=150, confirmation_status='CONFIRMED',  enterprise=enterprise_code)
         instant_order_item = baker.make(
-            InstantOrderItem, order=order, franchise=franchise_code, cart_item=cart_item2,
+            InstantOrderItem, order=order, enterprise=enterprise_code, cart_item=cart_item2,
             confirmation_status='CONFIRMED')
         transaction = baker.make(
             Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
             account_number=customer.account_number, amount=2000, transaction_means=MPESA_PAYBILL,
-            franchise=franchise_code)
+            enterprise=enterprise_code)
 
         assert order
         assert instant_order_item
@@ -510,10 +510,10 @@ class TestPayment(TestCase):
 
     def test_make_payment(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         payment = baker.make(
-            Payment, account_number='+254712345678', required_amount='1', franchise=franchise_code)
+            Payment, account_number='+254712345678', required_amount='1', enterprise=enterprise_code)
 
         assert payment
         assert Payment.objects.count() == 1
@@ -521,11 +521,11 @@ class TestPayment(TestCase):
 
     def test_make_payment_request(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         payment = baker.make(
             Payment, account_number='+254712345678', required_amount='1',
-            franchise=franchise_code)
+            enterprise=enterprise_code)
         payment.make_payment_request('M-PESA', None, '+254712345678', '174379')
 
         assert PaymentRequest.objects.count() == 1
@@ -537,14 +537,14 @@ class TestPaymentRequest(TestCase):
 
     def test_create_payment_request(self):
         """."""
-        franchise = baker.make(Franchise, name='Elites Age Supermarket')
-        franchise_code = franchise.elites_code
+        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = franchise.enterprise_code
         payment = baker.make(
-            Payment, account_number='+254712345678', required_amount='1',
-            franchise=franchise_code)
+            Payment, account_number='+254718488252', required_amount='1',
+            enterprise=enterprise_code)
         payment_request = baker.make(
             PaymentRequest, service='M-PESA', payment_id=payment.id, business_account_number='600986',
-            client_account_number='+254712345678', request_from_account_number='+254712345678',
+            client_account_number='+254718488252', request_from_account_number='+254718488252',
             requested_amount=100, paid_amount=100, is_confirmed=True, auto_process_payment=True)
 
         assert payment_request

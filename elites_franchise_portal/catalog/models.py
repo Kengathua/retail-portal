@@ -11,11 +11,11 @@ from elites_franchise_portal.debit.models import Inventory, InventoryItem
 from elites_franchise_portal.items.models import ItemUnits, ItemAttribute
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.common.validators import (
-    items_elites_code_validator)
+    items_enterprise_code_validator)
 from elites_franchise_portal.customers.models import Customer
 from django.contrib.auth import get_user_model
 from elites_franchise_portal.users.models import retrieve_user_email
-from elites_franchise_portal.common.code_generators import generate_elites_code
+from elites_franchise_portal.common.code_generators import generate_enterprise_code
 from django.core.validators import MinValueValidator
 
 KSH = 'KSH'
@@ -27,7 +27,7 @@ class Section(AbstractBase):
     section_name = models.CharField(
         null=False, blank=False, max_length=250)
     section_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_elites_code_validator])
+        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
     is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
@@ -35,7 +35,7 @@ class Section(AbstractBase):
     def create_section_code(self):
         """Create section code."""
         if not self.section_code:
-            self.section_code = generate_elites_code(self)
+            self.section_code = generate_enterprise_code(self)
 
     def clean(self) -> None:
         """Clean section model."""
@@ -143,7 +143,7 @@ class CatalogItem(AbstractBase):
 
     def get_quantity(self):
         """Get quantity."""
-        inventories = Inventory.objects.filter(is_active=True, franchise=self.franchise)
+        inventories = Inventory.objects.filter(is_active=True, enterprise=self.enterprise)
         if not inventories.filter(is_master=True).exists():
             raise ValidationError(
                 {'inventory':
@@ -164,19 +164,19 @@ class CatalogItem(AbstractBase):
         from elites_franchise_portal.orders.models import Cart, CartItem
         if not customer:
             user = get_user_model().objects.get(id=self.updated_by)
-            customer = Customer.objects.filter(franchise_user=user)
+            customer = Customer.objects.filter(enterprise_user=user)
         cart = Cart.objects.filter(customer=customer)
         if not cart.exists():
             cart_data = {
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.franchise,
+                'enterprise': self.enterprise,
                 'customer': customer,
             }
             Cart.objects.create(**cart_data)
         cart = Cart.objects.get(customer=customer, is_active=True)
 
-        cart_item = CartItem.objects.filter(cart=cart, catalog_item=self, franchise=self.franchise)
+        cart_item = CartItem.objects.filter(cart=cart, catalog_item=self, enterprise=self.enterprise)
         if price:
             if price < self.threshold_price:
                 diff = float(self.threshold_price) - float(price)
@@ -187,7 +187,7 @@ class CatalogItem(AbstractBase):
             cart_item_data = {
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.franchise,
+                'enterprise': self.enterprise,
                 'cart': cart,
                 'selling_price': price if price else self.selling_price,
                 'catalog_item': self,
@@ -233,14 +233,14 @@ class CatalogItem(AbstractBase):
         if catalog_item:
             filters = {
                 'catalog_item': catalog_item,
-                'franchise': self.franchise,
+                'enterprise': self.enterprise,
                 }
             reference_catalog = ReferenceCatalog.objects.filter(**filters)
             if not reference_catalog.exists():
                 ReferenceCatalog.objects.create(
                     catalog_item=catalog_item, quantity=self.quantity,
                     created_by=self.created_by, updated_by=self.updated_by,
-                    franchise=self.franchise)
+                    enterprise=self.enterprise)
             reference_catalog.update(quantity=self.quantity)
 
         cache.delete('catalog_items_objects')
@@ -305,7 +305,7 @@ class ReferenceCatalog(AbstractBase):
     def available_quantity(self):
         """Get quantity of available inventory."""
         inventory = Inventory.objects.get(
-            is_active=True, inventory_type='AVAILABLE', franchise=self.franchise)
+            is_active=True, inventory_type='AVAILABLE', enterprise=self.enterprise)
         if self.catalog_item.inventory_item not in inventory.inventory_items.all():
             raise ValidationError(
                 {'inventory_item': '{} is not in the Available Inventory. '

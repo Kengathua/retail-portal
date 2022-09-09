@@ -24,16 +24,16 @@ INVENTORY_TYPE_CHOICES = (
     ('ALLOCATED', 'ALLOCATED'),
     ('DECOUPLING', 'DECOUPLING'),
     ('THEORETICAL', 'THEORETICAL'),
-    ('RAW MATERIALS', 'RAW MATERIALS'),
-    ('FINISHED GOODS', 'FINISHED GOODS'),
-    ('MAINTENANCE, REPAIR AND OPERATING', 'MRO'),
     ('SAFETY STOCK', 'SAFETY STOCK'),
     ('WORKING STOCK', 'WORKING STOCK'),
-    ('ANTICIPATORY STOCK', 'ANTICIPATORY STOCK'),
     ('PSYCHIC STOCK', 'PSYCHIC STOCK'),
-    ('PACKING MATERIALS', 'PACKING MATERIALS'),
-    ('IN TRANSIT STOCK', 'IN TRANSIT STOCK'),
+    ('RAW MATERIALS', 'RAW MATERIALS'),
+    ('FINISHED GOODS', 'FINISHED GOODS'),
     ('WORK IN PROCESS', 'WORK IN PROCESS'),
+    ('IN TRANSIT STOCK', 'IN TRANSIT STOCK'),
+    ('PACKING MATERIALS', 'PACKING MATERIALS'),
+    ('ANTICIPATORY STOCK', 'ANTICIPATORY STOCK'),
+    ('MAINTENANCE, REPAIR AND OPERATING', 'MAINTENANCE, REPAIR AND OPERATING'),
 )
 
 SALES = 'SALES'
@@ -93,7 +93,7 @@ class InventoryItem(AbstractBase):
                 'updated_by': self.updated_by,
                 'created_by': self.created_by,
                 'item': self.item,
-                'franchise': self.franchise,
+                'enterprise': self.enterprise,
             }
             WarehouseItem.objects.create(**data)
 
@@ -103,7 +103,7 @@ class InventoryItem(AbstractBase):
         data = {
             'updated_by': self.updated_by,
             'created_by': self.created_by,
-            'franchise': self.franchise,
+            'enterprise': self.enterprise,
             'marked_price': self.unit_price,
             'selling_price': self.unit_price,
             'quantity': self.summary['available_quantity'],
@@ -111,7 +111,7 @@ class InventoryItem(AbstractBase):
             }
         defaults = {
             'inventory_item': self,
-            'franchise': self.franchise,
+            'enterprise': self.enterprise,
             }
         CatalogItem.objects.update_or_create(defaults=defaults, **data)
 
@@ -123,13 +123,13 @@ class InventoryItem(AbstractBase):
         """Super save to perform pre and post save."""
         super().save(*args, **kwargs)
         inventory = Inventory.objects.filter(
-            is_master=True, is_active=True, franchise=self.franchise)
+            is_master=True, is_active=True, enterprise=self.enterprise)
         inventory = inventory.first()
         if inventory:
             audit_fields = {
                 'updated_by': self.updated_by,
                 'created_by': self.created_by,
-                'franchise': self.franchise
+                'enterprise': self.enterprise
                 }
 
             InventoryInventoryItem.objects.filter(inventory=inventory, inventory_item=self, **audit_fields)
@@ -158,7 +158,7 @@ class Inventory(AbstractBase):
         """Summary."""
         inventory_items = self.inventory_items.all()
         inventory_records = InventoryRecord.objects.filter(
-            inventory=self, inventory_item__in=inventory_items, franchise=self.franchise)
+            inventory=self, inventory_item__in=inventory_items, enterprise=self.enterprise)
 
         summary = []
         if inventory_records.exists():
@@ -179,37 +179,37 @@ class Inventory(AbstractBase):
 
         return summary
 
-    def validate_unique_active_master_inventory_for_franchise(self):
+    def validate_unique_active_master_inventory_for_enterprise(self):
         inventory = self.__class__.objects.filter(id=self.id)
         if not inventory.exists():
             # It is a new inventory being created
             if self.is_master and self.__class__.objects.filter(
-                is_active=True, is_master=True, franchise=self.franchise).exists():
+                is_active=True, is_master=True, enterprise=self.enterprise).exists():
                 msg = 'You can only have one active master inventory'
                 raise ValidationError({'inventory': msg})
 
-    def validate_unique_active_available_inventory_for_franchise(self):
+    def validate_unique_active_available_inventory_for_enterprise(self):
         inventory = self.__class__.objects.filter(id=self.id)
         if not inventory.exists():
             # It is a new inventory being created
             if self.__class__.objects.filter(
-                is_active=True, inventory_type=AVAILABLE, franchise=self.franchise).exists():
+                is_active=True, inventory_type=AVAILABLE, enterprise=self.enterprise).exists():
                 msg = 'You can only have one active available inventory'
                 raise ValidationError({'inventory': msg})
 
-    def validate_unique_active_allocated_inventory_for_franchise(self):
+    def validate_unique_active_allocated_inventory_for_enterprise(self):
         inventory = self.__class__.objects.filter(id=self.id)
         if not inventory.exists():
             # It is a new inventory being created
             if self.__class__.objects.filter(
-                is_active=True, inventory_type=ALLOCATED, franchise=self.franchise).exists():
+                is_active=True, inventory_type=ALLOCATED, enterprise=self.enterprise).exists():
                 msg = 'You can only have one active allocated inventory'
                 raise ValidationError({'inventory': msg})
 
     def clean(self) -> None:
-        self.validate_unique_active_master_inventory_for_franchise()
-        self.validate_unique_active_available_inventory_for_franchise()
-        self.validate_unique_active_allocated_inventory_for_franchise()
+        self.validate_unique_active_master_inventory_for_enterprise()
+        self.validate_unique_active_available_inventory_for_enterprise()
+        self.validate_unique_active_allocated_inventory_for_enterprise()
         return super().clean()
 
 class InventoryInventoryItem(AbstractBase):
@@ -250,7 +250,7 @@ class InventoryRecord(AbstractBase):
         record_type = record_type if record_type else self.record_type
         records = InventoryRecord.objects.filter(
             inventory=self.inventory, inventory_item=self.inventory_item, record_type=record_type,
-            franchise=self.franchise)
+            enterprise=self.enterprise)
         if records:
             record = records.latest('updated_on')
 
@@ -369,12 +369,12 @@ class InventoryRecord(AbstractBase):
         """Update Catalog item."""
         from elites_franchise_portal.catalog.models import CatalogItem
         catalog_items = CatalogItem.objects.filter(
-            inventory_item=self.inventory_item, franchise=self.franchise)
+            inventory_item=self.inventory_item, enterprise=self.enterprise)
         catalog_item = catalog_items.first()
         if catalog_items.exists():
             filters = {
                     'id': catalog_item.id,
-                    'franchise': catalog_item.franchise,
+                    'enterprise': catalog_item.enterprise,
                 }
             if self.record_type == ADD and self.inventory.is_master:
                 quantity = catalog_item.quantity + self.quantity_recorded
@@ -392,11 +392,11 @@ class InventoryRecord(AbstractBase):
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,
-            'franchise': self.franchise}
+            'enterprise': self.enterprise}
 
         if self.inventory.inventory_type == AVAILABLE:
             master_inventory = Inventory.objects.get(
-                is_master=True, is_active=True, franchise=self.franchise)
+                is_master=True, is_active=True, enterprise=self.enterprise)
             record = self.__class__.objects.get(id=self.id)
             data = {
                 'inventory': master_inventory,
@@ -411,7 +411,7 @@ class InventoryRecord(AbstractBase):
             }
             if InventoryRecord.objects.filter(
                 inventory=master_inventory, record_code=record.record_code,
-                franchise=record.franchise).exists():
+                enterprise=record.enterprise).exists():
                 return self.__class__.objects.update(**data, **audit_fields)
 
             return self.__class__.objects.create(**data, **audit_fields)
