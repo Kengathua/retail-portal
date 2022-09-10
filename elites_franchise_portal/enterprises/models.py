@@ -3,7 +3,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from elites_franchise_portal.common.models import BaseModel
+from elites_franchise_portal.common.models import AbstractBase, BaseModel, BioData
 from elites_franchise_portal.common.validators import (
     phoneNumberRegex, franchise_enterprise_code_validator)
 from elites_franchise_portal.common.code_generators import generate_enterprise_code
@@ -140,3 +140,14 @@ class Platform(BaseModel):
         """Clean Enterprise online platforms."""
         return super().clean()
 
+
+class Employee(BioData):
+    """Employee model class."""
+
+    employee_number = models.CharField(max_length=300)
+
+
+class Agent(BioData):
+    """Agent model class."""
+
+    agent_number = models.CharField(max_length=300)

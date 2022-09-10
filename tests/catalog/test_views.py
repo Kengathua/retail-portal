@@ -41,7 +41,7 @@ class TestCatalogView(APITests, APITestCase):
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
-            Catalog, name='Elites Age Supermarket Standard Catalog',
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
 
     url = 'v1:catalog:catalog'
@@ -205,7 +205,7 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
         section = baker.make(
             Section, section_name='Section A', enterprise=enterprise_code)
         catalog = baker.make(
-            Catalog, name='Elites Age Supermarket Standard Catalog',
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, section=section, enterprise=enterprise_code)

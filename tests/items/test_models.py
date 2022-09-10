@@ -211,7 +211,7 @@ class TestItem(TestCase):
             'Please set that up to activate your products'
         assert msg in ve.value.messages
         baker.make(
-            Catalog, name='Elites Age Supermarket Standard Catalog',
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
         item.activate()
 

@@ -23,7 +23,6 @@ ENCOUNTER_PROCESSING_STATUS_CHOICES = (
 PENDING = 'PENDING'
 
 
-# Create your models here.
 class Encounter(AbstractBase):
     """Customer encounter model."""
 
@@ -31,6 +30,7 @@ class Encounter(AbstractBase):
         Customer, null=True, blank=True, on_delete=models.PROTECT)
     billing = models.JSONField(null=False, blank=False)
     payments = models.JSONField(null=True, blank=True)
+    served_by = models.JSONField(null=True, blank=True)
     submitted_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
