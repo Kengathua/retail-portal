@@ -24,7 +24,7 @@ class WarehouseItemViewSet(BaseViewMixin):
     serializer_class = serializers.WarehouseItemSerializer
     filterset_class = filters.WarehouseItemFilter
     search_fields = (
-        'warehouse_item__item__item_name', 'warehouse_item__item__barcode')
+        'item__item_name', 'item__barcode')
 
 
 class WarehouseWarehouseItemViewSet(BaseViewMixin):
