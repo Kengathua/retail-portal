@@ -19,8 +19,8 @@ class WarehouseSerializer(BaseSerializerMixin):
 class WarehouseItemSerializer(BaseSerializerMixin):
     """Warehouse Item serializer class."""
 
-    item_name = CharField(source='warehouse_item.item.item_name', read_only=True)
-    barcode = CharField(source='warehouse_item.item.barcode', read_only=True)
+    item_name = CharField(source='item.item_name', read_only=True)
+    barcode = CharField(source='item.barcode', read_only=True)
 
     class Meta:
         """Warehouse Item Meta class."""
@@ -30,6 +30,10 @@ class WarehouseItemSerializer(BaseSerializerMixin):
 class WarehouseWarehouseItemSerializer(BaseSerializerMixin):
     """Warehouse Warehouse Item serializer class."""
 
+    warehouse_name = CharField(source='warehouse.warehouse_name', read_only=True)
+    item_name = CharField(source='warehouse_item.item.item_name', read_only=True)
+    barcode = CharField(source='warehouse_item.item.barcode', read_only=True)
+
     class Meta:
         """Meta class."""
         model = models.WarehouseWarehouseItem
@@ -37,6 +41,10 @@ class WarehouseWarehouseItemSerializer(BaseSerializerMixin):
 
 class WarehouseRecordSerializer(BaseSerializerMixin):
     """Store record serializer class."""
+
+    warehouse_name = CharField(source='warehouse.warehouse_name', read_only=True)
+    item_name = CharField(source='warehouse_item.item.item_name', read_only=True)
+    barcode = CharField(source='warehouse_item.item.barcode', read_only=True)
 
     class Meta:
         """Store record Meta class."""
