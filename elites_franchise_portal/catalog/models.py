@@ -260,7 +260,8 @@ class Catalog(AbstractBase):
     """Catalog model."""
 
     # TODO Add a short name field
-    name = models.CharField(max_length=300, null=False, blank=False)
+    catalog_name = models.CharField(max_length=300, null=False, blank=False)
+    catalog_code = models.CharField(max_length=300, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
     is_standard = models.BooleanField(default=False)
     deactivated_on = models.DateTimeField(null=True, blank=True)
@@ -274,7 +275,7 @@ class Catalog(AbstractBase):
     def __str__(self):
         """Str representation for the section model."""
         return '{}'.format(
-            self.name,
+            self.catalog_name,
             )
 
 

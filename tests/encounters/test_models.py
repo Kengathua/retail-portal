@@ -58,7 +58,7 @@ class TestEncounter(TestCase):
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         baker.make(
-            Catalog, name='Elites Age Supermarket Standard Catalog',
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True,
             enterprise=enterprise_code)
         item1 = baker.make(
@@ -96,7 +96,7 @@ class TestEncounter(TestCase):
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2,
             record_type='ADD', quantity_recorded=2, unit_price=2000, enterprise=enterprise_code)
         baker.make(
-            Catalog, name='Elites Age Supermarket Standard Catalog',
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True,
             enterprise=enterprise_code)
         catalog_item1 = baker.make(

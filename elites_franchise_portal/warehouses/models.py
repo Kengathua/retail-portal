@@ -37,12 +37,24 @@ WAREHOUSE_TYPE_CHOICES = (
     ('DISTRIBUTION CENTER', 'DISTRIBUTION CENTER')
 )
 
+WAREHOUSE_PROCESS_CHOICES = (
+    ('RECEIVING', 'RECEIVING'),
+    ('PUT AWAY', 'PUT AWAY'),
+    ('PICKING', 'PICKING'),
+    ('PACKING', 'PACKING'),
+    ('DISPATCHING', 'DISPATCHING'),
+    ('SHIPPING', 'SHIPPING'),
+    ('STORAGE', 'STORAGE'),
+    ('RETURNS', 'RETURNS'),
+    ('VALUE ADDING', 'VALUE ADDING'),
+)
+
 SALES = 'SALES'
 ADD = 'ADD'
 REMOVE = 'REMOVE'
 INVENTORY = 'INVENTORY'
 PRIVATE = 'PRIVATE'
-
+STORAGE = 'STORAGE'
 
 class WarehouseItem(AbstractBase):
     """Warehouse Item model."""
@@ -115,6 +127,7 @@ class Warehouse(AbstractBase):
     warehouse_items = models.ManyToManyField(
         WarehouseItem, through='WarehouseWarehouseItem', related_name='warehousewarehouseitems')
     is_active = models.BooleanField(default=True)
+    is_receiving = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
     pushed_to_edi = models.BooleanField(default=False)
 
@@ -138,6 +151,8 @@ class WarehouseRecord(AbstractBase):
         WarehouseItem, null=False, blank=False, on_delete=models.PROTECT)
     opening_quantity = models.FloatField(default=0.0)
     opening_total_amount = models.FloatField(default=0.0)
+    warehouse_process = models.CharField(
+        max_length=300, choices=WAREHOUSE_PROCESS_CHOICES, default=STORAGE)
     record_type = models.CharField(
         max_length=300, null=False, blank=False,
         choices=RECORD_TYPE_CHOICES, default=ADD)

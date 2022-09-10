@@ -28,7 +28,7 @@ class SectionViewSet(BaseViewMixin):
 class CatalogViewSet(BaseViewMixin):
     """Catalog Viewset class."""
 
-    queryset = Catalog.objects.all().order_by('name')
+    queryset = Catalog.objects.all().order_by('catalog_name')
     serializer_class = serializers.CatalogSerializer
     filterset_class = filters.CatalogFilter
     search_fields = ('catalog_name')

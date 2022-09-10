@@ -39,7 +39,7 @@ class TestCatalog(TestCase):
         franchise = baker.make(Enterprise, name='Elites Age Supermarket')
         enterprise_code = franchise.enterprise_code
         catalog = baker.make(
-            Catalog, name='Elites Age Supermarket Standard Catalog',
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
         assert catalog
         assert Catalog.objects.count() == 1

@@ -15,22 +15,6 @@ class CategorySerializer(BaseSerializerMixin):
         model = models.Category
         fields = '__all__'
 
-    def create(self, validated_data):
-        """Create function for Category serializer."""
-        sections = validated_data.pop('sections', None)
-        self._populate_audit_fields(validated_data, True)
-        category = models.Category.objects.create(**validated_data)
-        if sections:
-            for section in sections:
-                data = {
-                    'category': category,
-                    'section': section,
-                }
-                self._populate_audit_fields(data, True)
-                models.CategorySection.objects.create(**data)
-
-        return category
-
 
 class ItemTypeSerializer(BaseSerializerMixin):
     """Item type serializer class."""
