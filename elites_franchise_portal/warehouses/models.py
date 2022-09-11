@@ -127,6 +127,7 @@ class Warehouse(AbstractBase):
         max_length=300, choices=WAREHOUSE_TYPE_CHOICES, default=PRIVATE)
     warehouse_items = models.ManyToManyField(
         WarehouseItem, through='WarehouseWarehouseItem', related_name='warehousewarehouseitems')
+    description = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_receiving = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)

@@ -149,6 +149,7 @@ class Inventory(AbstractBase):
         max_length=300, choices=INVENTORY_TYPE_CHOICES, default=WORKING_STOCK)
     inventory_items = models.ManyToManyField(
         InventoryItem, through='InventoryInventoryItem', related_name='inventoryinventoryitems')
+    description = models.TextField(null=True, blank=True)
     is_master = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
