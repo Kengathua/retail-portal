@@ -1,6 +1,6 @@
 """Item serializers file."""
 
-from rest_framework.fields import SerializerMethodField
+from rest_framework.fields import SerializerMethodField, CharField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.items import models
@@ -145,6 +145,9 @@ class UnitsSerializer(BaseSerializerMixin):
 class ItemUnitsSerializer(BaseSerializerMixin):
     """Item units serializer class."""
 
+    item_name = CharField(source='item.item_name', read_only=True)
+    sales_units_name = CharField(source='sales_units.units_name', read_only=True)
+    purchases_units_name = CharField(source='purchases_units.units_name', read_only=True)
     class Meta:
         """Item Units Meta class."""
 

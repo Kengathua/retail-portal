@@ -100,7 +100,7 @@ class UnitsViewSet(BaseViewMixin):
     queryset = Units.objects.all()
     serializer_class = serializers.UnitsSerializer
     filterset_class = filters.UnitsFilter
-    search_fields = ('')
+    search_fields = ('units_name', 'units_code',)
 
 
 class ItemUnitsViewSet(BaseViewMixin):
