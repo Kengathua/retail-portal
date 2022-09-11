@@ -320,45 +320,12 @@ class TestItemUnits(TestCase):
         baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
-        item_units = baker.make(
-            ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-
-        assert item_units
-        assert ItemUnits.objects.count() == 1
-
-    def test_validate_unique_item(self):
-        """."""
-        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
-        enterprise_code = enterprise.enterprise_code
-        cat = baker.make(
-            Category, category_name='Cat One',
-            enterprise=enterprise_code)
-        item_type = baker.make(
-            ItemType, category=cat, type_name='Cooker',
-            enterprise=enterprise_code)
-        brand = baker.make(
-            Brand, brand_name='Samsung', enterprise=enterprise_code)
-        baker.make(
-            BrandItemType, brand=brand, item_type=item_type,
-            enterprise=enterprise_code)
-        item_model = baker.make(
-            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            enterprise=enterprise_code)
-        item = baker.make(
-            Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            enterprise=enterprise_code)
-        s_units = baker.make(Units, units_name='5LITRE Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
-        s_units.item_types.set([item_type])
-        s_units.save()
-        p_units = baker.make(Units, units_name='5LITRE Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
         item_units1 = baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+        assert item_units1
+        assert ItemUnits.objects.count() == 1
+    
         item_units2 = Recipe(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
@@ -375,7 +342,8 @@ class TestItemUnits(TestCase):
         s_units.save()
         with pytest.raises(ValidationError) as ve:
             item_units2.make()
-        msg = 'Sales Units 5LITRE Gas has been deactivated. Kindly activate it or select the correct units to register'
+        msg = 'Sales Units 5 Gas has been deactivated. '\
+            'Kindly activate it or select the correct units to register'
         assert msg in ve.value.messages
         s_units.is_active = True
         s_units.save()
@@ -383,7 +351,8 @@ class TestItemUnits(TestCase):
         p_units.save()
         with pytest.raises(ValidationError) as ve:
             item_units2.make()
-        msg = 'Purchases Units 5LITRE Gas has been deactivated. Kindly activate it or select the correct units to register'
+        msg = 'Purchases Units 5 Gas has been deactivated. '\
+            'Kindly activate it or select the correct units to register'
         assert msg in ve.value.messages
 
 
