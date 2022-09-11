@@ -164,7 +164,8 @@ if settings.DEBUG:
         inventory_name='Elites Age Supermarket Available Inventory',
         is_active=True, inventory_type='AVAILABLE', **audit_fields)
     catalog, _ = Catalog.objects.update_or_create(
-        name='Elites Age Standard Catalog', is_standard=True, **audit_fields)
+        catalog_name='Elites Age Standard Catalog', catalog_code='C-0001',
+        is_standard=True, **audit_fields)
 
     item1.activate()
     item2.activate()

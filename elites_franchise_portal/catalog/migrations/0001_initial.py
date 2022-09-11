@@ -103,7 +103,7 @@ class Migration(migrations.Migration):
                 ('updated_by', models.UUIDField()),
                 ('enterprise', models.CharField(max_length=250)),
                 ('quantity', models.FloatField()),
-                ('quantity_on_deposit', models.FloatField(blank=True, null=True)),
+                ('quantity_on_installment_plan', models.FloatField(blank=True, null=True)),
                 ('catalog_item', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='catalog.catalogitem')),
             ],
             options={
