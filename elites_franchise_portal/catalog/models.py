@@ -300,21 +300,46 @@ class ReferenceCatalog(AbstractBase):
     catalog_item = models.ForeignKey(
         CatalogItem, on_delete=models.PROTECT)
     quantity = models.FloatField()
-    quantity_on_deposit = models.FloatField(null=True, blank=True)
+    quantity_on_installment_plan = models.FloatField(null=True, blank=True)
 
     @property
     def available_quantity(self):
         """Get quantity of available inventory."""
-        inventory = Inventory.objects.get(
-            is_active=True, inventory_type='AVAILABLE', enterprise=self.enterprise)
-        if self.catalog_item.inventory_item not in inventory.inventory_items.all():
+        from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+        enterprise_setup_rules = EnterpriseSetupRules.objects.filter(enterprise=self.enterprise, is_active=True)
+        enterprise_setup_rule = enterprise_setup_rules.first()
+        if not enterprise_setup_rule:
+            raise ValidationError({'enterprise_setup_rule': 'Please set up the rules for the enterprise'})
+
+        master_inventory = enterprise_setup_rule.master_inventory
+        default_catalog = enterprise_setup_rule.default_catalog
+        default_inventory = enterprise_setup_rule.default_inventory
+        if self.catalog_item.inventory_item not in master_inventory.inventory_items.all():
             raise ValidationError(
                 {'inventory_item': '{} is not in the Available Inventory. '
-                 'Please hook that up first'.format(
-                     self.catalog_item.inventory_item.item.item_name)})
+                'Please hook that up first'.format(
+                    self.catalog_item.inventory_item.item.item_name)})
 
-        quantity = [
-            data['quantity'] for data in inventory.summary
-            if data['inventory_item'] == self.catalog_item.inventory_item][0]
+        if not master_inventory.summary:
+            quantity_in_master_inventory = 0
+        else:
+            quantity_in_master_inventory = [
+                data['quantity'] for data in master_inventory.summary
+                if data['inventory_item'] == self.catalog_item.inventory_item][0]
 
+        if self.catalog_item.inventory_item not in default_inventory.inventory_items.all():
+            raise ValidationError(
+                {'inventory_item': '{} is not in the Available Inventory. '
+                'Please hook that up first'.format(
+                    self.catalog_item.inventory_item.item.item_name)})
+
+        if not default_inventory.summary:
+            quantity_in_default_inventory = 0
+        else:
+            quantity_in_default_inventory = [
+                data['quantity'] for data in default_inventory.summary
+                if data['inventory_item'] == self.catalog_item.inventory_item][0]
+
+        quantity = quantity_in_default_inventory if quantity_in_default_inventory >= \
+            quantity_in_master_inventory else quantity_in_master_inventory
         return quantity

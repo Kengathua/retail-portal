@@ -24,6 +24,7 @@ class EnterpriseSetupRules(AbstractBase):
         Catalog, related_name='standard_catalog', on_delete=models.CASCADE)
     default_catalog = models.ForeignKey(
         Catalog, related_name='default_catalog', on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=False)
 
 
 class EnterpriseSetup(AbstractBase):
