@@ -181,36 +181,24 @@ class Inventory(AbstractBase):
         return summary
 
     def validate_unique_active_master_inventory_for_enterprise(self):
-        inventory = self.__class__.objects.filter(id=self.id)
-        if not inventory.exists():
-            # It is a new inventory being created
-            if self.is_master and self.__class__.objects.filter(
-                is_active=True, is_master=True, enterprise=self.enterprise).exists():
+        if self.is_master:
+            master_inventory = self.__class__.objects.filter(
+                is_active=True, is_master=True, enterprise=self.enterprise).exclude(id=self.id)
+            if master_inventory.exists():
                 msg = 'You can only have one active master inventory'
                 raise ValidationError({'inventory': msg})
 
-    def validate_unique_active_available_inventory_for_enterprise(self):
-        inventory = self.__class__.objects.filter(id=self.id)
-        if not inventory.exists():
-            # It is a new inventory being created
-            if self.__class__.objects.filter(
-                is_active=True, inventory_type=AVAILABLE, enterprise=self.enterprise).exists():
-                msg = 'You can only have one active available inventory'
-                raise ValidationError({'inventory': msg})
+    def validate_unique_active_inventory_per_type_for_enterprise(self):
+        inventory = self.__class__.objects.filter(
+            inventory_type=self.inventory_type, is_active=True, enterprise=self.enterprise).exclude(id=self.id)
+        if inventory.exists():
+            msg = 'You can only have one active {} inventory'.format(self.inventory_type.title())
+            raise ValidationError({'inventory': msg})
 
-    def validate_unique_active_allocated_inventory_for_enterprise(self):
-        inventory = self.__class__.objects.filter(id=self.id)
-        if not inventory.exists():
-            # It is a new inventory being created
-            if self.__class__.objects.filter(
-                is_active=True, inventory_type=ALLOCATED, enterprise=self.enterprise).exists():
-                msg = 'You can only have one active allocated inventory'
-                raise ValidationError({'inventory': msg})
 
     def clean(self) -> None:
         self.validate_unique_active_master_inventory_for_enterprise()
-        self.validate_unique_active_available_inventory_for_enterprise()
-        self.validate_unique_active_allocated_inventory_for_enterprise()
+        self.validate_unique_active_inventory_per_type_for_enterprise()
         return super().clean()
 
 class InventoryInventoryItem(AbstractBase):
