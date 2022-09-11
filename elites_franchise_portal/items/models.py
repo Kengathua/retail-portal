@@ -419,6 +419,7 @@ class Units(AbstractBase):
         null=False, blank=False, max_length=300)
     units_code = models.CharField(
         null=True, blank=True, max_length=250, validators=[units_enterprise_code_validator])
+    is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
@@ -491,11 +492,34 @@ class ItemUnits(AbstractBase):
         Units, null=False, blank=False,
         related_name='purchasing_units', on_delete=PROTECT)  # eg Pieces
     quantity_of_sale_units_per_purchase_unit = models.FloatField()  # eg 12
+    is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
+    def validate_unique_active_item_units_for_item(self):
+        if self.__class__.objects.filter(
+            item=self.item, is_active=True).exclude(id=self.id).exists():
+            raise ValidationError(
+                {'item': 'This item already has an active units instance registered to it. '\
+                    'Kindly deactivate the existing units registered to it or select a different item'})
+
+    def validate_registered_units_are_active(self):
+        if not self.sales_units.is_active:
+            units_name = self.sales_units.units_name
+            raise ValidationError(
+                {'sales_units': 'Sales Units {} has been deactivated. Kindly activate it or '\
+                    'select the correct units to register'.format(units_name)})
+
+        if not self.purchases_units.is_active:
+            units_name = self.purchases_units.units_name
+            raise ValidationError(
+                {'purchases_units': 'Purchases Units {} has been deactivated. Kindly activate it or '\
+                    'select the correct units to register'.format(units_name)})
+
     def clean(self) -> None:
         """Clean Item Units model."""
+        self.validate_unique_active_item_units_for_item()
+        self.validate_registered_units_are_active()
         return super().clean()
 
 
