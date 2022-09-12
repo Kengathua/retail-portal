@@ -21,6 +21,9 @@ class InventorySerializer(BaseSerializerMixin):
 class InventoryItemSerializer(BaseSerializerMixin):
     """Inventory Item serializer class."""
 
+    item_name = CharField(source='item.item_name', read_only=True)
+    barcode = CharField(source='item.barcode', read_only=True)
+
     class Meta:
         """Inventory item Meta class."""
 
