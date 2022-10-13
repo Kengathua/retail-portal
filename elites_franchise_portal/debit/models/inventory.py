@@ -382,10 +382,13 @@ class InventoryRecord(AbstractBase):
 
     def update_catalog_item(self):
         """Update Catalog item."""
-        from elites_franchise_portal.restrictions_mgt.models import (
-            EnterpriseSetupRules)
-        enterprise_setup_rules = EnterpriseSetupRules.objects.get(
-            enterprise=self.enterprise, is_active=True)
+        from elites_franchise_portal.restrictions_mgt.helpers import (
+            get_valid_enterprise_setup_rules)
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        if not enterprise_setup_rules:
+            msg = 'You do not have setup rules for your enterprise. Please set that up first'
+            raise ValidationError({'enterprise_setup_rules':msg})
+
         default_inventory = enterprise_setup_rules.default_inventory
         default_catalog = enterprise_setup_rules.default_catalog
         if self.inventory.inventory_type == default_inventory.inventory_type:

@@ -1,18 +1,19 @@
 """."""
 
+import uuid
 import pytest
 from django.test import TestCase
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
-from elites_franchise_portal.warehouses.models import (
-    Warehouse, WarehouseItem, WarehouseWarehouseItem)
+from elites_franchise_portal.warehouses.models import Warehouse
 from elites_franchise_portal.catalog.models import Catalog
-
+from elites_franchise_portal.users.models import User
 from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
     ItemModel, ItemType, ItemUnits, UnitsItemType, Units)
 from django.core.exceptions import ValidationError
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -149,7 +150,7 @@ class TestItem(TestCase):
             enterprise=enterprise_code)
 
         assert item
-        assert item.item_name == 'Samsung GE731K-B SUT Cooker'
+        assert item.item_name == 'SAMSUNG GE731K-B SUT COOKER'
         assert item.item_code == 'EAS-MB/I-SGSC/2201'
         assert Item.objects.count() == 1
 
@@ -177,45 +178,31 @@ class TestItem(TestCase):
             enterprise=enterprise_code)
         assert not item.is_active
 
-        with pytest.raises(ValidationError) as ve:
-            item.activate()
-        msg = 'You do not have an activate private warehouse set up. ' \
-            'Please set that up to activate your products'
-        assert msg in ve.value.messages
-        baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', warehouse_type='PRIVATE',
-            enterprise=enterprise_code)
-
-        with pytest.raises(ValidationError) as ve:
-            item.activate()
-        msg = 'You do not have an active master inventory for your entity. '\
-            'Please set that up to activate your products'
-        assert msg in ve.value.messages
-        baker.make(
+        user = baker.make(
+            User, email='testuser@email.com', first_name='Test', last_name='User',
+            guid=uuid.uuid4(), enterprise=enterprise_code)
+        master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
             enterprise=enterprise_code)
-
-        with pytest.raises(ValidationError) as ve:
-            item.activate()
-        msg = 'You do not have an active available inventory set up. '\
-            'Please set that up to activate your products'
-        assert msg in ve.value.messages
-        baker.make(
+        default_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
-
-        with pytest.raises(ValidationError) as ve:
-            item.activate()
-        msg = 'You do not have an active standard catalog set up. '\
-            'Please set that up to activate your products'
-        assert msg in ve.value.messages
-        baker.make(
+        standard_catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        item.activate()
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        enterprise_setup_rules = baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=default_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=standard_catalog,
+            default_catalog=standard_catalog, is_active=True, enterprise=enterprise_code)
+        item.activate(user)
 
         assert item.is_active
+        assert enterprise_setup_rules
         assert Inventory.objects.count() == 2
         assert InventoryItem.objects.count() == 1
         assert InventoryInventoryItem.objects.count() == 2

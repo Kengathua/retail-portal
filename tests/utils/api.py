@@ -175,7 +175,9 @@ class APITests(LoggedInMixin, object):
                 assert str(val1) == str(val2)
                 continue
 
-            assert candidate_dict[key] == test_dict[key], '{}  should equal -> {}, key {}'.format(
+            test_value = test_dict[key] or ''
+            candidate_value = candidate_dict[key] or ''
+            assert candidate_value.title() == test_value.title(), '{}  should equal -> {}, key {}'.format(
                 candidate_dict[key], test_dict[key], key)
 
     def get_test_data(self, instance):
@@ -187,7 +189,7 @@ class APITests(LoggedInMixin, object):
                     value = getattr(instance, field.name, None)
                     data[field.name] = value if value else ''
                     if isinstance(field, CharField):
-                        data[field.name] = value if value else ''
+                        data[field.name] = value or ''
 
                     if isinstance(
                             field, FloatField) or isinstance(

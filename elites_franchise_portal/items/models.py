@@ -11,7 +11,6 @@ from elites_franchise_portal.common.validators import (
     items_enterprise_code_validator, units_enterprise_code_validator)
 from elites_franchise_portal.users.models import retrieve_user_email
 
-
 ITEM_ATTRIBUTE_TYPES = (
     ('SPECIAL OFFER', 'SPECIAL OFFER'),
     ('WARRANTY', 'WARRANTY'),
@@ -249,27 +248,29 @@ class Item(AbstractBase):
             activate_warehouse_item, activate_inventory_item)
 
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        if not enterprise_setup_rules:
+            msg = 'You do not have setup rules for your enterprise. Please set that up first'
+            raise ValidationError({'enterprise_setup_rules':msg})
 
-        receiving_warehouse = enterprise_setup_rules.receiving_warehouse
-        default_warehouse = enterprise_setup_rules.default_warehouse
-        master_inventory = enterprise_setup_rules.master_inventory
-        default_inventory = enterprise_setup_rules.default_inventory
-        allocated_inventory = enterprise_setup_rules.allocated_inventory
+        if enterprise_setup_rules.receiving_warehouse:
+            activate_warehouse_item(
+                enterprise_setup_rules.receiving_warehouse, self, user)
 
-        if receiving_warehouse:
-            activate_warehouse_item(receiving_warehouse, self, user)
+        if enterprise_setup_rules.default_warehouse:
+            activate_warehouse_item(
+                enterprise_setup_rules.default_warehouse, self, user)
 
-        if default_warehouse:
-            activate_warehouse_item(default_warehouse, self, user)
+        if enterprise_setup_rules.master_inventory:
+            activate_inventory_item(
+                enterprise_setup_rules.master_inventory, self, user)
 
-        if master_inventory:
-            activate_inventory_item(master_inventory, self, user)
+        if enterprise_setup_rules.default_inventory:
+            activate_inventory_item(
+                enterprise_setup_rules.default_inventory, self, user)
 
-        if default_inventory:
-            activate_inventory_item(default_inventory, self, user)
-
-        if allocated_inventory:
-            activate_inventory_item(allocated_inventory, self, user)
+        if enterprise_setup_rules.allocated_inventory:
+            activate_inventory_item(
+                enterprise_setup_rules.allocated_inventory, self, user)
 
         self.is_active = True
         self.save()
