@@ -10,6 +10,9 @@ from elites_franchise_portal.items.models import (
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,)
 from tests.utils.login_mixins import authenticate_test_user
+from elites_franchise_portal.catalog.models import Catalog, CatalogItem
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.warehouses.models import Warehouse
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe, foreign_key
@@ -130,18 +133,28 @@ class TestInventoryRecordView(APITests, APITestCase):
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
             enterprise=enterprise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(
             InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory,
             inventory_item=inventory_item, enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
-            inventory_item=inventory_item, enterprise=enterprise_code)
         self.recipe = Recipe(
             InventoryRecord, inventory=master_inventory, inventory_item=inventory_item,
-            record_type='ADD',
-            quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
+            record_type='ADD', quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
 
     url = 'v1:debit:inventoryrecord'
 

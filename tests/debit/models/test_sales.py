@@ -5,7 +5,9 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
-
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.catalog.models import Catalog
+from elites_franchise_portal.warehouses.models import Warehouse
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
@@ -125,6 +127,17 @@ class TestSaleRecord(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item1 = baker.make(
             InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(

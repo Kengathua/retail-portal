@@ -145,7 +145,8 @@ class CatalogItem(AbstractBase):
 
     def get_quantity(self):
         """Get quantity."""
-        from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+        from elites_franchise_portal.restrictions_mgt.helpers import (
+            get_valid_enterprise_setup_rules)
         inventories = Inventory.objects.filter(is_active=True, enterprise=self.enterprise)
         if not inventories.filter(is_master=True).exists():
             raise ValidationError(
@@ -154,8 +155,7 @@ class CatalogItem(AbstractBase):
 
         if not self.quantity:
             quantity = 0
-            enterprise_setup_rules = EnterpriseSetupRules.objects.get(
-                is_active=True, enterprise=self.enterprise)
+            enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
             default_inventory = enterprise_setup_rules.default_inventory
             if not default_inventory.summary == []:
                 quantities = [
