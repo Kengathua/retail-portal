@@ -64,3 +64,20 @@ https://developer.redis.com/create/windows/
     git branch | grep -v "master" | xargs git branch -D
 
     scrcpy
+
+
+## DATABASE SETUP
+
+    sudo -u postgres psql
+
+    CREATE DATABASE elites_franchise;
+
+    CREATE USER elites_user WITH PASSWORD 'elites_pass';
+
+    ALTER ROLE elites_user SET client_encoding TO 'utf8';
+    ALTER ROLE elites_user SET default_transaction_isolation TO 'read committed';
+    ALTER ROLE elites_user SET timezone TO 'UTC';
+
+    GRANT ALL PRIVILEGES ON DATABASE elites_franchise TO elites_user;
+
+    \q
