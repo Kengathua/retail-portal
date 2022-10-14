@@ -35,7 +35,10 @@ setup(
         'djangorestframework-simplejwt==5.1.0',
         'ipython==8.4.0',
         'psycopg2==2.9.3',
-
+        'celery==5.2.7',
+        'dj-database-url==1.0.0',
+        'django-cryptography==1.1',
+        'gunicorn==20.1.0',
     ],
     # scripts=[
     #     'bin/franchise_portal_manage',
