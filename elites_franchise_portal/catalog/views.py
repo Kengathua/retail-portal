@@ -47,16 +47,16 @@ class CatalogItemViewSet(BaseViewMixin):
         'inventory_item__item__item_model__item_type__type_name',
         'inventory_item__item__item_code', 'inventory_item__item__barcode')
 
-    @method_decorator(vary_on_cookie)
-    @method_decorator(cache_page(60*60*14))
-    def dispatch(self, *args, **kwargs):
-        """."""
-        if self.request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
-            cache.delete('catalog_items_objects')
-        catalog_items_objects = cache.get('catalog_items_objects')
-        if catalog_items_objects is None:
-            cache.set('catalog_items_objects', self.queryset)
-        return super(CatalogItemViewSet, self).dispatch(*args, **kwargs)
+    # @method_decorator(vary_on_cookie)
+    # @method_decorator(cache_page(60*60*14))
+    # def dispatch(self, *args, **kwargs):
+    #     """."""
+    #     if self.request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+    #         cache.delete('catalog_items_objects')
+    #     catalog_items_objects = cache.get('catalog_items_objects')
+    #     if catalog_items_objects is None:
+    #         cache.set('catalog_items_objects', self.queryset)
+    #     return super(CatalogItemViewSet, self).dispatch(*args, **kwargs)
 
 
 class CatalogCatalogItemViewSet(BaseViewMixin):

@@ -199,7 +199,26 @@ class TestItem(TestCase):
             default_inventory=default_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=standard_catalog,
             default_catalog=standard_catalog, is_active=True, enterprise=enterprise_code)
+        with pytest.raises(ValidationError) as ve:
+            item.activate(user)
+        msg = 'SAMSUNG GE731K-B SUT COOKER does not have Units assigned to it. '\
+            'Please hook that up first'
+        assert msg in ve.value.messages
+
+        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
+        s_units.item_types.set([item_type])
+        s_units.save()
+        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
+        p_units.item_types.set([item_type])
+        p_units.save()
+        baker.make(
+            ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
+
         item.activate(user)
+        item.refresh_from_db()
 
         assert item.is_active
         assert enterprise_setup_rules

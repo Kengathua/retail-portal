@@ -2,26 +2,28 @@
 
 from tests.utils.api import APITests
 from rest_framework.test import APITestCase
-from django.db.models import ForeignKey, OneToOneField
 from django.urls import reverse
 
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord, Sale, SaleRecord)
 from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryInventoryItem)
+    Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
 from elites_franchise_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import authenticate_test_user
-
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.warehouses.models import Warehouse
 from model_bakery import baker
-from model_bakery.recipe import Recipe, foreign_key
+from model_bakery.recipe import Recipe
+
 
 class TestSectionView(APITests, APITestCase):
+    """."""
+
     def setUp(self):
+        """."""
         # using the Setup function helps avoid using recipes for foregn keys
         # or the django db mark error
         franchise = baker.make(
@@ -91,14 +93,25 @@ class TestCatalogItemView(APITests, APITestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
+            record_type='ADD', quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
         section = baker.make(
             Section, section_name='Section A', enterprise=enterprise_code)
         self.recipe = Recipe(

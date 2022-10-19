@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 import os
-import sys
+import psycopg2
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
@@ -115,23 +115,43 @@ WSGI_APPLICATION = 'elites_franchise_portal.config.wsgi.application'
 
 """
 This is a helper variable that you will use to determine when to connect to Postgres database
-and when to connect to a local SQLite database for testing.""" 
+and when to connect to a local SQLite database for testing."""
+
 DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 
-if DEVELOPMENT_MODE is True:
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+DEBUG = True
+
+if DEVELOPMENT_MODE or DEBUG==False:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+        "default": dj_database_url.parse(
+            os.environ.get(
+                "DATABASE_URL",
+                "postgres://elites_user:elites_pass@localhost:5432/elites_franchises"
+            )
+        ),
     }
 
-elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
-    if os.getenv("DATABASE_URL", None) is None:
-        raise Exception("DATABASE_URL environment variable not defined")
-    DATABASES = {
-        "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
+    # Keep connections alive for 10 minutes in production
+    DATABASES['default']['CONN_MAX_AGE'] = 0 if DEBUG else 600
+
+    # set transaction isolation level
+    isolation_level = os.getenv('PG_TRANSACTION_ISOLATION_LEVEL', 'READ_COMMITTED')
+    isolation_level_choices = {
+        'READ_COMMITTED': psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED,
+        'REPEATABLE_READ': psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ,
+        'SERIALIZABLE': psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE,
     }
+    options = DATABASES['default'].get('OPTIONS', {})
+    options.update({
+        'isolation_level': isolation_level_choices.get(isolation_level, 'READ_COMMITTED'),
+    })
+    DATABASES['default']['OPTIONS'] = options
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -146,7 +166,6 @@ elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
 #         'PORT': os.getenv("POSTGRES_DB_PORT", '5432'),
 #     }
 # }
-
 
 
 # Password validation

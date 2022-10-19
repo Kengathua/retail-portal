@@ -3,11 +3,12 @@ from setuptools import find_packages, setup
 # from version import get_version
 
 name = 'franchise_portal'
+version = '0.0.1'
 # version = get_version()
 
 setup(
     name=name,
-    # version=version,
+    version=version,
     packages=find_packages(exclude=['tests', 'tests.*']),
     description="Elites Franchise Portal System",
     long_description=open('README.md').read(),
@@ -30,13 +31,13 @@ setup(
         'django-money==2.1.1',
         'django-phonenumber-field==6.1.0',
         'djangorestframework==3.13.1',
+        'dj-database-url==1.0.0',
         'Pillow==9.2.0',
         'django-sendfile==0.3.11',
         'djangorestframework-simplejwt==5.1.0',
         'ipython==8.4.0',
         'psycopg2==2.9.3',
         'celery==5.2.7',
-        'dj-database-url==1.0.0',
         'django-cryptography==1.1',
         'gunicorn==20.1.0',
     ],
