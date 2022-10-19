@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.common.code_generators import generate_enterprise_code
-from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.common.validators import (
     items_enterprise_code_validator, units_enterprise_code_validator)
 from elites_franchise_portal.users.models import retrieve_user_email
@@ -218,6 +217,17 @@ class Item(AbstractBase):
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
+    def validate_active_item_has_units(self):
+        """Validate active item has units assigned to it."""
+        if self.is_active:
+            if not ItemUnits.objects.filter(item=self, is_active=True).exists():
+                msg = '{} does not have Units assigned to it. ' \
+                    'Please hook that up first'.format(
+                        self.item_name)
+
+                raise ValidationError(
+                    {'item_units': msg})
+
     def get_item_name(self):
         """Get the item's name."""
         type = self.item_model.item_type.type_name
@@ -232,6 +242,7 @@ class Item(AbstractBase):
 
     def clean(self) -> None:
         """Clean the item model."""
+        self.validate_active_item_has_units()
         self.get_item_name()
         self.create_item_code()
         return super().clean()
@@ -250,7 +261,7 @@ class Item(AbstractBase):
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         if not enterprise_setup_rules:
             msg = 'You do not have setup rules for your enterprise. Please set that up first'
-            raise ValidationError({'enterprise_setup_rules':msg})
+            raise ValidationError({'enterprise_setup_rules': msg})
 
         if enterprise_setup_rules.receiving_warehouse:
             activate_warehouse_item(

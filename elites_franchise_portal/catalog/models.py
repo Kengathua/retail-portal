@@ -89,23 +89,14 @@ class CatalogItem(AbstractBase):
         type = self.inventory_item.item.item_model.item_type.type_name
         brand = self.inventory_item.item.item_model.brand.brand_name
         model = self.inventory_item.item.item_model.model_name
-        units = ''
 
-        if self.is_active:
-            try:
-                item_units = ItemUnits.objects.get(item=self.inventory_item.item)
-                units = item_units.sales_units.units_name
-            except ItemUnits.DoesNotExist:
-                pass
-                msg = 'Please assign units to {}'.format(
-                    self.inventory_item.item.item_name)
-                raise ValidationError({
-                    'units': msg
-                })
+        item_units = ItemUnits.objects.filter(item=self.inventory_item.item).first()
+        units = item_units.sales_units.units_name if item_units else ''
 
         special_features = []
         special_offers = []
         year = ''
+
         item_attributes = ItemAttribute.objects.filter(
             item=self.inventory_item.item)
         if item_attributes.exists():
@@ -148,7 +139,8 @@ class CatalogItem(AbstractBase):
         from elites_franchise_portal.restrictions_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         inventories = Inventory.objects.filter(is_active=True, enterprise=self.enterprise)
-        if not inventories.filter(is_master=True).exists():
+
+        if inventories.exists() and not inventories.filter(is_master=True).exists():
             raise ValidationError(
                 {'inventory':
                     'Your enterprise does not have a master Inventory. Please set up one first'})
@@ -162,7 +154,7 @@ class CatalogItem(AbstractBase):
                     data['quantity'] for data in default_inventory.summary
                     if data['inventory_item'] == self.inventory_item]
 
-                quantity = quantities[0] or 0
+                quantity = quantities[0] if quantities else 0
 
             self.quantity = quantity
 
@@ -215,12 +207,20 @@ class CatalogItem(AbstractBase):
         cart_item.save()
         return cart_item
 
-    def remove_from_cart(self):
+    def validate_item_is_active(self):
         """Remove item from cart."""
-        pass
+        if self.is_active:
+            item_units = ItemUnits.objects.filter(item=self.inventory_item.item)
+            if not item_units.exists():
+                msg = 'Please assign units to {}'.format(
+                    self.inventory_item.item.item_name)
+
+                raise ValidationError(
+                    {'item_units': msg})
 
     def clean(self) -> None:
         """Clean Catalog Item."""
+        self.validate_item_is_active()
         return super().clean()
 
     def __str__(self):
