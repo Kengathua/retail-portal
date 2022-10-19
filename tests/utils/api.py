@@ -1,17 +1,12 @@
-from email.mime import base
-from turtle import pd
+"""."""
+
 import uuid
-import pytz
-from dateutil.parser import parse
 from decimal import Decimal
-from xml.dom import ValidationErr
 from dateutil.parser import parse
 from datetime import date, datetime, timedelta
 
 from django.urls import reverse
-from django.urls import resolve
 from django.db.models import ForeignKey, OneToOneField
-from django.db.models.base import ModelBase
 from django.db.models import CharField, DecimalField, FloatField, IntegerField
 
 from .login_mixins import LoggedInMixin, authenticate_test_user
@@ -31,6 +26,10 @@ class APITests(LoggedInMixin, object):
     write_only_fields = []
     post_ignore_fields = []
     patch_ignore_fields = []
+
+    def setUp(self):
+        self.client = authenticate_test_user()
+        return super().setUp()
 
     def get_enterprise_code(self):
         """."""
