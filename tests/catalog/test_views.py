@@ -27,7 +27,7 @@ class TestSectionView(APITests, APITestCase):
         # using the Setup function helps avoid using recipes for foregn keys
         # or the django db mark error
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
@@ -39,7 +39,7 @@ class TestSectionView(APITests, APITestCase):
 class TestCatalogView(APITests, APITestCase):
     def setUp(self):
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
@@ -55,7 +55,7 @@ class TestCatalogItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -119,6 +119,12 @@ class TestCatalogItemView(APITests, APITestCase):
 
     url = 'v1:catalog:catalogitem'
 
+    def test_list(self, status_code=200):
+        pass
+
+    def test_list_specific_fields(self, status_code=200):
+        pass
+
     def test_post(self, status_code=201):
         """."""
         self.client = authenticate_test_user()
@@ -172,7 +178,7 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -210,6 +216,17 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
