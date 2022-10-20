@@ -92,7 +92,7 @@ class BioData(AbstractBase):
     @property
     def full_name(self):
         """Return a customer's full name."""
-        title = self.title or ""
+        title = f"{self.title} " if self.title else ""
         first_name = self.first_name or None
         other_names = self.other_names + " " if self.other_names else ""
         last_name = self.last_name or None
