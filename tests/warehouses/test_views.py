@@ -22,7 +22,7 @@ class TestWarehouseView(APITests, APITestCase):
 
     def setUp(self):
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE', business_type='SHOP')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE', business_type='SHOP')
         enterprise_code = enterprise.enterprise_code
         self.recipe = Recipe(Warehouse, warehouse_name='Elites Private Warehouse', enterprise=enterprise_code)
 
@@ -33,7 +33,7 @@ class TestWarehouseItemView(APITests, APITestCase):
 
     def setUp(self):
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE', business_type='SHOP')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE', business_type='SHOP')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -61,7 +61,7 @@ class TestWarehouseWarehouseItemView(APITests, APITestCase):
 
     def setUp(self):
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE', business_type='SHOP')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE', business_type='SHOP')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -97,7 +97,7 @@ class TestWarehouseRecordView(APITests, APITestCase):
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE', business_type='SHOP')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE', business_type='SHOP')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',

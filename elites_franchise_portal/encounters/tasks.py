@@ -49,6 +49,8 @@ def process_customer_encounter(encounter_id):
             is_processed=False, is_cleared=False, enterprise=encounter.enterprise)
 
         encounters.update(order_guid=order.id)
+        encounter.processing_status = 'BILLING DONE'
+        encounter.save()
         order.process_order()
 
         encounter.refresh_from_db()

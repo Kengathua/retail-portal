@@ -27,7 +27,7 @@ class TestSectionView(APITests, APITestCase):
         # using the Setup function helps avoid using recipes for foregn keys
         # or the django db mark error
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
@@ -39,7 +39,7 @@ class TestSectionView(APITests, APITestCase):
 class TestCatalogView(APITests, APITestCase):
     def setUp(self):
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
@@ -55,7 +55,7 @@ class TestCatalogItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -178,7 +178,7 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(

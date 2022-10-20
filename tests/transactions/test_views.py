@@ -1,6 +1,6 @@
 """Test transaction views."""
 
-from django.test import TestCase, Client
+from django.test import Client
 from django.urls import reverse
 
 from rest_framework.test import APITestCase
@@ -10,12 +10,13 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    InventoryItem, InventoryRecord)
-from elites_franchise_portal.catalog.models import CatalogItem
+    Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
+from elites_franchise_portal.catalog.models import CatalogItem, Catalog, CatalogCatalogItem
 from elites_franchise_portal.orders.models import (
-    Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem,
-    Installment)
+    Cart, CartItem, Order, InstallmentsOrderItem)
 from elites_franchise_portal.customers.models import Customer
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.warehouses.models import Warehouse
 from elites_franchise_portal.transactions.models import (
     Transaction, Payment, PaymentRequest)
 
@@ -27,15 +28,16 @@ from model_bakery.recipe import Recipe
 client= Client()
 
 
-class TestPaymentRequestView(APITests, APITestCase):
+# class TestPaymentRequestView(APITests, APITestCase):
+class TestPaymentRequestView(APITestCase):
     """."""
 
     def setUp(self):
         """."""
-        franchise = baker.make(
-            Franchise, reg_no='BS-9049444', name='Franchise One',
-            enterprise_code='EAL-F/FO-MB/2201-01', business_type='SHOP')
-        enterprise_code = franchise.enterprise_code
+        enterprise = baker.make(
+            Enterprise, reg_no='BS-9049444', name='Enterprise One',
+            enterprise_code='EAL-E/EO-MB/2201-01', business_type='SHOP')
+        enterprise_code = enterprise.enterprise_code
         payment = baker.make(
             Payment, account_number='+254718488252', required_amount='1',
             enterprise=enterprise_code)
@@ -49,13 +51,13 @@ class TestPaymentRequestView(APITests, APITestCase):
     url = 'v1:transactions:paymentrequest'
 
 
-class TestMpesaCheckoutView(TestCase):
+class TestMpesaCheckoutView(APITestCase):
     """."""
 
     def setUp(self) -> None:
         """."""
-        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
-        enterprise_code = franchise.enterprise_code
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
             enterprise=enterprise_code)
@@ -84,10 +86,30 @@ class TestMpesaCheckoutView(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-        inventory_item = InventoryItem.objects.get(item=item, enterprise=enterprise_code)
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory_item=inventory_item, record_type='ADD',
-            quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
+        baker.make(
+            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
+            record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         customer = baker.make(
@@ -137,7 +159,7 @@ class TestMpesaCheckoutView(TestCase):
         # assert resp.status_code == 200
 
 
-class TestMpesaRegisterView(TestCase):
+class TestMpesaRegisterView(APITestCase):
     """."""
     url = 'v1:adapters:mobile_money:safaricom:c2b:register'
     'v1:adapters:mobile_money:safaricom:c2b:confirmation'

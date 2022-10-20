@@ -19,7 +19,7 @@ class TestCustomerViewViewSet(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-                Enterprise, name='Franchise One', business_type='SUPERMARKET')
+                Enterprise, name='Enterprise One', business_type='SUPERMARKET')
         enterprise_code = franchise.enterprise_code
         test_user = get_user_model().objects.create_superuser(
             email='testuser@email.com', first_name='Test', last_name='User',

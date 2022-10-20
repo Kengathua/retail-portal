@@ -26,7 +26,7 @@ class TestInventoryView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE',
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         self.recipe = Recipe(
@@ -42,7 +42,7 @@ class TestInventoryItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', business_type='SHOP')
+            Enterprise, name='Enterprise One', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -73,7 +73,7 @@ class TestInventoryInventoryItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', business_type='SHOP')
+            Enterprise, name='Enterprise One', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -110,7 +110,7 @@ class TestInventoryRecordView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', business_type='SHOP')
+            Enterprise, name='Enterprise One', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',

@@ -14,7 +14,7 @@ from model_bakery import baker
 class TestComboboxFilter(LoggedInMixin, APITestCase):
     def setUp(self):
         self.enterprise = baker.make(
-            Franchise, reg_no='BS-9049444', name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, reg_no='BS-9049444', name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = self.enterprise.enterprise_code
         self.client = authenticate_test_user()

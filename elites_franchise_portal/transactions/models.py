@@ -220,7 +220,7 @@ class Payment(AbstractBase):
             payment_request_data = {
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.enterprise,
+                'enterprise': self.enterprise,
                 'payment_id': self.id,
                 'client_account_number': client_account_number,
                 'request_from_account_number': phone_number,

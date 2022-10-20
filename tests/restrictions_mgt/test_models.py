@@ -21,7 +21,7 @@ class TestEnterPriseSetupRules(TestCase):
 
     def setUp(self) -> None:
         self.enterprise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             enterprise_type='FRANCHISE', business_type='SHOP')
         self.enterprise_code = self.enterprise.enterprise_code
         self.master_inventory = baker.make(
