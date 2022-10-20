@@ -28,7 +28,7 @@ class APITests(LoggedInMixin, object):
     patch_ignore_fields = []
 
     def setUp(self):
-        self.client = authenticate_test_user()
+        # self.client = authenticate_test_user()
         return super().setUp()
 
     def get_enterprise_code(self):

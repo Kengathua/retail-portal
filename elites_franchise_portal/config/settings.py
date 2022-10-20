@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv(
     'django-insecure-^pa2=6*-vo@hne3@l26&&v(9__@rx!a4m28xy#2-+gf!$zd7lp')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
 NGROK_BASE_URL = 'http://2028-197-237-137-119.ngrok.io'
 # ALLOWED_HOSTS = [
@@ -118,6 +118,9 @@ This is a helper variable that you will use to determine when to connect to Post
 and when to connect to a local SQLite database for testing."""
 
 DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
+# ENVIRONMENTS = ['DEVELOPMENT', 'STAGING', 'UAT-TEST', 'PRODUCTION']
+
+ENVIRONMENT = os.getenv("ENVIRONMENT", "DEVELOPMENT")
 
 DATABASES = {
     'default': {
@@ -127,7 +130,7 @@ DATABASES = {
 }
 DEBUG = True
 
-if DEVELOPMENT_MODE or DEBUG==False:
+if not ENVIRONMENT == 'DEVELOPMENT':
     DATABASES = {
         "default": dj_database_url.parse(
             os.environ.get(

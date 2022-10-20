@@ -12,6 +12,8 @@ from elites_franchise_portal.credit.models import Purchase
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryInventoryItem, InventoryItem)
 from tests.utils.login_mixins import authenticate_test_user
+from elites_franchise_portal.catalog.models import Catalog
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
 
 from django.urls import reverse
 from model_bakery import baker
@@ -24,7 +26,7 @@ class TestPurchasesView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -62,14 +64,22 @@ class TestPurchasesView(APITests, APITestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
-        baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
-            is_active=True, enterprise=enterprise_code)
         self.recipe = Recipe(
             Purchase, item=item, quantity_purchased=10, total_price=10000,
             recommended_retail_price=100, quantity_to_inventory=40,

@@ -29,7 +29,7 @@ class TestCustomer(TestCase):
     def test_create_site_customer(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         test_user = get_user_model().objects.create_superuser(
@@ -47,7 +47,7 @@ class TestCustomer(TestCase):
     def test_fail_create_site_customer(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         test_user = get_user_model().objects.create_superuser(

@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 
 from elites_franchise_portal.users.models import User
 from elites_franchise_portal.enterprises.models import Enterprise
+from django.core.exceptions import ValidationError
 
 from model_bakery import baker
 
@@ -19,7 +20,7 @@ class LoggedInMixin:
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             enterprise_type='FRANCHISE', business_type='SHOP')
         user = get_user_model().objects.filter(email='user@email.com')
         if user.exists():
@@ -48,10 +49,10 @@ def authenticate_test_user():
     """Authenticate a user for a test."""
     client = APIClient()
     try:
-        enterprise = Enterprise.objects.get(enterprise_code='EAL-E/FO-MB/2201-01')
+        enterprise = Enterprise.objects.get(enterprise_code='EAL-E/EO-MB/2201-01')
     except Enterprise.DoesNotExist:
         enterprise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             enterprise_type='FRANCHISE', business_type='SHOP')
     users = get_user_model().objects.filter(email='testuser@email.com')
     if users.exists():

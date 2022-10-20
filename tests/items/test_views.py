@@ -28,7 +28,7 @@ class TestCategoryView(APITests, APITestCase):
 
     def setUp(self):
         """."""
-        enterprise = baker.make(Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+        enterprise = baker.make(Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         self.recipe = Recipe(
             Category, category_name='ELECTRONICS', enterprise=enterprise.enterprise_code)
 
@@ -40,7 +40,7 @@ class TestItemTypeView(APITests, APITestCase):
 
     def setUp(self):
         """."""
-        enterprise = baker.make(Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+        enterprise = baker.make(Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -57,7 +57,7 @@ class TestBrandView(APITests, APITestCase):
 
     def setUp(self):
         """."""
-        enterprise = baker.make(Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+        enterprise = baker.make(Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         self.recipe = Recipe(
             Brand, brand_name='Samsung', enterprise=enterprise_code)
@@ -69,7 +69,7 @@ class TestBrandItemTypeView(APITests, APITestCase):
     """."""
 
     def setUp(self):
-        enterprise = baker.make(Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+        enterprise = baker.make(Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -91,7 +91,7 @@ class TestItemModelView(APITests, APITestCase):
 
     def setUp(self):
         """."""
-        enterprise = baker.make(Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+        enterprise = baker.make(Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -117,7 +117,7 @@ class TestItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -149,7 +149,7 @@ class TestItemAttributeView(APITests, APITestCase):
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -181,7 +181,7 @@ class TestUnitsView(APITests, APITestCase):
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         self.recipe = Recipe(Units, units_name='5 Gas', enterprise=enterprise_code)
 
@@ -194,7 +194,7 @@ class TestItemUnitsView(APITests, APITestCase):
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -240,7 +240,7 @@ class TestItemImages(APITests, APITestCase, LoggedInMixin):
     def setUp(self):
         """."""
         enterprise = baker.make(
-            Enterprise, name='Franchise One', enterprise_type='FRANCHISE')
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',

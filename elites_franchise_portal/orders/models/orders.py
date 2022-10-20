@@ -1,4 +1,6 @@
 """Orders models file."""
+import logging
+
 from decimal import Decimal
 from datetime import timedelta, date
 
@@ -15,6 +17,8 @@ from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
 from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+
+LOGGER = logging.getLogger(__name__)
 
 ORDER_CONFIRMATION_STATUS_CHOICES = (
     ('PENDING', 'PENDING'),
@@ -548,7 +552,7 @@ class OrderTransaction(AbstractBase):
     def process_order_transaction(self):
         """Process a transaction for an order."""
         from elites_franchise_portal.debit.models import (
-            Inventory, InventoryRecord)
+            InventoryRecord)
         instant_order_items = InstantOrderItem.objects.filter(
             order=self.order, is_cleared=False)
         installment_order_items = InstallmentsOrderItem.objects.filter(
@@ -585,13 +589,15 @@ class OrderTransaction(AbstractBase):
             else:
                 for instant_order_item in instant_order_items:
                     no_of_clearable_items = int(float(self.balance) / instant_order_item.unit_price)
-                    quantity_cleared = instant_order_item.quantity if no_of_clearable_items >= 1 else 0
+                    quantity_cleared = no_of_clearable_items if no_of_clearable_items >= 1 else 0
                     deficit = Decimal(instant_order_item.total_amount) - Decimal(self.balance)  # noqa
                     new_balance = float(self.balance) % instant_order_item.unit_price
                     instant_order_item.quantity_cleared = quantity_cleared
                     instant_order_item.save()
                     self.balance = new_balance
                     self.__class__.objects.filter(id=self.id).update(balance=new_balance)
+                    LOGGER.info('{} was less with KSH {}'.format(
+                        instant_order_item.cart_item.catalog_item.inventory_item.item.item_name, deficit))
 
             for instant_order_item in instant_order_items:
                 instant_order_item.refresh_from_db()

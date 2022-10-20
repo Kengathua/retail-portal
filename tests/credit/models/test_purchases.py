@@ -8,7 +8,8 @@ from elites_franchise_portal.debit.models import (
     InventoryRecord, Inventory, InventoryInventoryItem, InventoryItem)
 from elites_franchise_portal.warehouses.models import (
     WarehouseRecord, Warehouse, WarehouseItem)
-
+from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.catalog.models import Catalog
 from elites_franchise_portal.credit.models import Purchase
 
 from model_bakery import baker
@@ -20,7 +21,7 @@ class TestPurchase(TestCase):
     def test_create_purchase_record(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -51,9 +52,6 @@ class TestPurchase(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
-            is_active=True, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
@@ -61,6 +59,17 @@ class TestPurchase(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRules, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -77,7 +86,7 @@ class TestPurchase(TestCase):
 
         assert Warehouse.objects.count() == 1
         assert WarehouseRecord.objects.count() == 2
-        assert InventoryRecord.objects.count() == 2
+        assert InventoryRecord.objects.count() == 1
 
         warehouse_record1 = WarehouseRecord.objects.get(
             warehouse_item__item=purchase.item, record_type='ADD')
@@ -159,8 +168,8 @@ class TestPurchase(TestCase):
         assert WarehouseItem.objects.count() == 1
         assert WarehouseRecord.objects.count() == 1
 
-        store_record = WarehouseRecord.objects.get(warehouse_item__item=purchase.item)
+        warehouse_record = WarehouseRecord.objects.get(warehouse_item__item=purchase.item)
 
-        assert store_record.quantity_recorded == 120
-        assert store_record.quantity_recorded == purchase.sale_units_purchased
-        assert store_record.unit_price == purchase.recommended_retail_price
+        assert warehouse_record.quantity_recorded == 120
+        assert warehouse_record.quantity_recorded == purchase.sale_units_purchased
+        assert warehouse_record.unit_price == purchase.recommended_retail_price

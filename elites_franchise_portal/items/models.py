@@ -251,7 +251,7 @@ class Item(AbstractBase):
         """Str representation for item model."""
         return f'{self.item_name}'
 
-    def activate(self, user):
+    def activate(self, user=None):
         """Activate a product by setting it up in inventory and catalog."""
         from elites_franchise_portal.restrictions_mgt.helpers import (
             get_valid_enterprise_setup_rules)
@@ -263,25 +263,31 @@ class Item(AbstractBase):
             msg = 'You do not have setup rules for your enterprise. Please set that up first'
             raise ValidationError({'enterprise_setup_rules': msg})
 
+        audit_fields = {
+            'created_by': user.id if user else self.created_by,
+            'updated_by': user.id if user else self.updated_by,
+            'enterprise': user.enterprise if user else self.enterprise,
+        }
+
         if enterprise_setup_rules.receiving_warehouse:
             activate_warehouse_item(
-                enterprise_setup_rules.receiving_warehouse, self, user)
+                enterprise_setup_rules.receiving_warehouse, self, audit_fields)
 
         if enterprise_setup_rules.default_warehouse:
             activate_warehouse_item(
-                enterprise_setup_rules.default_warehouse, self, user)
+                enterprise_setup_rules.default_warehouse, self, audit_fields)
 
         if enterprise_setup_rules.master_inventory:
             activate_inventory_item(
-                enterprise_setup_rules.master_inventory, self, user)
+                enterprise_setup_rules.master_inventory, self, audit_fields)
 
         if enterprise_setup_rules.default_inventory:
             activate_inventory_item(
-                enterprise_setup_rules.default_inventory, self, user)
+                enterprise_setup_rules.default_inventory, self, audit_fields)
 
         if enterprise_setup_rules.allocated_inventory:
             activate_inventory_item(
-                enterprise_setup_rules.allocated_inventory, self, user)
+                enterprise_setup_rules.allocated_inventory, self, audit_fields)
 
         self.is_active = True
         self.save()
