@@ -3,7 +3,6 @@
 from elites_franchise_portal.common.views import BaseViewMixin
 
 from elites_franchise_portal.restrictions_mgt import serializers
-from elites_franchise_portal.restrictions_mgt import filters
 from elites_franchise_portal.restrictions_mgt.models import (
     EnterpriseSetup, EnterpriseSetupRules)
 

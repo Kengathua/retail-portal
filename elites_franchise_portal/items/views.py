@@ -86,6 +86,7 @@ class ItemViewSet(BaseViewMixin):
 
     @action(methods=['post'], detail=True)
     def activate(self, request, *args, **kwargs):
+        """Activate item end point."""
         user = request.user
         item = self.get_object()
         item.activate(user)

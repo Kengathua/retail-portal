@@ -22,20 +22,28 @@ class Purchase(AbstractBase):
         related_name='supplier_enterprise', on_delete=models.PROTECT)
     invoice_number = models.CharField(
         null=True, blank=True, max_length=300)
+    purchase_date = models.DateTimeField(db_index=True, default=timezone.now)
+
+
+class PurchaseItem(AbstractBase):
+    """Purchase Item model."""
+
+    purchase = models.ForeignKey(
+        Purchase, max_length=250, null=False, blank=False,
+        related_name='invoice_purchase', on_delete=models.PROTECT)
     item = models.ForeignKey(
         Item, null=False, blank=False, on_delete=models.PROTECT)
     quantity_purchased = models.FloatField(null=False, blank=False)
     sale_units_purchased = models.FloatField(null=True, blank=True)
-    total_price = models.DecimalField(
-        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=False, blank=False)
     unit_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0.0)
+    total_price = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=False, blank=False)
     recommended_retail_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0.0)
-    purchase_date = models.DateTimeField(db_index=True, default=timezone.now)
     quantity_to_inventory = models.FloatField(null=True, blank=True)
     quantity_to_inventory_on_display = models.FloatField(null=True, blank=True)
     quantity_to_inventory_in_warehouse = models.FloatField(null=True, blank=True)
@@ -54,8 +62,8 @@ class Purchase(AbstractBase):
         """Get the total number selling units eg 12 packets from a dozen purchased."""
         if not self.sale_units_purchased:
             item_units = ItemUnits.objects.filter(item=self.item).first()
-            no_of_sale_quantity_of_sale_units_per_purchase_unit = item_units.quantity_of_sale_units_per_purchase_unit
-            total_no_of_items = no_of_sale_quantity_of_sale_units_per_purchase_unit * self.quantity_purchased
+            sale_units_per_purchase_unit = item_units.quantity_of_sale_units_per_purchase_unit
+            total_no_of_items = sale_units_per_purchase_unit * self.quantity_purchased
             self.sale_units_purchased = total_no_of_items
 
     def validate_item_has_units_registered_to_it(self):

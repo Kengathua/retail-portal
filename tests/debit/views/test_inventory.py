@@ -10,12 +10,12 @@ from elites_franchise_portal.items.models import (
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem, InventoryRecord,)
 from tests.utils.login_mixins import authenticate_test_user
-from elites_franchise_portal.catalog.models import Catalog, CatalogItem
+from elites_franchise_portal.catalog.models import Catalog
 from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.warehouses.models import Warehouse
 
 from model_bakery import baker
-from model_bakery.recipe import Recipe, foreign_key
+from model_bakery.recipe import Recipe
 
 pytestmark = pytest.mark.django_db
 

@@ -1,9 +1,7 @@
 """Catalog serializers file."""
 
-from rest_framework.fields import CharField
-
-from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.catalog import models
+from elites_franchise_portal.common.serializers import BaseSerializerMixin
 
 
 class SectionSerializer(BaseSerializerMixin):

@@ -76,3 +76,13 @@ class SaleRecordSerializer(BaseSerializerMixin):
 
         model = models.SaleRecord
         fields = '__all__'
+
+
+class PurchasesReturnSerializer(BaseSerializerMixin):
+    """Purchases Return serializer class."""
+
+    class Meta:
+        """Purchases Return Meta class."""
+
+        model = models.PurchasesReturn
+        fields = '__all__'

@@ -1,4 +1,4 @@
-# django_celery/celery.py
+"""Celery initialization file."""
 
 import os
 from celery import Celery

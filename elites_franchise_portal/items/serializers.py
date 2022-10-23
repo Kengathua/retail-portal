@@ -34,13 +34,15 @@ class BrandSerializer(BaseSerializerMixin):
     """Brand serializer class."""
 
     item_types = ItemTypeSerializer(many=True, required=False, read_only=True)
+
     def create(self, validated_data):
+        """Create brand serializer."""
         request = self.context['request']
         user = request.user
         audit_fields = {
-            'created_by':user.id,
-            'updated_by':user.id,
-            'enterprise':user.enterprise,
+            'created_by': user.id,
+            'updated_by': user.id,
+            'enterprise': user.enterprise,
             }
 
         item_types_ids = request.data['item_types'] if 'item_types' in request.data.keys() else []
@@ -52,12 +54,13 @@ class BrandSerializer(BaseSerializerMixin):
         return brand
 
     def update(self, instance, validated_data):
+        """Update brands serializer."""
         request = self.context['request']
         user = request.user
         audit_fields = {
-            'created_by':user.id,
-            'updated_by':user.id,
-            'enterprise':user.enterprise,
+            'created_by': user.id,
+            'updated_by': user.id,
+            'enterprise': user.enterprise,
             }
 
         item_types_ids = request.data['item_types'] if 'item_types' in request.data.keys() else []
@@ -82,6 +85,7 @@ class BrandSerializer(BaseSerializerMixin):
 
 class BrandItemTypeSerializer(BaseSerializerMixin):
     """Brand Item Type serializer class."""
+
     class Meta:
         """Category serializer Meta class."""
 
@@ -95,6 +99,7 @@ class ItemModelSerializer(BaseSerializerMixin):
     heading = SerializerMethodField()
 
     def get_heading(self, instance):
+        """Get the heading for the item model."""
         model_name = instance.model_name
         brand_name = instance.brand.brand_name
         type_name = instance.item_type.type_name
@@ -148,6 +153,7 @@ class ItemUnitsSerializer(BaseSerializerMixin):
     item_name = CharField(source='item.item_name', read_only=True)
     sales_units_name = CharField(source='sales_units.units_name', read_only=True)
     purchases_units_name = CharField(source='purchases_units.units_name', read_only=True)
+
     class Meta:
         """Item Units Meta class."""
 

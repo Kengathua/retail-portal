@@ -1,5 +1,6 @@
 """Inventory models file."""
 
+from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -297,8 +298,8 @@ class InventoryRecord(AbstractBase):
 
     def calculate_total_amount_recorded(self):
         """Calculate total amount recorded."""
-        total = self.quantity_recorded * self.unit_price
-        self.total_amount_recorded = total
+        self.total_amount_recorded = round(
+            Decimal(float(self.quantity_recorded) * float(self.unit_price)), 2)
 
     def calculate_closing_stock_quantity(self):
         """Calculate quantity of closing stock."""
@@ -313,7 +314,8 @@ class InventoryRecord(AbstractBase):
             recorded_total_amount = -(unit_price * self.quantity_recorded)
 
         self.closing_stock_quantity = self.opening_stock_quantity + recorded_quantity
-        self.closing_stock_total_amount = self.opening_stock_total_amount + recorded_total_amount
+        self.closing_stock_total_amount = round(
+            Decimal(float(self.opening_stock_total_amount) + float(recorded_total_amount)), 2)
 
     def validate_quantity_of_stock_in_warehouse(self):
         """Validate quantity of stock in store."""

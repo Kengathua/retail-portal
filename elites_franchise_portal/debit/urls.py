@@ -10,5 +10,6 @@ router.register(r'inventory_inventory_items', views.InventoryInventoryItemViewSe
 router.register(r'inventory_records', views.InventoryRecordViewSet)
 router.register(r'sales', views.SaleViewSet)
 router.register(r'sale_records', views.SaleRecordViewSet)
+router.register(r'purchases_returns', views.PurchasesReturnViewSet)
 
 urlpatterns = router.urls

@@ -41,6 +41,7 @@ class EnterpriseSetup(AbstractBase):
 
     @property
     def inventories(self):
+        """Get all active inventories for the enterise."""
         active_inventories = Inventory.objects.filter(
             enterprise=self.enterprise, is_active=True)
         active_inventories_names = []
@@ -51,6 +52,7 @@ class EnterpriseSetup(AbstractBase):
 
     @property
     def warehouses(self):
+        """Get all warehouses for the enterprise."""
         active_warehouses = Warehouse.objects.filter(
             enterprise=self.enterprise, is_active=True)
         active_warehouses_names = []
@@ -61,6 +63,7 @@ class EnterpriseSetup(AbstractBase):
 
     @property
     def catalogs(self):
+        """Get all catalogs for the enterprise."""
         active_catalogs = Catalog.objects.filter(enterprise=self.enterprise, is_active=True)
         active_catalogs_names = []
         if active_catalogs.exists():

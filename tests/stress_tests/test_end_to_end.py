@@ -17,7 +17,7 @@ from elites_franchise_portal.orders.models import (
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord)
-from elites_franchise_portal.credit.models import Purchase
+from elites_franchise_portal.credit.models import Purchase, PurchaseItem
 from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
 from elites_franchise_portal.transactions.models import (
@@ -117,10 +117,12 @@ class TesTEndToEnd(TestEnterPriseSetupRules):
         assert inventory_record3
         # assert self.master_inventory.summary[0]['quantity'] == 12
         # assert self.default_inventory.summary[0]['quantity'] == 12
-
+        supplier = baker.make(Enterprise, name='LG Suppplier', enterprise_type='SUPPLIER')
         purchase = baker.make(
-            Purchase, item=item, quantity_purchased=30, total_price=31000,
-            recommended_retail_price=330, quantity_to_inventory=25,
+            Purchase, supplier = supplier, enterprise=enterprise_code)
+        purchase = baker.make(
+            PurchaseItem, purchase=purchase, item=item, quantity_purchased=30,
+            total_price=31000, recommended_retail_price=330, quantity_to_inventory=25,
             quantity_to_inventory_on_display=10, enterprise=enterprise_code)
 
         assert purchase
