@@ -41,3 +41,13 @@ class InventoryRecordFilter(SearchComboboxBaseFilter):
 
         model = models.InventoryRecord
         fields = '__all__'
+
+
+class PurchasesReturnFilter(SearchComboboxBaseFilter):
+    """Filter Purchases Returns."""
+
+    class Meta:
+        """Purchases Return Filter Meta class."""
+
+        model = models.PurchasesReturn
+        fields = '__all__'

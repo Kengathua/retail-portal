@@ -1,5 +1,6 @@
 """."""
 
+
 def activate_warehouse_item(warehouse, item, audit_fields):
     """Activate Warehouse item."""
     from elites_franchise_portal.warehouses.models import (

@@ -1,46 +1,26 @@
 """."""
 
-from elites_franchise_portal.credit.models.purchases import PurchaseItem
-from rest_framework.test import APITestCase
-from tests.utils.api import APITests
+from django.test import TestCase
 
+from elites_franchise_portal.catalog.models import Catalog
+from elites_franchise_portal.credit.models import PurchaseItem, Purchase
 from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.warehouses.models import Warehouse
-from elites_franchise_portal.credit.models import Purchase
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryInventoryItem, InventoryItem)
-from tests.utils.login_mixins import authenticate_test_user
-from elites_franchise_portal.catalog.models import Catalog
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+    Inventory, InventoryInventoryItem, InventoryItem,
+    InventoryRecord, PurchasesReturn)
+from elites_franchise_portal.warehouses.models import Warehouse
+from elites_franchise_portal.restrictions_mgt.models import (
+    EnterpriseSetupRules)
 
-from django.urls import reverse
 from model_bakery import baker
-from model_bakery.recipe import Recipe
 
-
-class TestPurchasesView(APITests, APITestCase):
+class TestPurchasesReturn(TestCase):
     """."""
 
-    def setUp(self):
-        """."""
-        franchise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
-            business_type='SHOP')
-        enterprise_code = franchise.enterprise_code
-        supplier = baker.make(Enterprise, name='LG Supplier')
-        self.recipe = Recipe(
-            Purchase, invoice_number='INV-001', supplier=supplier, enterprise=enterprise_code)
-
-    url = 'v1:credit:purchase'
-
-
-class TestPurchaseItemsView(APITests, APITestCase):
-    """."""
-
-    def setUp(self):
+    def test_create_purchase_return(self):
         """."""
         franchise = baker.make(
             Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
@@ -100,56 +80,16 @@ class TestPurchaseItemsView(APITests, APITestCase):
         supplier = baker.make(Enterprise, name='LG Supplier')
         purchase = baker.make(
             Purchase, invoice_number='INV-001', supplier=supplier, enterprise=enterprise_code)
-        self.recipe = Recipe(
-            PurchaseItem, purchase=purchase, item=item, quantity_purchased=10, total_price=10000,
+        purchase_item = baker.make(
+            PurchaseItem,purchase=purchase, item=item, quantity_purchased=10, total_price=10000,
             recommended_retail_price=100, quantity_to_inventory=40,
             quantity_to_inventory_on_display=10, quantity_to_inventory_in_warehouse=30,
             enterprise=enterprise_code)
+        assert InventoryRecord.objects.count() == 1
+        purchase_return = baker.make(
+            PurchasesReturn, quantity_returned=5, purchase_item=purchase_item,
+            enterprise=enterprise_code)
 
-    url = 'v1:credit:purchaseitem'
-
-    def test_post(self, status_code=201):
-        """."""
-        self.client = authenticate_test_user()
-        purchase = self.make()
-        test_data = self.get_test_data(purchase)
-        url = reverse(self.url + '-list')
-        resp = self.client.post(url, test_data)
-        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)  # noqa
-        if resp.status_code != 201:
-            return resp
-        self.compare_dicts(test_data, resp.data)
-
-        return test_data, resp
-
-    def test_patch(self, status_code=200):
-        """."""
-        self.client = authenticate_test_user()
-        instance = self.make()
-        test_data = self.get_test_data(instance)
-        test_id = getattr(instance, self.id_field)
-        assert test_id, test_id
-        assert instance.__class__.objects.get(pk=test_id), \
-            'unable to get instance with PK {}'.format(test_id)
-        url = reverse(
-            self.url + '-detail', kwargs={self.id_field: test_id}
-        )
-        resp = self.client.patch(url, test_data)
-        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)
-        return resp
-
-    def test_put(self, status_code=200):
-        """."""
-        self.client = authenticate_test_user()
-
-        instance = self.make()
-        test_data = self.get_test_data(instance)
-
-        test_id = getattr(instance, self.id_field)
-        url = reverse(
-            self.url + '-detail', kwargs={self.id_field: test_id}
-        )
-
-        resp = self.client.put(url, test_data)
-        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)
-        return resp
+        assert InventoryRecord.objects.count() == 2
+        assert purchase_return
+        assert PurchasesReturn.objects.count() == 1
