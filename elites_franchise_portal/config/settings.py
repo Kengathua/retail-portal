@@ -247,8 +247,14 @@ REST_FRAMEWORK = {
         'user': '100/second',
         'anon': '4/minute'
     },
+    'DEFAULT_PAGINATION_CLASS': 'elites_franchise_portal.common.pagination.EnhancedPagination',
+    'EXCEPTION_HANDLER': 'elites_franchise_portal.common.exception_handlers.custom_exception_handler',
+    'PAGE_SIZE': 50,    # Default paginated page size
+    'DATETIME_FORMAT': 'iso-8601',
+    'DATE_FORMAT': 'iso-8601',
+    'TIME_FORMAT': 'iso-8601',
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    # 'PAGE_SIZE': 200
+    # 'PAGE_SIZE': 50
 }
 
 SIMPLE_JWT = {
