@@ -3,6 +3,8 @@
 from elites_franchise_portal.catalog import models
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 
+from rest_framework.fields import CharField
+
 
 class SectionSerializer(BaseSerializerMixin):
     """Section serializer class."""
@@ -27,10 +29,10 @@ class CatalogSerializer(BaseSerializerMixin):
 class CatalogItemSerializer(BaseSerializerMixin):
     """Catalog Item Serializer class."""
 
-    # section_name = CharField(source='section.section_name', read_only=True)
-    # barcode = CharField(source='inventory_item.item.barcode', read_only=True)
-    # item_name = CharField(source='inventory_item.item.item_name', read_only=True)
-    # unit_price = CharField(source='inventory_item.unit_price', read_only=True)
+    section_name = CharField(source='section.section_name', read_only=True)
+    barcode = CharField(source='inventory_item.item.barcode', read_only=True)
+    item_name = CharField(source='inventory_item.item.item_name', read_only=True)
+    unit_price = CharField(source='inventory_item.unit_price', read_only=True)
 
     class Meta:
         """Serializer Meta class."""
