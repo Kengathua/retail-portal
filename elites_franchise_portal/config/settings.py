@@ -228,16 +228,13 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
         'rest_framework.filters.SearchFilter',
     ],
-    # 'DEFAULT_AUTHENTICATION_CLASSES': [
-    #     'rest_framework.authentication.BasicAuthentication',
-    #     'rest_framework.authentication.SessionAuthentication',
-    # ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+
     # Throttling settings
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.UserRateThrottle',
@@ -253,8 +250,6 @@ REST_FRAMEWORK = {
     'DATETIME_FORMAT': 'iso-8601',
     'DATE_FORMAT': 'iso-8601',
     'TIME_FORMAT': 'iso-8601',
-    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    # 'PAGE_SIZE': 50
 }
 
 SIMPLE_JWT = {
