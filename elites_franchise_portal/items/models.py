@@ -205,7 +205,7 @@ class Item(AbstractBase):
     item_model = models.OneToOneField(
         ItemModel, null=False, blank=False, on_delete=PROTECT)
     barcode = models.CharField(
-        null=False, blank=False, max_length=250)
+        null=True, blank=True, max_length=250)
     item_name = models.CharField(
         null=True, blank=True, max_length=250)
     item_code = models.CharField(
