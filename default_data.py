@@ -8,7 +8,7 @@ from elites_franchise_portal.items.models import (
     Category, ItemType, Brand, BrandItemType, ItemModel,
     Item, Units, UnitsItemType, ItemUnits)
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryRecord)
+    Inventory, InventoryItem, InventoryRecord, Sale, SaleRecord)
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
 from elites_franchise_portal.catalog.models import (
@@ -18,6 +18,7 @@ from elites_franchise_portal.config import settings
 from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
+from elites_franchise_portal.orders.models import Order
 
 from unittest import mock
 
@@ -577,5 +578,22 @@ if settings.DEBUG:
         }
 
     process_customer_encounter.delay = mock.MagicMock()
-    encounter, _ = Encounter.objects.update_or_create(**encounter_payload, **audit_fields)
+    encounter = Encounter.objects.create(**encounter_payload, **audit_fields)
     process_customer_encounter(encounter.id)
+
+    sale = Sale.objects.create(sale_code='C-003', **audit_fields)
+    order = Order.objects.first()
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item1, order=order, quantity_sold=4, **audit_fields)
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item2, order=order, quantity_sold=5, **audit_fields)
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item3, order=order, quantity_sold=6, **audit_fields)
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item4, order=order, quantity_sold=9, **audit_fields)
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item5, order=order, quantity_sold=3, **audit_fields)
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item6, order=order, quantity_sold=8, **audit_fields)
+    salerecord = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item7, order=order, quantity_sold=6, **audit_fields)

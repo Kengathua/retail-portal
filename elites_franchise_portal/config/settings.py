@@ -246,7 +246,8 @@ REST_FRAMEWORK = {
     },
     'DEFAULT_PAGINATION_CLASS': 'elites_franchise_portal.common.pagination.EnhancedPagination',
     'EXCEPTION_HANDLER': 'elites_franchise_portal.common.exception_handlers.custom_exception_handler',
-    'PAGE_SIZE': 50,    # Default paginated page size
+    # 'PAGE_SIZE': 50,    # Default paginated page size
+    'PAGE_SIZE': 10,    # Default paginated page size
     'DATETIME_FORMAT': 'iso-8601',
     'DATE_FORMAT': 'iso-8601',
     'TIME_FORMAT': 'iso-8601',
@@ -327,16 +328,3 @@ CELERY_TASK_IGNORE_RESULT = True
 # First name: Admin
 # Last name: User
 # Password: Hu46!YftP6^l$
-
-"""
-import uuid
-from django.contrib.auth import get_user_model
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.config import settings
-if settings.DEBUG:
-    franchise = Franchise.objects.create(
-        name='Elites Supermarket', updated_by=uuid.uuid4(), created_by=uuid.uuid4())
-    user = get_user_model().objects.create_superuser(
-            email='adminuser@email.com', first_name='Admin', last_name='User',
-            guid=uuid.uuid4(), password='Hu46!YftP6^l$', enterprise=franchise.enterprise_code)
-"""
