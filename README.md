@@ -81,3 +81,7 @@ https://developer.redis.com/create/windows/
     GRANT ALL PRIVILEGES ON DATABASE elites_franchise TO elites_user;
 
     \q
+
+
+xrandr -o left
+xrandr -o normal

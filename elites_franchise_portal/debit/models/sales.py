@@ -3,8 +3,8 @@
 from decimal import Decimal
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from django.core.validators import MinValueValidator
-from django.contrib.postgres.fields import ArrayField
 
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.catalog.models import CatalogItem
@@ -34,6 +34,7 @@ INSTALLMENT = 'INSTALLMENT'
 class Sale(AbstractBase):
     """Sales model."""
 
+    sale_date = models.DateTimeField(db_index=True, default=timezone.now)
     customer = models.ForeignKey(
         Customer, null=True, blank=True, on_delete=models.PROTECT)
     sale_code = models.CharField(null=True, blank=True, max_length=300)
@@ -108,6 +109,9 @@ class SaleRecord(AbstractBase):
     selling_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
+    total_amount = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0)
     amount_paid = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
@@ -137,7 +141,7 @@ class SaleRecord(AbstractBase):
 
     def get_closing_stock(self):
         """Get opening stock."""
-        item_sold_total = self.quantity_sold * Decimal(self.selling_price)
+        item_sold_total = Decimal(self.quantity_sold * float(self.selling_price))
         self.closing_stock_quantity = self.opening_stock_quantity + self.quantity_sold
         self.closing_stock_amount = self.opening_stock_amount + item_sold_total
 
@@ -149,4 +153,5 @@ class SaleRecord(AbstractBase):
         """Perform pre save and post save actions."""
         self.get_opening_stock()
         self.get_closing_stock()
+        self.total_amount = Decimal(float(self.selling_price) * self.closing_stock_quantity)
         super().save(*args, **kwargs)
