@@ -581,19 +581,19 @@ if settings.DEBUG:
     encounter = Encounter.objects.create(**encounter_payload, **audit_fields)
     process_customer_encounter(encounter.id)
 
-    sale = Sale.objects.create(sale_code='C-003', **audit_fields)
     order = Order.objects.first()
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item1, order=order, quantity_sold=4, **audit_fields)
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item2, order=order, quantity_sold=5, **audit_fields)
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item3, order=order, quantity_sold=6, **audit_fields)
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item4, order=order, quantity_sold=9, **audit_fields)
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item5, order=order, quantity_sold=3, **audit_fields)
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item6, order=order, quantity_sold=8, **audit_fields)
-    salerecord = SaleRecord.objects.create(
-        sale=sale, catalog_item=catalog_item7, order=order, quantity_sold=6, **audit_fields)
+    sale = Sale.objects.create(sale_code='C-003', order=order, **audit_fields)
+    salerecord1 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item1, quantity_sold=4, **audit_fields)
+    salerecord2 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item2, quantity_sold=5, **audit_fields)
+    salerecord3 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item3, quantity_sold=6, **audit_fields)
+    salerecord4 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item4, quantity_sold=9, **audit_fields)
+    salerecord5 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item5, quantity_sold=3, **audit_fields)
+    salerecord6 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item6, quantity_sold=8, **audit_fields)
+    salerecord7 = SaleRecord.objects.create(
+        sale=sale, catalog_item=catalog_item7, quantity_sold=6, **audit_fields)
