@@ -1,16 +1,9 @@
 from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
-import pytest
 from django.test import TestCase
-from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
-    Brand, BrandItemType, Category, Item, ItemModel, ItemType,
-    ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.debit.models import (
-    InventoryItem, Inventory, InventoryInventoryItem, Sale, SaleRecord)
-from elites_franchise_portal.catalog.models import (
-    Section, Catalog, CatalogItem, CatalogCatalogItem)
+from elites_franchise_portal.debit.models import Inventory
+from elites_franchise_portal.catalog.models import Catalog
 from elites_franchise_portal.warehouses.models import Warehouse
 
 

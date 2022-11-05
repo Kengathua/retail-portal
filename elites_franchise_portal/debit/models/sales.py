@@ -42,7 +42,8 @@ class Sale(AbstractBase):
     total_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
-    encounter = models.JSONField(null=True, blank=True)
+    data = models.JSONField(null=True, blank=True)
+    receipt_number = models.CharField(null=True, blank=True, max_length=300)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
 
@@ -96,7 +97,7 @@ class Sale(AbstractBase):
         # self.check_cart()
 
 
-class SaleRecord(AbstractBase):
+class SaleItem(AbstractBase):
     """Sales item model."""
 
     sale = models.ForeignKey(

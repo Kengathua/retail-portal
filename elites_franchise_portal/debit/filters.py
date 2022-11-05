@@ -75,11 +75,11 @@ class SaleFilter(SearchComboboxBaseFilter):
         # use default behavior otherwise
         return super().filter_for_lookup(f, lookup_type)
 
-class SaleRecordFilter(SearchComboboxBaseFilter):
-    """Filter sale record."""
+class SaleItemFilter(SearchComboboxBaseFilter):
+    """Filter sale item."""
 
     class Meta:
         """Restrict filter fields."""
 
-        model = models.SaleRecord
+        model = models.SaleItem
         fields = '__all__'

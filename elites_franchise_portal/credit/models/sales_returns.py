@@ -3,12 +3,13 @@
 from decimal import Decimal
 
 from django.db import models
+from django.utils import timezone
 from django.core.validators import MinValueValidator
 
 from elites_franchise_portal.items.models import Item
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.debit.models import (
-    InventoryRecord, InventoryItem, Sale, SaleRecord)
+    InventoryRecord, InventoryItem, Sale, SaleItem)
 from elites_franchise_portal.restrictions_mgt.helpers import (
     get_valid_enterprise_setup_rules)
 
@@ -19,8 +20,8 @@ class SalesReturn(AbstractBase):
     sale = models.ForeignKey(
         Sale, max_length=250, null=False, blank=False,
         on_delete=models.PROTECT)
-    item = models.ForeignKey(
-        Item, max_length=250, null=False, blank=False,
+    sale_item = models.ForeignKey(
+        SaleItem, max_length=250, null=False, blank=False,
         on_delete=models.PROTECT)
     quantity_returned = models.FloatField(null=False, blank=False)
     unit_price = models.DecimalField(
@@ -29,11 +30,13 @@ class SalesReturn(AbstractBase):
     total_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+    return_date = models.DateTimeField(db_index=True, default=timezone.now)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        sale_record = SaleRecord.objects.filter(
-            sale=self.sale, catalog_item__inventory_item__item=self.item).first()
+        sale_record = SaleItem.objects.filter(
+            sale=self.sale, catalog_item=self.sale_item.catalog_item).first()
         self.unit_price = self.unit_price or sale_record.selling_price if sale_record else 0
         self.total_price = round(
             Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
@@ -41,7 +44,7 @@ class SalesReturn(AbstractBase):
 
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory
-        inventory_item = InventoryItem.objects.get(item=self.item, is_active=True)
+        inventory_item = InventoryItem.objects.get(id=self.sale_item.catalog_item.inventory_item.id, is_active=True)
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,

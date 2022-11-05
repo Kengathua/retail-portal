@@ -9,7 +9,7 @@ from elites_franchise_portal.credit import filters
 class SalesReturnViewSet(BaseViewMixin):
     """SalesReturns view model."""
 
-    queryset = SalesReturn.objects.all()
+    queryset = SalesReturn.objects.all().order_by('-return_date')
     serializer_class = serializers.SalesReturnSerializer
     filterset_class = filters.SalesReturnFilter
     search_fields = (

@@ -1,7 +1,7 @@
 """Sales views  file."""
 
 from elites_franchise_portal.debit.models import (
-    Sale, SaleRecord)
+    Sale, SaleItem)
 from elites_franchise_portal.debit import serializers, filters
 from elites_franchise_portal.common.views import BaseViewMixin
 
@@ -17,8 +17,8 @@ class SaleViewSet(BaseViewMixin):
         'order__order_number', 'sale_code',
     )
 
-class SaleRecordViewSet(BaseViewMixin):
+class SaleItemViewSet(BaseViewMixin):
     """Sale Record view class."""
 
-    queryset = SaleRecord.objects.all()
-    serializer_class = serializers.SaleRecordSerializer
+    queryset = SaleItem.objects.all()
+    serializer_class = serializers.SaleItemSerializer

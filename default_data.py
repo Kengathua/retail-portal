@@ -8,7 +8,7 @@ from elites_franchise_portal.items.models import (
     Category, ItemType, Brand, BrandItemType, ItemModel,
     Item, Units, UnitsItemType, ItemUnits)
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryRecord, Sale, SaleRecord)
+    Inventory, InventoryItem, InventoryRecord, Sale, SaleItem)
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
 from elites_franchise_portal.catalog.models import (
@@ -583,17 +583,17 @@ if settings.DEBUG:
 
     order = Order.objects.first()
     sale = Sale.objects.create(sale_code='C-003', order=order, **audit_fields)
-    salerecord1 = SaleRecord.objects.create(
+    saleitem1 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item1, quantity_sold=4, **audit_fields)
-    salerecord2 = SaleRecord.objects.create(
+    saleitem2 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item2, quantity_sold=5, **audit_fields)
-    salerecord3 = SaleRecord.objects.create(
+    saleitem3 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item3, quantity_sold=6, **audit_fields)
-    salerecord4 = SaleRecord.objects.create(
+    saleitem4 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item4, quantity_sold=9, **audit_fields)
-    salerecord5 = SaleRecord.objects.create(
+    saleitem5 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item5, quantity_sold=3, **audit_fields)
-    salerecord6 = SaleRecord.objects.create(
+    saleitem6 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item6, quantity_sold=8, **audit_fields)
-    salerecord7 = SaleRecord.objects.create(
+    saleitem7 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item7, quantity_sold=6, **audit_fields)
