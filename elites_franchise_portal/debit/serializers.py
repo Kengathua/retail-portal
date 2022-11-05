@@ -70,15 +70,15 @@ class SaleSerializer(BaseSerializerMixin):
         fields = '__all__'
 
 
-class SaleRecordSerializer(BaseSerializerMixin):
-    """Sale Record serializer class."""
+class SaleItemSerializer(BaseSerializerMixin):
+    """Sale Item serializer class."""
 
     item_name = CharField(source='catalog_item.inventory_item.item.item_name', read_only=True)
 
     class Meta:
-        """Sale Record Meta class."""
+        """Sale Item Meta class."""
 
-        model = models.SaleRecord
+        model = models.SaleItem
         fields = '__all__'
 
 

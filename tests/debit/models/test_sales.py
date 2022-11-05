@@ -12,7 +12,7 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryRecord, Sale, SaleRecord)
+    Inventory, InventoryItem, InventoryRecord, Sale, SaleItem)
 from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.customers.models import Customer
@@ -58,7 +58,7 @@ class TestSale(TestCase):
         assert Sale.objects.count() == 1
         assert sale.customer == customer
 
-class TestSaleRecord(TestCase):
+class TestSaleItem(TestCase):
     """."""
 
     def test_create_sale_record(self):
@@ -202,14 +202,14 @@ class TestSaleRecord(TestCase):
 
         sale = baker.make(Sale, customer=customer, enterprise=enterprise_code)
         baker.make(
-            SaleRecord, sale=sale, quantity_sold=1, selling_price=560, catalog_item=catalog_item1, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=1, selling_price=560, catalog_item=catalog_item1, enterprise=enterprise_code)
         baker.make(
-            SaleRecord, sale=sale, quantity_sold=2, selling_price=340, catalog_item=catalog_item2, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=2, selling_price=340, catalog_item=catalog_item2, enterprise=enterprise_code)
         baker.make(
-            SaleRecord, sale=sale, quantity_sold=3, selling_price=230, catalog_item=catalog_item3, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=3, selling_price=230, catalog_item=catalog_item3, enterprise=enterprise_code)
         baker.make(
-            SaleRecord, sale=sale, quantity_sold=4, selling_price=100, catalog_item=catalog_item4, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=4, selling_price=100, catalog_item=catalog_item4, enterprise=enterprise_code)
 
         assert sale
         assert Sale.objects.count() == 1
-        assert SaleRecord.objects.count() == 4
+        assert SaleItem.objects.count() == 4

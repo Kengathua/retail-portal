@@ -7,7 +7,7 @@ from elites_franchise_portal.credit.models import SalesReturn
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem,
-    InventoryRecord, Sale, SaleRecord)
+    InventoryRecord, Sale, SaleItem)
 from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
@@ -92,7 +92,7 @@ class TestSalesReturns(TestCase):
             phone_no='+254712345678', email='johnwick@parabellum.com')
         sale = baker.make(Sale, customer=customer, enterprise=enterprise_code)
         baker.make(
-            SaleRecord, sale=sale, quantity_sold=1, selling_price=560,
+            SaleItem, sale=sale, quantity_sold=1, selling_price=560,
             catalog_item=catalog_item, enterprise=enterprise_code)
 
         assert InventoryRecord.objects.count() == 1
