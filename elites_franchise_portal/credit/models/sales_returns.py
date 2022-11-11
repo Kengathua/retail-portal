@@ -30,6 +30,9 @@ class SalesReturn(AbstractBase):
     total_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
+    amount_paid = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0.0)
     note = models.TextField(null=True, blank=True)
     return_date = models.DateTimeField(db_index=True, default=timezone.now)
 

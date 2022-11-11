@@ -581,8 +581,10 @@ if settings.DEBUG:
     encounter = Encounter.objects.create(**encounter_payload, **audit_fields)
     process_customer_encounter(encounter.id)
 
+    from random import randint
+
     order = Order.objects.first()
-    sale = Sale.objects.create(sale_code='C-003', order=order, **audit_fields)
+    sale = Sale.objects.create(sale_code=f'C-{randint(3000,9999)}', order=order, **audit_fields)
     saleitem1 = SaleItem.objects.create(
         sale=sale, catalog_item=catalog_item1, quantity_sold=4, **audit_fields)
     saleitem2 = SaleItem.objects.create(

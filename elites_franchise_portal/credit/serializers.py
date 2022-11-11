@@ -1,6 +1,6 @@
 """Credit side serializers file."""
 
-from rest_framework.fields import CharField
+from rest_framework.fields import CharField, ReadOnlyField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.credit import models
@@ -11,6 +11,7 @@ class PurchaseSerializer(BaseSerializerMixin):
 
     supplier_name = CharField(source='supplier.name', read_only=True)
     barcode = CharField(source='item.barcode', read_only=True)
+    total_cost = ReadOnlyField()
 
     class Meta:
         """Serializer Meta class."""
