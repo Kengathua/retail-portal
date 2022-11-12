@@ -1,8 +1,11 @@
 """."""
 
 from decimal import Decimal
+
 from django.db import models
+from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.items.models import Item
 from elites_franchise_portal.credit.models import PurchaseItem
@@ -24,10 +27,41 @@ class PurchasesReturn(AbstractBase):
     total_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+    return_date = models.DateTimeField(db_index=True, default=timezone.now)
+
+    @property
+    def purchase(self):
+        """Purchase property"""
+        return self.purchase_item.purchase or None
+
+    def check_and_update_existing_return(self, purchases_return):
+        purchases_return.quantity_returned += self.quantity_returned
+        purchases_return.unit_price += self.unit_price
+        purchases_return.total_price += self.total_price
+        purchases_return.notes += self.notes
+        purchases_return.save()
+
+    def validate_quantity_returned_less_than_quantity_purchased(self):
+        """."""
+        if self.quantity_returned > self.purchase_item.quantity_purchased:
+            msg = 'The quantity purchased {} is less than the quantity returned {}'.format(
+                self.purchase_item.quantity_purchased, self.quantity_returned)
+            raise ValidationError(
+                {'quantity_returned': msg})
+
+    def clean(self) -> None:
+        self.validate_quantity_returned_less_than_quantity_purchased()
+        return super().clean()
 
     def save(self, *args, **kwargs):
         self.unit_price = self.unit_price or self.purchase_item.unit_price
         self.total_price = round(Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
+        purchases_return = self.__class__.objects.filter(purchase_item=self.purchase_item).exclude(id=self.id).first()
+        if purchases_return:
+            self.check_and_update_existing_return(purchases_return)
+            return
+
         super().save(*args, **kwargs)
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory

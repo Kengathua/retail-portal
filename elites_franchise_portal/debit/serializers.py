@@ -1,7 +1,7 @@
 """Debit side serializers."""
 
 from rest_framework.fields import CharField
-from rest_framework.fields import SerializerMethodField
+from rest_framework.fields import SerializerMethodField, ReadOnlyField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.debit import models
@@ -84,6 +84,9 @@ class SaleItemSerializer(BaseSerializerMixin):
 
 class PurchasesReturnSerializer(BaseSerializerMixin):
     """Purchases Return serializer class."""
+
+    item_name = ReadOnlyField(source='purchase_item.item.item_name')
+    purchase = ReadOnlyField(source='purchase.id')
 
     class Meta:
         """Purchases Return Meta class."""

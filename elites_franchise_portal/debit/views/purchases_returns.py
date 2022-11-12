@@ -9,7 +9,7 @@ from elites_franchise_portal.common.views import BaseViewMixin
 class PurchasesReturnViewSet(BaseViewMixin):
     """Purchases Returns View class."""
 
-    queryset = PurchasesReturn.objects.all()
+    queryset = PurchasesReturn.objects.all().order_by('updated_on')
     serializer_class = serializers.PurchasesReturnSerializer
     filterset_class = filters.PurchasesReturnFilter
     search_fields = (
