@@ -61,7 +61,7 @@ class BaseModel(models.Model):
 class AbstractBase(BaseModel):
     """Base Class for all models that are applicable to enterprises."""
 
-    enterprise = models.CharField(null=False, blank=False, max_length=250,)
+    enterprise = models.CharField(null=False, blank=False, max_length=250)
 
     def save(self, *args, **kwargs):
         """Override save."""

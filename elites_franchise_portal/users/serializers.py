@@ -11,8 +11,8 @@ class UserSerializer(ModelSerializer):
     """Serialize a user, their roles and their permissions."""
 
     full_name = ReadOnlyField(source='get_full_name', read_only=True)
-    roles = CharField(required=False, allow_null=True)
-    permissions = CharField(required=False, allow_null=True)
+    roles = CharField(source='user_roles')
+    permissions = CharField(source='user_permissions')
 
     class Meta:
         """Exclude sensitive fields (e.g password) from being serialized for a user."""
