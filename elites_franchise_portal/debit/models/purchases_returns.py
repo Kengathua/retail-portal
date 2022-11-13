@@ -35,12 +35,11 @@ class PurchasesReturn(AbstractBase):
         """Purchase property"""
         return self.purchase_item.purchase or None
 
-    def check_and_update_existing_return(self, purchases_return):
-        purchases_return.quantity_returned += self.quantity_returned
-        purchases_return.unit_price += self.unit_price
-        purchases_return.total_price += self.total_price
-        purchases_return.notes += self.notes
-        purchases_return.save()
+    def validate_unique_return_item_per_purchase(self):
+        if self.__class__.objects.filter(purchase_item=self.purchase_item).exclude(id=self.id).exists():
+            msg = "The item {} already exists as a returned item. Kindly select Edit to update it".format(
+                self.purchase_item.item.item_name)
+            raise ValidationError({'update_item': msg})
 
     def validate_quantity_returned_less_than_quantity_purchased(self):
         """."""
@@ -51,17 +50,13 @@ class PurchasesReturn(AbstractBase):
                 {'quantity_returned': msg})
 
     def clean(self) -> None:
+        self.validate_unique_return_item_per_purchase()
         self.validate_quantity_returned_less_than_quantity_purchased()
         return super().clean()
 
     def save(self, *args, **kwargs):
         self.unit_price = self.unit_price or self.purchase_item.unit_price
         self.total_price = round(Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
-        purchases_return = self.__class__.objects.filter(purchase_item=self.purchase_item).exclude(id=self.id).first()
-        if purchases_return:
-            self.check_and_update_existing_return(purchases_return)
-            return
-
         super().save(*args, **kwargs)
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory

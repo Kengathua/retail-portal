@@ -453,7 +453,7 @@ class ItemUnits(AbstractBase):
     purchases_units = models.ForeignKey(
         Units, null=False, blank=False,
         related_name='purchasing_units', on_delete=PROTECT)  # eg Pieces
-    quantity_of_sale_units_per_purchase_unit = models.FloatField()  # eg 12
+    quantity_of_sale_units_per_purchase_unit = models.FloatField(default=1)  # eg 12
     is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
