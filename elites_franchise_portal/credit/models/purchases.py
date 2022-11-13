@@ -33,6 +33,18 @@ class Purchase(AbstractBase):
 
         return float(items_cost) - float(returns_price)
 
+    def validate_unique_invoice_number_per_supplier(self):
+        if self.__class__.objects.filter(
+                invoice_number=self.invoice_number, enterprise=self.enterprise,
+                supplier=self.supplier).exclude(id=self.id).exists():
+            msg = 'A purchase from {} for the invoice number {} already exists. '\
+                'Kindly enter a new invoice number or update the existing record'.format(self.supplier.name, self.invoice_number)
+            raise ValidationError({'invoice_number': msg})
+
+    def clean(self) -> None:
+        self.validate_unique_invoice_number_per_supplier()
+        return super().clean()
+
 class PurchaseItem(AbstractBase):
     """Purchase Item model."""
 
@@ -74,6 +86,12 @@ class PurchaseItem(AbstractBase):
             total_no_of_items = sale_units_per_purchase_unit * self.quantity_purchased
             self.sale_units_purchased = total_no_of_items
 
+    def validate_unique_item_per_purchase(self):
+        if self.__class__.objects.filter(purchase=self.purchase, item=self.item).exclude(id=self.id).exists():
+            msg = 'The item {} already exists in this purchase instance. '\
+                'Kindly select a new item or update the existing record'.format(self.item.item_name)
+            raise ValidationError({'item': msg})
+
     def validate_item_has_units_registered_to_it(self):
         """Validate that the items purchased have units to measure them."""
         from elites_franchise_portal.items.models import ItemUnits
@@ -83,6 +101,7 @@ class PurchaseItem(AbstractBase):
 
     def clean(self) -> None:
         """Clean the Purchases model."""
+        self.validate_unique_item_per_purchase()
         self.validate_item_has_units_registered_to_it()
         return super().clean()
 
