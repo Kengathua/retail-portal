@@ -41,8 +41,8 @@ setup(
         'django-cryptography==1.1',
         'gunicorn==20.1.0',
     ],
-    # scripts=[
-    #     'bin/franchise_portal_manage',
-    # ],
+    scripts=[
+        'bin/franchise_portal_manage'
+    ],
     include_package_data=True
 )
