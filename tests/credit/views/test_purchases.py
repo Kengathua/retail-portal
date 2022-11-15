@@ -14,7 +14,7 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryInventoryItem, InventoryItem)
 from tests.utils.login_mixins import authenticate_test_user
 from elites_franchise_portal.catalog.models import Catalog
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 
 from django.urls import reverse
 from model_bakery import baker
@@ -88,7 +88,7 @@ class TestPurchaseItemsView(APITests, APITestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
+            EnterpriseSetupRule, master_inventory=master_inventory,
             default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=catalog,
             default_catalog=catalog, is_active=True, enterprise=enterprise_code)

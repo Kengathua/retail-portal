@@ -16,7 +16,7 @@ from elites_franchise_portal.orders.models import (
     Cart, CartItem)
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.warehouses.models import (Warehouse)
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -71,7 +71,7 @@ class TestCatalogItem(TestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=self.master_inventory,
+            EnterpriseSetupRule, master_inventory=self.master_inventory,
             default_inventory=self.available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=self.catalog,
             default_catalog=self.catalog, is_active=True, enterprise=enterprise_code)

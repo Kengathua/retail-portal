@@ -1,4 +1,4 @@
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from django.test import TestCase
 
 from elites_franchise_portal.enterprises.models import Enterprise
@@ -9,7 +9,7 @@ from elites_franchise_portal.warehouses.models import Warehouse
 
 from model_bakery import baker
 
-class TestEnterPriseSetupRules(TestCase):
+class TestEnterpriseSetupRule(TestCase):
     """."""
 
     def setUp(self) -> None:
@@ -32,7 +32,7 @@ class TestEnterPriseSetupRules(TestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=self.enterprise_code)
         self.enterprise_setup_rules = baker.make(
-            EnterpriseSetupRules, master_inventory=self.master_inventory,
+            EnterpriseSetupRule, master_inventory=self.master_inventory,
             default_inventory=self.default_inventory, receiving_warehouse=self.receiving_warehouse,
             default_warehouse=self.receiving_warehouse, standard_catalog=self.standard_catalog,
             default_catalog=self.standard_catalog, is_active=True, enterprise=self.enterprise_code)

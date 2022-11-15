@@ -5,7 +5,8 @@ import pytest
 from django.test import TestCase
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
-from elites_franchise_portal.warehouses.models import Warehouse
+from elites_franchise_portal.warehouses.models import (
+    Warehouse, WarehouseItem, WarehouseWarehouseItem)
 from elites_franchise_portal.catalog.models import Catalog
 from elites_franchise_portal.users.models import User
 from elites_franchise_portal.enterprises.models import Enterprise
@@ -13,7 +14,9 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
     ItemModel, ItemType, ItemUnits, UnitsItemType, Units)
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleInventory,
+    EnterpriseSetupRuleWarehouse, EnterpriseSetupRuleCatalog)
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -172,33 +175,18 @@ class TestItem(TestCase):
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             enterprise=enterprise_code)
-
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             enterprise=enterprise_code)
+        item.refresh_from_db()
         assert not item.is_active
 
         user = baker.make(
             User, email='testuser@email.com', first_name='Test', last_name='User',
             guid=uuid.uuid4(), enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        default_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
-        standard_catalog = baker.make(
-            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
-            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
-            enterprise=enterprise_code)
-        enterprise_setup_rules = baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
-            default_inventory=default_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=standard_catalog,
-            default_catalog=standard_catalog, is_active=True, enterprise=enterprise_code)
+        enterprise_setup_rule = baker.make(
+            EnterpriseSetupRule, name='Elites age supermarket default enterprise rule',
+            is_default=True, is_active=True, enterprise=enterprise_code)
         with pytest.raises(ValidationError) as ve:
             item.activate(user)
         msg = 'SAMSUNG GE731K-B SUT COOKER does not have Units assigned to it. '\
@@ -216,15 +204,44 @@ class TestItem(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-
         item.activate(user)
         item.refresh_from_db()
 
         assert item.is_active
-        assert enterprise_setup_rules
-        assert Inventory.objects.count() == 2
+        assert enterprise_setup_rule
         assert InventoryItem.objects.count() == 1
+        assert WarehouseItem.objects.count() == 1
+        assert InventoryInventoryItem.objects.count() == 0
+        assert WarehouseWarehouseItem.objects.count() == 0
+
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        standard_catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+
+        baker.make(EnterpriseSetupRuleInventory, rule=enterprise_setup_rule, inventory=master_inventory)
+        baker.make(EnterpriseSetupRuleInventory, rule=enterprise_setup_rule, inventory=available_inventory)
+        baker.make(EnterpriseSetupRuleWarehouse, rule=enterprise_setup_rule, warehouse=receiving_warehouse)
+        baker.make(EnterpriseSetupRuleCatalog, rule=enterprise_setup_rule, catalog=standard_catalog)
+
+        assert Inventory.objects.count() == 2
+        assert Warehouse.objects.count() == 1
+        assert Warehouse.objects.count() == 1
+        assert InventoryInventoryItem.objects.count() == 0
+        assert WarehouseWarehouseItem.objects.count() == 0
+
+        item.activate(user)
         assert InventoryInventoryItem.objects.count() == 2
+        assert WarehouseWarehouseItem.objects.count() == 1
 
 
 class TestItemAttribute(TestCase):

@@ -260,7 +260,7 @@ class Item(AbstractBase):
 
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         if not enterprise_setup_rules:
-            msg = 'You do not have setup rules for your enterprise. Please set that up first'
+            msg = 'You do not have rules for your enterprise. Please set that up first'
             raise ValidationError({'enterprise_setup_rules': msg})
 
         audit_fields = {
@@ -269,25 +269,11 @@ class Item(AbstractBase):
             'enterprise': user.enterprise if user else self.enterprise,
         }
 
-        if enterprise_setup_rules.receiving_warehouse:
-            activate_warehouse_item(
-                enterprise_setup_rules.receiving_warehouse, self, audit_fields)
+        inventories = enterprise_setup_rules.inventories.all()
+        activate_inventory_item(self, audit_fields, inventories)
 
-        if enterprise_setup_rules.default_warehouse:
-            activate_warehouse_item(
-                enterprise_setup_rules.default_warehouse, self, audit_fields)
-
-        if enterprise_setup_rules.master_inventory:
-            activate_inventory_item(
-                enterprise_setup_rules.master_inventory, self, audit_fields)
-
-        if enterprise_setup_rules.default_inventory:
-            activate_inventory_item(
-                enterprise_setup_rules.default_inventory, self, audit_fields)
-
-        if enterprise_setup_rules.allocated_inventory:
-            activate_inventory_item(
-                enterprise_setup_rules.allocated_inventory, self, audit_fields)
+        warehouses = enterprise_setup_rules.warehouses.all()
+        activate_warehouse_item(self, audit_fields, warehouses)
 
         self.is_active = True
         self.save()
