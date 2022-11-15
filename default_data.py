@@ -15,7 +15,7 @@ from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.config import settings
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
 from elites_franchise_portal.orders.models import Order

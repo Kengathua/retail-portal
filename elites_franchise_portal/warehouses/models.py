@@ -241,7 +241,7 @@ class WarehouseRecord(AbstractBase):
 
     def process_removal(self):
         """Process removals from store."""
-        from elites_franchise_portal.restrictions_mgt.models import (
+        from elites_franchise_portal.enterprise_mgt.models import (
             EnterpriseSetupRules)
         if not self.record_type == REMOVE:
             return

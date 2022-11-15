@@ -3,7 +3,7 @@
 from rest_framework.fields import SerializerMethodField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
-from elites_franchise_portal.restrictions_mgt import models
+from elites_franchise_portal.enterprise_mgt import models
 
 
 class EnterpriseSetupSerializer(BaseSerializerMixin):

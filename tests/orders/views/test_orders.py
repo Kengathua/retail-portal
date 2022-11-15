@@ -17,7 +17,7 @@ from elites_franchise_portal.catalog.models import (
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem, Installment)
 from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.warehouses.models import Warehouse
 
 from tests.utils import APITests

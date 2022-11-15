@@ -14,7 +14,7 @@ from elites_franchise_portal.users.models import (
 class Command(BaseCommand):
     """."""
 
-    help = 'Sets up the default roles and permissions data'
+    help = 'Sets up the default user, group, roles and permissions data'
 
     def add_arguments(self, parser):
         """."""

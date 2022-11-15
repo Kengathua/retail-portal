@@ -12,7 +12,7 @@ from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.restrictions_mgt.models import (
+from elites_franchise_portal.enterprise_mgt.models import (
     EnterpriseSetupRules)
 from elites_franchise_portal.warehouses.models import Warehouse
 

@@ -1,7 +1,7 @@
 """."""
 
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.restrictions_mgt.helpers import get_valid_enterprise_setup_rules
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
 
 def get_catalog_item_available_quantity(catalog_item, include_encounters=True):

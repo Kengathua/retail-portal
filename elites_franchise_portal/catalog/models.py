@@ -136,7 +136,7 @@ class CatalogItem(AbstractBase):
 
     def get_quantity(self):
         """Get quantity."""
-        from elites_franchise_portal.restrictions_mgt.helpers import (
+        from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         inventories = Inventory.objects.filter(is_active=True, enterprise=self.enterprise)
 

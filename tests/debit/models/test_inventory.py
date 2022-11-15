@@ -15,7 +15,7 @@ from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord)
 from elites_franchise_portal.catalog.models import CatalogItem, Section, Catalog, CatalogCatalogItem
 from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe

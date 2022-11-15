@@ -8,7 +8,7 @@ from elites_franchise_portal.debit.models import (
     InventoryRecord, Inventory, InventoryInventoryItem, InventoryItem)
 from elites_franchise_portal.warehouses.models import (
     WarehouseRecord, Warehouse, WarehouseItem)
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.catalog.models import Catalog
 from elites_franchise_portal.credit.models import Purchase, PurchaseItem
 

@@ -1,6 +1,6 @@
 """."""
 
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 
 def get_valid_enterprise_setup_rules(enterpise_code):

@@ -384,7 +384,7 @@ class InventoryRecord(AbstractBase):
 
     def update_catalog_item(self):
         """Update Catalog item."""
-        from elites_franchise_portal.restrictions_mgt.helpers import (
+        from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         if not enterprise_setup_rules:

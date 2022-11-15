@@ -22,12 +22,12 @@ from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
 from elites_franchise_portal.transactions.models import (
     Transaction)
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
 
-from tests.restrictions_mgt.test_models import TestEnterPriseSetupRules
+from tests.enterprise_mgt.test_models import TestEnterPriseSetupRules
 
 class TesTEndToEnd(TestEnterPriseSetupRules):
     """."""

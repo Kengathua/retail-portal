@@ -11,3 +11,9 @@ class EncounterViewSet(BaseViewMixin):
     queryset = Encounter.objects.all()
     serializer_class = serializers.EncounterSerializer
     filterset_class = filters.EncounterFilter
+    required_permissions = [
+        'encounters.add_encounter',
+        'encounters.change_encounter',
+        'encounters.delete_encounter',
+        'encounters.view_encounter',
+    ]

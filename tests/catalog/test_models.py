@@ -16,7 +16,7 @@ from elites_franchise_portal.orders.models import (
     Cart, CartItem)
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.warehouses.models import (Warehouse)
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe

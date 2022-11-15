@@ -16,7 +16,7 @@ from elites_franchise_portal.orders.models import CartItem, Cart
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 LOGGER = logging.getLogger(__name__)
 

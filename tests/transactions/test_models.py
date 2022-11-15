@@ -15,7 +15,7 @@ from elites_franchise_portal.orders.models import (
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import (
     Transaction, Payment, PaymentRequest)
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.warehouses.models import (
     Warehouse)
 
