@@ -16,7 +16,7 @@ from elites_franchise_portal.orders.models import CartItem, Cart
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 
 LOGGER = logging.getLogger(__name__)
 
@@ -557,7 +557,7 @@ class OrderTransaction(AbstractBase):
             order=self.order, is_cleared=False)
         installment_order_items = InstallmentsOrderItem.objects.filter(
             order=self.order, is_cleared=False)
-        enterprise_setup_rules = EnterpriseSetupRules.objects.get(
+        enterprise_setup_rules = EnterpriseSetupRule.objects.get(
             enterprise=self.enterprise, is_active=True)
         default_inventory = enterprise_setup_rules.default_inventory
         audit_fields = {

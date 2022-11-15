@@ -15,7 +15,7 @@ from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.config import settings
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
 from elites_franchise_portal.orders.models import Order
@@ -225,7 +225,7 @@ if settings.DEBUG:
         description='Will have all items being sold at the shop',
         is_standard=True, **audit_fields)
 
-    EnterpriseSetupRules.objects.update_or_create(
+    EnterpriseSetupRule.objects.update_or_create(
         master_inventory=master_inventory, default_inventory=default_inventory,
         receiving_warehouse=receiving_warehouse, default_warehouse=receiving_warehouse,
         standard_catalog=standard_catalog, default_catalog=standard_catalog,

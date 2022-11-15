@@ -22,14 +22,14 @@ from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
 from elites_franchise_portal.transactions.models import (
     Transaction)
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
 
-from tests.enterprise_mgt.test_models import TestEnterPriseSetupRules
+from tests.enterprise_mgt.test_models import TestEnterpriseSetupRule
 
-class TesTEndToEnd(TestEnterPriseSetupRules):
+class TesTEndToEnd(TestEnterpriseSetupRule):
     """."""
 
     MK_ROOT = 'elites_franchise_portal.encounters'

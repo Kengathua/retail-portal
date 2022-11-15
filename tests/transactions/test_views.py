@@ -15,7 +15,7 @@ from elites_franchise_portal.catalog.models import CatalogItem, Catalog, Catalog
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstallmentsOrderItem)
 from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_franchise_portal.warehouses.models import Warehouse
 from elites_franchise_portal.transactions.models import (
     Transaction, Payment, PaymentRequest)
@@ -100,7 +100,7 @@ class TestMpesaCheckoutView(APITestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
+            EnterpriseSetupRule, master_inventory=master_inventory,
             default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=catalog,
             default_catalog=catalog, is_active=True, enterprise=enterprise_code)

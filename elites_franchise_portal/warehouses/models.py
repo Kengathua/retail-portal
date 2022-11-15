@@ -242,12 +242,12 @@ class WarehouseRecord(AbstractBase):
     def process_removal(self):
         """Process removals from store."""
         from elites_franchise_portal.enterprise_mgt.models import (
-            EnterpriseSetupRules)
+            EnterpriseSetupRule)
         if not self.record_type == REMOVE:
             return
 
         if self.removal_type == INVENTORY:
-            enterprise_setup_rules = EnterpriseSetupRules.objects.get(
+            enterprise_setup_rules = EnterpriseSetupRule.objects.get(
                 enterprise=self.enterprise, is_active=True)
             default_inventory = enterprise_setup_rules.default_inventory
             inventory_items = InventoryItem.objects.filter(

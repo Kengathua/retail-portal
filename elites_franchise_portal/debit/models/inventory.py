@@ -253,6 +253,7 @@ class InventoryRecord(AbstractBase):
     quantity_sold = models.FloatField(null=True, blank=True)
     remaining_stock_total_amount = models.FloatField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    updated_catalog = models.BooleanField(default=False)
 
     # TODO Refactor to use recommended retail price for updating the selling prices of items
 
@@ -317,6 +318,14 @@ class InventoryRecord(AbstractBase):
         self.closing_stock_total_amount = round(
             Decimal(float(self.opening_stock_total_amount) + float(recorded_total_amount)), 2)
 
+    def validate_enterprise_has_set_up_rules(self):
+        from elites_franchise_portal.enterprise_mgt.helpers import (
+            get_valid_enterprise_setup_rules)
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        if not enterprise_setup_rules:
+            msg = 'You do not have rules for your enterprise. Please set that up first'
+            raise ValidationError({'enterprise_setup_rules':msg})
+
     def validate_quantity_of_stock_in_warehouse(self):
         """Validate quantity of stock in store."""
         from .import Store
@@ -376,6 +385,7 @@ class InventoryRecord(AbstractBase):
 
     def clean(self) -> None:
         """Clean Inventory Record."""
+        self.validate_enterprise_has_set_up_rules()
         self.validate_inventory_item_exists_in_inventory()
         self.validate_cannot_remove_more_than_existing_items()
         self.validate_removal_item_has_removal_type()
@@ -386,26 +396,64 @@ class InventoryRecord(AbstractBase):
         """Update Catalog item."""
         from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
-        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
-        if not enterprise_setup_rules:
-            msg = 'You do not have setup rules for your enterprise. Please set that up first'
-            raise ValidationError({'enterprise_setup_rules':msg})
+        from elites_franchise_portal.catalog.models import CatalogItemAuditLog
 
-        default_inventory = enterprise_setup_rules.default_inventory
-        default_catalog = enterprise_setup_rules.default_catalog
-        if self.inventory.inventory_type == default_inventory.inventory_type:
-            catalog_items = default_catalog.catalog_items.filter(
-                inventory_item=self.inventory_item, enterprise=self.enterprise,
-                is_active=True)
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        available_inventory = enterprise_setup_rules.available_inventory
+        standard_catalog = enterprise_setup_rules.standard_catalog
+
+        if self.inventory.inventory_type == available_inventory.inventory_type:
+            catalog_items = standard_catalog.catalog_items.filter(
+                inventory_item=self.inventory_item, is_active=True, enterprise=self.enterprise)
             catalog_item = catalog_items.first()
+
             if catalog_item:
+                audit_fields = {
+                    'created_by': self.created_by,
+                    'updated_by': self.updated_by,
+                    'enterprise': self.enterprise,
+                }
+
+                catalog_item_audit_payload = {
+                    'catalog_item': catalog_item,
+                    'inventory_record': self,
+                    'operation_type': 'CREATE',
+                    'record_type': self.record_type,
+                }
+
+                catalog_item_audit_logs = CatalogItemAuditLog.objects.filter(catalog_item=catalog_item)
+
                 if self.record_type == ADD:
-                    quantity = catalog_item.quantity + self.quantity_recorded
-                    catalog_item = catalog_items.first()
-                    catalog_item.quantity=quantity
-                    catalog_item.marked_price=self.unit_price
-                    catalog_item.save()
-                    return catalog_item
+                    details_payload = {
+                        'quantity_recorded': self.quantity_recorded,
+                        'marked_price_recorded': self.unit_price
+                    }
+
+                    if catalog_item_audit_logs.exists():
+                        catalog_item_audit_payload['operation_type'] = 'UPDATE'
+                        record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
+                        if record_audit_logs.exists():
+                            latest_catalog_audit_log = record_audit_logs.latest('created_on')
+                            if latest_catalog_audit_log.quantity_recorded != self.quantity_recorded or latest_catalog_audit_log.marked_price_recorded != self.unit_price:
+                                diff = self.quantity_recorded - latest_catalog_audit_log.quantity_recorded
+                                catalog_item.quantity += diff
+                                latest_inventory_record_log = catalog_item_audit_logs.latest('inventory_record__created_on')
+                                catalog_item.marked_price = latest_inventory_record_log.marked_price_recorded
+                                if latest_inventory_record_log.inventory_record == self:
+                                    catalog_item.marked_price = self.unit_price
+                                catalog_item.save()
+
+                        else:
+                            catalog_item.quantity += self.quantity_recorded
+                            catalog_item.marked_price = self.unit_price
+                            catalog_item.save()
+
+                    else:
+                        catalog_item.quantity = self.quantity_recorded
+                        catalog_item.marked_price = self.unit_price
+                        catalog_item.save()
+
+                    CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
 
                 if self.record_type == REMOVE:
                     marked_price = catalog_item.marked_price
@@ -413,7 +461,10 @@ class InventoryRecord(AbstractBase):
                     catalog_item.quantity=quantity
                     catalog_item.marked_price=marked_price
                     catalog_item.save()
-                    return catalog_item
+
+                if not self.updated_catalog:
+                    self.updated_catalog = True
+                    self.save()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on Catalog Item."""

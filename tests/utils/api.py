@@ -237,7 +237,7 @@ class APITests(LoggedInMixin, object):
         assert resp.status_code == status_code, '{}, {}'.format(resp.content, url)
         if resp.status_code != 200:
             return resp
-        assert len(resp.data) == 1
+        assert len(resp.data['results']) == 1
 
         return instance, resp
 
@@ -253,7 +253,9 @@ class APITests(LoggedInMixin, object):
         assert resp.status_code == status_code, '{}, {}'.format(resp.content, url)
         if resp.status_code != 200:
             return resp
-        assert len(resp.data) == 1
+
+        assert resp.data['count'] == 1
+        assert len(resp.data['results']) == 1
         return instance, resp
 
     def test_get(self, status_code=200):
@@ -319,7 +321,6 @@ class APITests(LoggedInMixin, object):
         resp = self.client.patch(url, test_data)
         assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)
         return resp
-
 
     def test_delete(self, status_code=204):
         self.client = authenticate_test_user()

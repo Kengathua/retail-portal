@@ -13,7 +13,7 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
 from elites_franchise_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import authenticate_test_user
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_franchise_portal.warehouses.models import Warehouse
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -100,7 +100,7 @@ class TestCatalogItemView(APITests, APITestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
+            EnterpriseSetupRule, master_inventory=master_inventory,
             default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=catalog,
             default_catalog=catalog, is_active=True, enterprise=enterprise_code)
@@ -223,7 +223,7 @@ class TestCatalogCatalogItemView(APITests, APITestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
+            EnterpriseSetupRule, master_inventory=master_inventory,
             default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=catalog,
             default_catalog=catalog, is_active=True, enterprise=enterprise_code)

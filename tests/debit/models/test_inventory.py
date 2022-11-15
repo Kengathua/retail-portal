@@ -13,9 +13,10 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord)
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord)
-from elites_franchise_portal.catalog.models import CatalogItem, Section, Catalog, CatalogCatalogItem
+from elites_franchise_portal.catalog.models import CatalogItem, Section, Catalog, CatalogCatalogItem, CatalogItemAuditLog
 from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleInventory, EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -153,17 +154,19 @@ class TestInventoryRecord(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
-        standard_catalog = baker.make(
+        catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
-        baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=standard_catalog,
-            default_catalog=standard_catalog, is_active=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elite Age Rules', is_default=True,
+            is_active=True, enterprise=enterprise_code)
+        baker.make(EnterpriseSetupRuleInventory, rule=rule, inventory=master_inventory)
+        baker.make(EnterpriseSetupRuleInventory, rule=rule, inventory=available_inventory)
+        baker.make(EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse)
+        baker.make(EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -233,14 +236,16 @@ class TestInventoryRecord(TestCase):
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
-        baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elite Age Rules', is_default=True,
+            is_active=True, enterprise=enterprise_code)
+        baker.make(EnterpriseSetupRuleInventory, rule=rule, inventory=master_inventory)
+        baker.make(EnterpriseSetupRuleInventory, rule=rule, inventory=available_inventory)
+        baker.make(EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse)
+        baker.make(EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -273,6 +278,30 @@ class TestInventoryRecord(TestCase):
         assert catalog_item.marked_price == record2.unit_price == 370
         assert catalog_item.quantity == expected_total == 30
 
+        record1.save()
+        catalog_item.refresh_from_db()
+        assert CatalogItem.objects.count() == 1
+        assert catalog_item.marked_price == record2.unit_price == 370
+        assert catalog_item.quantity == expected_total == 30
+
+        record1.quantity_recorded = 10
+        record1.unit_price = 330
+        expected_total = expected_total - 5
+        record1.save()
+        catalog_item.refresh_from_db()
+        assert CatalogItem.objects.count() == 1
+        assert catalog_item.marked_price == record2.unit_price == 370
+        assert catalog_item.quantity == expected_total == 25
+
+        record2.quantity_recorded = 18
+        expected_total = expected_total + 3
+        record2.unit_price = 400
+        record2.save()
+        catalog_item.refresh_from_db()
+        assert CatalogItem.objects.count() == 1
+        assert catalog_item.marked_price == record2.unit_price == 400
+        assert catalog_item.quantity == expected_total == 28
+
         record3 = baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
             record_type='ADD', quantity_recorded=20, unit_price=320, enterprise=enterprise_code)
@@ -280,7 +309,9 @@ class TestInventoryRecord(TestCase):
         catalog_item.refresh_from_db()
         assert CatalogItem.objects.count() == 1
         assert catalog_item.marked_price == record3.unit_price == 320
-        assert catalog_item.quantity == expected_total == 50
+        assert catalog_item.quantity == expected_total == 48
+
+        # assert CatalogItemAuditLog.objects.filter().latest('created_on').quantity_after == 48
 
 
     def test_fail_remove_from_empty_inventory(self):
@@ -383,7 +414,7 @@ class TestInventoryRecord(TestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
+            EnterpriseSetupRule, master_inventory=master_inventory,
             default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=catalog,
             default_catalog=catalog, is_active=True, enterprise=enterprise_code)
@@ -465,7 +496,7 @@ class TestInventoryRecord(TestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRules, master_inventory=master_inventory,
+            EnterpriseSetupRule, master_inventory=master_inventory,
             default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
             default_warehouse=receiving_warehouse, standard_catalog=catalog,
             default_catalog=catalog, is_active=True, enterprise=enterprise_code)

@@ -59,11 +59,11 @@ class EnterpriseSetupSerializer(BaseSerializerMixin):
         fields = '__all__'
 
 
-class EnterpriseSetupRulesSerializer(BaseSerializerMixin):
-    """EnterpriseSetupRules Serializer class."""
+class EnterpriseSetupRuleSerializer(BaseSerializerMixin):
+    """EnterpriseSetupRule Serializer class."""
 
     class Meta:
-        """EnterpriseSetupRules serializer Meta class."""
+        """EnterpriseSetupRule serializer Meta class."""
 
-        model = models.EnterpriseSetupRules
+        model = models.EnterpriseSetupRule
         fields = '__all__'
