@@ -13,7 +13,7 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
 from elites_franchise_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import authenticate_test_user
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.warehouses.models import Warehouse
 from model_bakery import baker
 from model_bakery.recipe import Recipe

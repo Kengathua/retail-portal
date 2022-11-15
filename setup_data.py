@@ -15,7 +15,7 @@ from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.config import settings
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 # if settings.DEBUG:
 enterprise = Enterprise.objects.create(

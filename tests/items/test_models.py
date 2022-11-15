@@ -13,7 +13,7 @@ from elites_franchise_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
     ItemModel, ItemType, ItemUnits, UnitsItemType, Units)
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe

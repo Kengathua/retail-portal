@@ -253,7 +253,7 @@ class Item(AbstractBase):
 
     def activate(self, user=None):
         """Activate a product by setting it up in inventory and catalog."""
-        from elites_franchise_portal.restrictions_mgt.helpers import (
+        from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         from elites_franchise_portal.items.helpers import (
             activate_warehouse_item, activate_inventory_item)

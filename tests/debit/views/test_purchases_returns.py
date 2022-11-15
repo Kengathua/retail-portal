@@ -14,7 +14,7 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryInventoryItem, InventoryItem,
     InventoryRecord, PurchasesReturn)
 from elites_franchise_portal.warehouses.models import Warehouse
-from elites_franchise_portal.restrictions_mgt.models import (
+from elites_franchise_portal.enterprise_mgt.models import (
     EnterpriseSetupRules)
 
 from model_bakery import baker

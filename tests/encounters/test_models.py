@@ -16,7 +16,7 @@ from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.catalog.models import (
     Catalog, CatalogCatalogItem, CatalogItem)
 from elites_franchise_portal.encounters.models import Encounter
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 from model_bakery import baker
 

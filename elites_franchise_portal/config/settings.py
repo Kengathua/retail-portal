@@ -75,7 +75,7 @@ LOCAL_APPS = [
     'elites_franchise_portal.enterprises',
     'elites_franchise_portal.encounters',
     'elites_franchise_portal.transactions',
-    'elites_franchise_portal.restrictions_mgt',
+    'elites_franchise_portal.enterprise_mgt',
     'elites_franchise_portal.adapters.mobile_money.mpesa',
 ]
 
@@ -233,6 +233,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        'elites_franchise_portal.common.permissions.DRFScreenPermission',
     ],
 
     # Throttling settings

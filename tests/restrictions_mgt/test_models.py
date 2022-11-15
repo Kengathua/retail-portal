@@ -1,4 +1,4 @@
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from django.test import TestCase
 
 from elites_franchise_portal.enterprises.models import Enterprise

@@ -1,17 +1,12 @@
 """The custom user model."""
-import uuid
 
-from typing import Any, Collection, Optional, Set, Tuple, Type, TypeVar, Union
+import uuid
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth.models import (
-    BaseUserManager, PermissionsMixin, AbstractBaseUser,
-    PermissionManager, GroupManager, AnonymousUser)
-from django.db.models.base import Model
-
-_AnyUser = Union[Model, "AnonymousUser"]
+    BaseUserManager, AbstractBaseUser, PermissionManager, GroupManager)
 
 
 class Role(models.Model):
@@ -129,13 +124,12 @@ class User(AbstractBaseUser):
         return roles
 
     @property
-    def user_permissions(self):
+    def permissions(self):
         """."""
         perms = []
         if self.group:
             perms = set(self.group.permissions.values_list('value', flat=True).order_by('-value'))
         return perms
-
 
     def get_full_name(self):
         """Format the user's full name."""

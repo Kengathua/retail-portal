@@ -14,7 +14,7 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseWarehouseItem, WarehouseRecord)
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 from elites_franchise_portal.catalog.models import CatalogItem, Catalog, CatalogCatalogItem
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem)

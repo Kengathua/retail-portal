@@ -11,7 +11,7 @@ from elites_franchise_portal.items.models import Item
 from elites_franchise_portal.credit.models import PurchaseItem
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.debit.models import InventoryRecord, InventoryItem
-from elites_franchise_portal.restrictions_mgt.helpers import get_valid_enterprise_setup_rules
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
 
 class PurchasesReturn(AbstractBase):

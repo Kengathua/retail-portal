@@ -12,7 +12,7 @@ class UserSerializer(ModelSerializer):
 
     full_name = ReadOnlyField(source='get_full_name', read_only=True)
     roles = CharField(source='user_roles')
-    permissions = CharField(source='user_permissions')
+    permissions = ReadOnlyField()
 
     class Meta:
         """Exclude sensitive fields (e.g password) from being serialized for a user."""

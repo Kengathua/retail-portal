@@ -14,7 +14,7 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryInventoryItem, InventoryItem)
 from tests.utils.login_mixins import authenticate_test_user
 from elites_franchise_portal.catalog.models import Catalog
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRules
 
 from django.urls import reverse
 from model_bakery import baker
