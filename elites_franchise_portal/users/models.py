@@ -1,11 +1,66 @@
 """The custom user model."""
+
 import uuid
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth.models import (
-    BaseUserManager, PermissionsMixin, AbstractBaseUser)
+    BaseUserManager, AbstractBaseUser, PermissionManager, GroupManager)
+
+
+class Role(models.Model):
+    """Custom roles model."""
+
+    id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True)
+    name = models.CharField(max_length=300)
+    value = models.CharField(max_length=300)
+
+
+class Permission(models.Model):
+    """Custom permissions model."""
+
+    id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True)
+    name = models.CharField(max_length=300)
+    value = models.CharField(max_length=300)
+
+    objects: PermissionManager
+
+
+class Group(models.Model):
+    """Custom groups model."""
+
+    id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True, auto_created=True)
+    created_on = models.DateTimeField(
+        db_index=True, editable=False, default=timezone.now)
+    created_by = models.UUIDField(editable=False)
+    updated_on = models.DateTimeField(db_index=True, default=timezone.now)
+    updated_by = models.UUIDField()
+    enterprise = models.CharField(null=False, blank=False, max_length=250)
+    name = models.CharField(max_length=300)
+    permissions = models.ManyToManyField(
+        Permission, through='GroupPermission',
+        related_name='group_permissions')
+
+    objects: GroupManager
+
+
+class GroupPermission(models.Model):
+    """Group Permission Model."""
+
+    id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True, auto_created=True)
+    created_on = models.DateTimeField(
+        db_index=True, editable=False, default=timezone.now)
+    created_by = models.UUIDField(editable=False)
+    updated_on = models.DateTimeField(db_index=True, default=timezone.now)
+    updated_by = models.UUIDField()
+    enterprise = models.CharField(null=False, blank=False, max_length=250)
+    group = models.ForeignKey(Group, on_delete=models.PROTECT)
+    permission = models.ForeignKey(Permission, on_delete=models.PROTECT)
 
 
 class UserManager(BaseUserManager):
@@ -31,7 +86,7 @@ class UserManager(BaseUserManager):
         return user
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser):
     """The custom user model."""
 
     id = models.UUIDField(
@@ -53,11 +108,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    roles = models.ManyToManyField(
+        Role, through='UserRole', related_name='user_roles')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, blank=True)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
+
+    @property
+    def user_roles(self):
+        """User roles string."""
+        roles = set(UserRole.objects.filter(user=self).values_list('role__name', flat=True))
+        return roles
+
+    @property
+    def permissions(self):
+        """."""
+        perms = []
+        if self.group:
+            perms = set(self.group.permissions.values_list('value', flat=True).order_by('-value'))
+        return perms
 
     def get_full_name(self):
         """Format the user's full name."""
@@ -75,6 +147,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Sort alphabetically users by their first name, last name."""
 
         ordering = ('first_name', 'last_name',)
+
+
+class UserRole(models.Model):
+    """User Role model."""
+
+    id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    role = models.ForeignKey(Role, on_delete=models.PROTECT)
 
 
 def retrieve_user_email(id_field):

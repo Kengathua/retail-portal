@@ -1,5 +1,6 @@
 """."""
 
+from elites_franchise_portal.credit.models.purchases import PurchaseItem
 from rest_framework.test import APITestCase
 from tests.utils.api import APITests
 
@@ -12,10 +13,12 @@ from elites_franchise_portal.credit.models import Purchase
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryInventoryItem, InventoryItem)
 from tests.utils.login_mixins import authenticate_test_user
+from elites_franchise_portal.catalog.models import Catalog
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 
 from django.urls import reverse
 from model_bakery import baker
-from model_bakery.recipe import Recipe, foreign_key
+from model_bakery.recipe import Recipe
 
 
 class TestPurchasesView(APITests, APITestCase):
@@ -24,7 +27,23 @@ class TestPurchasesView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
+            business_type='SHOP')
+        enterprise_code = franchise.enterprise_code
+        supplier = baker.make(Enterprise, name='LG Supplier')
+        self.recipe = Recipe(
+            Purchase, invoice_number='INV-001', supplier=supplier, enterprise=enterprise_code)
+
+    url = 'v1:credit:purchase'
+
+
+class TestPurchaseItemsView(APITests, APITestCase):
+    """."""
+
+    def setUp(self):
+        """."""
+        franchise = baker.make(
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -62,21 +81,32 @@ class TestPurchasesView(APITests, APITestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
-        baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
-            is_active=True, enterprise=enterprise_code)
+        supplier = baker.make(Enterprise, name='LG Supplier')
+        purchase = baker.make(
+            Purchase, invoice_number='INV-001', supplier=supplier, enterprise=enterprise_code)
         self.recipe = Recipe(
-            Purchase, item=item, quantity_purchased=10, total_price=10000,
+            PurchaseItem, purchase=purchase, item=item, quantity_purchased=10, total_price=10000,
             recommended_retail_price=100, quantity_to_inventory=40,
             quantity_to_inventory_on_display=10, quantity_to_inventory_in_warehouse=30,
             enterprise=enterprise_code)
 
-    url = 'v1:credit:purchase'
+    url = 'v1:credit:purchaseitem'
 
     def test_post(self, status_code=201):
         """."""

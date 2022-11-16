@@ -8,16 +8,17 @@ from elites_franchise_portal.items.models import (
     Category, ItemType, Brand, BrandItemType, ItemModel,
     Item, Units, UnitsItemType, ItemUnits)
 from elites_franchise_portal.debit.models import (
-    Inventory, InventoryItem, InventoryRecord)
+    Inventory, InventoryItem, InventoryRecord, Sale, SaleItem)
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
 from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.config import settings
-from elites_franchise_portal.restrictions_mgt.models import EnterpriseSetupRules
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.encounters.tasks import process_customer_encounter
+from elites_franchise_portal.orders.models import Order
 
 from unittest import mock
 
@@ -224,32 +225,11 @@ if settings.DEBUG:
         description='Will have all items being sold at the shop',
         is_standard=True, **audit_fields)
 
-    EnterpriseSetupRules.objects.update_or_create(
+    EnterpriseSetupRule.objects.update_or_create(
         master_inventory=master_inventory, default_inventory=default_inventory,
         receiving_warehouse=receiving_warehouse, default_warehouse=receiving_warehouse,
         standard_catalog=standard_catalog, default_catalog=standard_catalog,
         is_active=True, **audit_fields)
-
-    item1.activate(user)
-    item2.activate(user)
-    item3.activate(user)
-    item4.activate(user)
-    item5.activate(user)
-    item6.activate(user)
-    item7.activate(user)
-    item8.activate(user)
-    item9.activate(user)
-    item10.activate(user)
-    item11.activate(user)
-    item12.activate(user)
-    item13.activate(user)
-    item14.activate(user)
-    item15.activate(user)
-    item16.activate(user)
-    item17.activate(user)
-    item18.activate(user)
-    item19.activate(user)
-    item20.activate(user)
 
     s_units, _ = Units.objects.update_or_create(units_name='32 Inch', **audit_fields)
     p_units, _ = Units.objects.update_or_create(units_name='32 Inch', **audit_fields)
@@ -319,6 +299,27 @@ if settings.DEBUG:
     ItemUnits.objects.update_or_create(
         item=item20, sales_units=s_units, purchases_units=p_units,
         quantity_of_sale_units_per_purchase_unit=1, **audit_fields)
+
+    item1.activate(user)
+    item2.activate(user)
+    item3.activate(user)
+    item4.activate(user)
+    item5.activate(user)
+    item6.activate(user)
+    item7.activate(user)
+    item8.activate(user)
+    item9.activate(user)
+    item10.activate(user)
+    item11.activate(user)
+    item12.activate(user)
+    item13.activate(user)
+    item14.activate(user)
+    item15.activate(user)
+    item16.activate(user)
+    item17.activate(user)
+    item18.activate(user)
+    item19.activate(user)
+    item20.activate(user)
 
     inventory_item1, _ = InventoryItem.objects.update_or_create(item=item1, **audit_fields)
     inventory_item2, _ = InventoryItem.objects.update_or_create(item=item2, **audit_fields)
@@ -577,5 +578,24 @@ if settings.DEBUG:
         }
 
     process_customer_encounter.delay = mock.MagicMock()
-    encounter, _ = Encounter.objects.update_or_create(**encounter_payload, **audit_fields)
+    encounter = Encounter.objects.create(**encounter_payload, **audit_fields)
     process_customer_encounter(encounter.id)
+
+    from random import randint
+
+    order = Order.objects.first()
+    sale = Sale.objects.create(sale_code=f'C-{randint(3000,9999)}', order=order, **audit_fields)
+    saleitem1 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item1, quantity_sold=4, **audit_fields)
+    saleitem2 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item2, quantity_sold=5, **audit_fields)
+    saleitem3 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item3, quantity_sold=6, **audit_fields)
+    saleitem4 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item4, quantity_sold=9, **audit_fields)
+    saleitem5 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item5, quantity_sold=3, **audit_fields)
+    saleitem6 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item6, quantity_sold=8, **audit_fields)
+    saleitem7 = SaleItem.objects.create(
+        sale=sale, catalog_item=catalog_item7, quantity_sold=6, **audit_fields)

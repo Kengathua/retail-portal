@@ -1,0 +1,23 @@
+[0;1;32m●[0m gunicorn.service - gunicorn daemon
+     Loaded: loaded (/etc/systemd/system/gunicorn.service; disabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Wed 2022-11-16 22:35:55 UTC; 52min ago
+TriggeredBy: [0;1;32m●[0m gunicorn.socket
+   Main PID: 355251 (gunicorn)
+      Tasks: 4 (limit: 1131)
+     Memory: 203.8M
+     CGroup: /system.slice/gunicorn.service
+             ├─355251 /home/kengathua/franchise-portal/venv/bin/python /home/kengathua/franchise-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_franchise_portal.config.wsgi:application
+             ├─355289 /home/kengathua/franchise-portal/venv/bin/python /home/kengathua/franchise-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_franchise_portal.config.wsgi:application
+             ├─355301 /home/kengathua/franchise-portal/venv/bin/python /home/kengathua/franchise-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_franchise_portal.config.wsgi:application
+             └─355304 /home/kengathua/franchise-portal/venv/bin/python /home/kengathua/franchise-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_franchise_portal.config.wsgi:application
+
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:   File "/home/kengathua/franchise-portal/venv/lib/python3.8/site-packages/django/db/backends/utils.py", line 89, in _execute
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:     return self.cursor.execute(sql, params)
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:   File "/home/kengathua/franchise-portal/venv/lib/python3.8/site-packages/django/db/utils.py", line 91, in __exit__
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:     raise dj_exc_value.with_traceback(traceback) from exc_value
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:   File "/home/kengathua/franchise-portal/venv/lib/python3.8/site-packages/django/db/backends/utils.py", line 89, in _execute
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:     return self.cursor.execute(sql, params)
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:   File "/home/kengathua/franchise-portal/venv/lib/python3.8/site-packages/django/db/backends/sqlite3/base.py", line 357, in execute
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:     return Database.Cursor.execute(self, query, params)
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]: django.db.utils.OperationalError: attempt to write a readonly database
+Nov 16 23:20:49 franchise-portal-uat gunicorn[355301]:  - - [17/Nov/2022:02:20:49 +0300] "POST /v1/items/categories/ HTTP/1.0" 500 218983 "http://localhost:3000/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"

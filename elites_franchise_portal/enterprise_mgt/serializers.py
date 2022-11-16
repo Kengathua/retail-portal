@@ -1,20 +1,10 @@
 """Restriction Rules serializers file."""
 
-from django.core.serializers import serialize
-from rest_framework.fields import CharField, SerializerMethodField
+from rest_framework.fields import SerializerMethodField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
-from elites_franchise_portal.restrictions_mgt import models
-from elites_franchise_portal.debit.serializers import InventoryItemSerializer
+from elites_franchise_portal.enterprise_mgt import models
 
-
-from django.core.serializers.json import DjangoJSONEncoder
-
-class LazyEncoder(DjangoJSONEncoder):
-    def default(self, obj):
-        # if isinstance(obj, YourCustomType):
-        #     return str(obj)
-        return super().default(obj)
 
 class EnterpriseSetupSerializer(BaseSerializerMixin):
     """EnterpriseSetup Serializer class."""
@@ -24,6 +14,7 @@ class EnterpriseSetupSerializer(BaseSerializerMixin):
     catalogs = SerializerMethodField()
 
     def get_inventories(self, instance):
+        """Get inventories."""
         inventories, inventories_names = instance.inventories
         all_inventories = []
         for inventory in inventories:
@@ -36,6 +27,7 @@ class EnterpriseSetupSerializer(BaseSerializerMixin):
         return all_inventories
 
     def get_warehouses(self, instance):
+        """Get warehouses."""
         warehouses, warehouses_names = instance.warehouses
         all_warehouses = []
         for warehouse in warehouses:
@@ -48,6 +40,7 @@ class EnterpriseSetupSerializer(BaseSerializerMixin):
         return all_warehouses
 
     def get_catalogs(self, instance):
+        """Get catalogs."""
         catalogs, catalogs_names = instance.catalogs
         all_catalogs = []
         for catalog in catalogs:
@@ -66,11 +59,11 @@ class EnterpriseSetupSerializer(BaseSerializerMixin):
         fields = '__all__'
 
 
-class EnterpriseSetupRulesSerializer(BaseSerializerMixin):
-    """EnterpriseSetupRules Serializer class."""
+class EnterpriseSetupRuleSerializer(BaseSerializerMixin):
+    """EnterpriseSetupRule Serializer class."""
 
     class Meta:
-        """EnterpriseSetupRules serializer Meta class."""
+        """EnterpriseSetupRule serializer Meta class."""
 
-        model = models.EnterpriseSetupRules
+        model = models.EnterpriseSetupRule
         fields = '__all__'

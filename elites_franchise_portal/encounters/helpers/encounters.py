@@ -7,8 +7,7 @@ UNPROCESSED_ENCOUNTERS_STATUS = ['PENDING', 'ONGOING']
 
 def process_billing(encounter):
     """Process encounter billing."""
-    import pdb
-    pdb.set_trace()
+    pass
 
 
 def get_all_unprocessed_encounters(enterprise_code, catalog_item=None):

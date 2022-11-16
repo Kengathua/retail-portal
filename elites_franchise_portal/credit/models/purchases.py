@@ -12,7 +12,7 @@ from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord)
 from elites_franchise_portal.items.models import Item, ItemUnits
 from elites_franchise_portal.enterprises.models import Enterprise
-
+from elites_franchise_portal.debit import models as debit_models
 
 class Purchase(AbstractBase):
     """Purchases model."""
@@ -22,41 +22,75 @@ class Purchase(AbstractBase):
         related_name='supplier_enterprise', on_delete=models.PROTECT)
     invoice_number = models.CharField(
         null=True, blank=True, max_length=300)
+    purchase_date = models.DateTimeField(db_index=True, default=timezone.now)
+
+    @property
+    def total_cost(self):
+        items_costs = PurchaseItem.objects.filter(purchase=self).values_list('total_cost', flat=True)
+        items_cost = sum(items_costs)
+        returns_prices = debit_models.PurchasesReturn.objects.filter(purchase_item__purchase=self).values_list('total_price', flat=True)
+        returns_price = sum(returns_prices)
+
+        return float(items_cost) - float(returns_price)
+
+    def validate_unique_invoice_number_per_supplier(self):
+        if self.__class__.objects.filter(
+                invoice_number=self.invoice_number, enterprise=self.enterprise,
+                supplier=self.supplier).exclude(id=self.id).exists():
+            msg = 'A purchase from {} for the invoice number {} already exists. '\
+                'Kindly enter a new invoice number or update the existing record'.format(self.supplier.name, self.invoice_number)
+            raise ValidationError({'invoice_number': msg})
+
+    def clean(self) -> None:
+        self.validate_unique_invoice_number_per_supplier()
+        return super().clean()
+
+class PurchaseItem(AbstractBase):
+    """Purchase Item model."""
+
+    purchase = models.ForeignKey(
+        Purchase, max_length=250, null=False, blank=False,
+        related_name='invoice_purchase', on_delete=models.PROTECT)
     item = models.ForeignKey(
         Item, null=False, blank=False, on_delete=models.PROTECT)
     quantity_purchased = models.FloatField(null=False, blank=False)
     sale_units_purchased = models.FloatField(null=True, blank=True)
-    total_price = models.DecimalField(
-        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=False, blank=False)
-    unit_price = models.DecimalField(
+    unit_cost = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0.0)
+    total_cost = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=False, blank=False)
     recommended_retail_price = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0.0)
-    purchase_date = models.DateTimeField(db_index=True, default=timezone.now)
     quantity_to_inventory = models.FloatField(null=True, blank=True)
     quantity_to_inventory_on_display = models.FloatField(null=True, blank=True)
     quantity_to_inventory_in_warehouse = models.FloatField(null=True, blank=True)
     move_in_bulk = models.BooleanField(default=False)
 
-    def get_unit_price(self):
+    def get_unit_cost(self):
         """Calculate buying price per unit."""
         total_no_of_items = self.sale_units_purchased
         buying_price = decimal.Decimal(
-            float(self.total_price) / total_no_of_items).quantize(
+            float(self.total_cost) / total_no_of_items).quantize(
                 decimal.Decimal('0.00'), rounding=decimal.ROUND_CEILING)
 
-        self.unit_price = buying_price
+        self.unit_cost = buying_price
 
     def get_total_no_of_items(self):
         """Get the total number selling units eg 12 packets from a dozen purchased."""
         if not self.sale_units_purchased:
             item_units = ItemUnits.objects.filter(item=self.item).first()
-            no_of_sale_quantity_of_sale_units_per_purchase_unit = item_units.quantity_of_sale_units_per_purchase_unit
-            total_no_of_items = no_of_sale_quantity_of_sale_units_per_purchase_unit * self.quantity_purchased
+            sale_units_per_purchase_unit = item_units.quantity_of_sale_units_per_purchase_unit
+            total_no_of_items = sale_units_per_purchase_unit * self.quantity_purchased
             self.sale_units_purchased = total_no_of_items
+
+    def validate_unique_item_per_purchase(self):
+        if self.__class__.objects.filter(purchase=self.purchase, item=self.item).exclude(id=self.id).exists():
+            msg = 'The item {} already exists in this purchase instance. '\
+                'Kindly select a new item or update the existing record'.format(self.item.item_name)
+            raise ValidationError({'item': msg})
 
     def validate_item_has_units_registered_to_it(self):
         """Validate that the items purchased have units to measure them."""
@@ -67,13 +101,14 @@ class Purchase(AbstractBase):
 
     def clean(self) -> None:
         """Clean the Purchases model."""
+        self.validate_unique_item_per_purchase()
         self.validate_item_has_units_registered_to_it()
         return super().clean()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
         self.get_total_no_of_items()
-        self.get_unit_price()
+        self.get_unit_cost()
         super().save(*args, **kwargs)
         audit_fields = {
             'created_by': self.created_by,

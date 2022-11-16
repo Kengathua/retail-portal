@@ -1,6 +1,6 @@
 """Encounters Validation Helpers file."""
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.restrictions_mgt.helpers import get_valid_enterprise_setup_rules
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 from elites_franchise_portal.catalog.helpers import (
     get_catalog_item_available_quantity)
 from elites_franchise_portal.catalog.models import CatalogItem, CatalogCatalogItem

@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv(
     'django-insecure-^pa2=6*-vo@hne3@l26&&v(9__@rx!a4m28xy#2-+gf!$zd7lp')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
 NGROK_BASE_URL = 'http://2028-197-237-137-119.ngrok.io'
 # ALLOWED_HOSTS = [
@@ -75,7 +75,7 @@ LOCAL_APPS = [
     'elites_franchise_portal.enterprises',
     'elites_franchise_portal.encounters',
     'elites_franchise_portal.transactions',
-    'elites_franchise_portal.restrictions_mgt',
+    'elites_franchise_portal.enterprise_mgt',
     'elites_franchise_portal.adapters.mobile_money.mpesa',
 ]
 
@@ -118,6 +118,9 @@ This is a helper variable that you will use to determine when to connect to Post
 and when to connect to a local SQLite database for testing."""
 
 DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
+# ENVIRONMENTS = ['DEVELOPMENT', 'STAGING', 'UAT-TEST', 'PRODUCTION']
+
+ENVIRONMENT = os.getenv("ENVIRONMENT", "DEVELOPMENT")
 
 DATABASES = {
     'default': {
@@ -127,7 +130,7 @@ DATABASES = {
 }
 DEBUG = True
 
-if DEVELOPMENT_MODE or DEBUG==False:
+if not ENVIRONMENT == 'DEVELOPMENT':
     DATABASES = {
         "default": dj_database_url.parse(
             os.environ.get(
@@ -225,16 +228,14 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
         'rest_framework.filters.SearchFilter',
     ],
-    # 'DEFAULT_AUTHENTICATION_CLASSES': [
-    #     'rest_framework.authentication.BasicAuthentication',
-    #     'rest_framework.authentication.SessionAuthentication',
-    # ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        'elites_franchise_portal.common.permissions.DRFScreenPermission',
     ],
+
     # Throttling settings
     'DEFAULT_THROTTLE_CLASSES': (
         'rest_framework.throttling.UserRateThrottle',
@@ -244,8 +245,13 @@ REST_FRAMEWORK = {
         'user': '100/second',
         'anon': '4/minute'
     },
-    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    # 'PAGE_SIZE': 200
+    'DEFAULT_PAGINATION_CLASS': 'elites_franchise_portal.common.pagination.EnhancedPagination',
+    'EXCEPTION_HANDLER': 'elites_franchise_portal.common.exception_handlers.custom_exception_handler',
+    # 'PAGE_SIZE': 50,    # Default paginated page size
+    'PAGE_SIZE': 10,    # Default paginated page size
+    'DATETIME_FORMAT': 'iso-8601',
+    'DATE_FORMAT': 'iso-8601',
+    'TIME_FORMAT': 'iso-8601',
 }
 
 SIMPLE_JWT = {
@@ -323,16 +329,3 @@ CELERY_TASK_IGNORE_RESULT = True
 # First name: Admin
 # Last name: User
 # Password: Hu46!YftP6^l$
-
-"""
-import uuid
-from django.contrib.auth import get_user_model
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.config import settings
-if settings.DEBUG:
-    franchise = Franchise.objects.create(
-        name='Elites Supermarket', updated_by=uuid.uuid4(), created_by=uuid.uuid4())
-    user = get_user_model().objects.create_superuser(
-            email='adminuser@email.com', first_name='Admin', last_name='User',
-            guid=uuid.uuid4(), password='Hu46!YftP6^l$', enterprise=franchise.enterprise_code)
-"""

@@ -1,5 +1,6 @@
 """Inventory models file."""
 
+from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -252,6 +253,7 @@ class InventoryRecord(AbstractBase):
     quantity_sold = models.FloatField(null=True, blank=True)
     remaining_stock_total_amount = models.FloatField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    updated_catalog = models.BooleanField(default=False)
 
     # TODO Refactor to use recommended retail price for updating the selling prices of items
 
@@ -297,8 +299,8 @@ class InventoryRecord(AbstractBase):
 
     def calculate_total_amount_recorded(self):
         """Calculate total amount recorded."""
-        total = self.quantity_recorded * self.unit_price
-        self.total_amount_recorded = total
+        self.total_amount_recorded = round(
+            Decimal(float(self.quantity_recorded) * float(self.unit_price)), 2)
 
     def calculate_closing_stock_quantity(self):
         """Calculate quantity of closing stock."""
@@ -313,7 +315,16 @@ class InventoryRecord(AbstractBase):
             recorded_total_amount = -(unit_price * self.quantity_recorded)
 
         self.closing_stock_quantity = self.opening_stock_quantity + recorded_quantity
-        self.closing_stock_total_amount = self.opening_stock_total_amount + recorded_total_amount
+        self.closing_stock_total_amount = round(
+            Decimal(float(self.opening_stock_total_amount) + float(recorded_total_amount)), 2)
+
+    def validate_enterprise_has_set_up_rules(self):
+        from elites_franchise_portal.enterprise_mgt.helpers import (
+            get_valid_enterprise_setup_rules)
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        if not enterprise_setup_rules:
+            msg = 'You do not have rules for your enterprise. Please set that up first'
+            raise ValidationError({'enterprise_setup_rules':msg})
 
     def validate_quantity_of_stock_in_warehouse(self):
         """Validate quantity of stock in store."""
@@ -374,6 +385,7 @@ class InventoryRecord(AbstractBase):
 
     def clean(self) -> None:
         """Clean Inventory Record."""
+        self.validate_enterprise_has_set_up_rules()
         self.validate_inventory_item_exists_in_inventory()
         self.validate_cannot_remove_more_than_existing_items()
         self.validate_removal_item_has_removal_type()
@@ -382,36 +394,88 @@ class InventoryRecord(AbstractBase):
 
     def update_catalog_item(self):
         """Update Catalog item."""
-        from elites_franchise_portal.restrictions_mgt.helpers import (
+        from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
+        from elites_franchise_portal.catalog.models import CatalogItemAuditLog
+
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
-        if not enterprise_setup_rules:
-            msg = 'You do not have setup rules for your enterprise. Please set that up first'
-            raise ValidationError({'enterprise_setup_rules':msg})
+        available_inventory = enterprise_setup_rules.available_inventory
+        standard_catalog = enterprise_setup_rules.standard_catalog
 
-        default_inventory = enterprise_setup_rules.default_inventory
-        default_catalog = enterprise_setup_rules.default_catalog
-        if self.inventory.inventory_type == default_inventory.inventory_type:
-            catalog_items = default_catalog.catalog_items.filter(
-                inventory_item=self.inventory_item, enterprise=self.enterprise,
-                is_active=True)
-            catalog_item = catalog_items.first()
-            if catalog_item:
-                if self.record_type == ADD:
-                    quantity = catalog_item.quantity + self.quantity_recorded
-                    catalog_item = catalog_items.first()
-                    catalog_item.quantity=quantity
-                    catalog_item.marked_price=self.unit_price
-                    catalog_item.save()
-                    return catalog_item
+        if not self.inventory.inventory_type == available_inventory.inventory_type:
+            self.__class__.objects.filter(id=self.id).update(updated_catalog=False)
+            return
 
-                if self.record_type == REMOVE:
-                    marked_price = catalog_item.marked_price
-                    quantity = catalog_item.quantity - self.quantity_recorded
-                    catalog_item.quantity=quantity
-                    catalog_item.marked_price=marked_price
-                    catalog_item.save()
-                    return catalog_item
+        catalog_items = standard_catalog.catalog_items.filter(
+            inventory_item=self.inventory_item, is_active=True, enterprise=self.enterprise)
+        catalog_item = catalog_items.first()
+
+        if not catalog_item:
+            self.__class__.objects.filter(id=self.id).update(updated_catalog=False)
+            return
+
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'enterprise': self.enterprise,
+        }
+
+        catalog_item_audit_payload = {
+            'catalog_item': catalog_item,
+            'inventory_record': self,
+            'operation_type': 'CREATE',
+            'record_type': self.record_type,
+        }
+
+        catalog_item_audit_logs = CatalogItemAuditLog.objects.filter(catalog_item=catalog_item)
+
+        if self.record_type == ADD:
+            details_payload = {
+                'quantity_before': catalog_item.quantity,
+                'quantity_recorded': self.quantity_recorded,
+                'marked_price_recorded': self.unit_price
+            }
+
+            if not catalog_item_audit_logs.exists():
+                catalog_item.quantity = self.quantity_recorded
+                catalog_item.marked_price = self.unit_price
+                catalog_item.save()
+                CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+                return
+
+            catalog_item_audit_payload['operation_type'] = 'UPDATE'
+            record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
+            if not record_audit_logs.exists():
+                catalog_item.quantity += self.quantity_recorded
+                catalog_item.marked_price = self.unit_price
+                catalog_item.save()
+                CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+                return
+
+            latest_catalog_audit_log = record_audit_logs.latest('created_on')
+            if latest_catalog_audit_log.quantity_recorded == self.quantity_recorded and latest_catalog_audit_log.marked_price_recorded == self.unit_price:
+                # Early return
+                return
+
+            diff = self.quantity_recorded - latest_catalog_audit_log.quantity_recorded
+            catalog_item.quantity += diff
+            details_payload['quantity_recorded'] = diff
+            latest_inventory_record_log = catalog_item_audit_logs.latest('inventory_record__created_on')
+            catalog_item.marked_price = latest_inventory_record_log.marked_price_recorded
+            if latest_inventory_record_log.inventory_record == self:
+                catalog_item.marked_price = self.unit_price
+            catalog_item.save()
+            CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+            return
+
+        if self.record_type == REMOVE:
+            marked_price = catalog_item.marked_price
+            quantity = catalog_item.quantity - self.quantity_recorded
+            catalog_item.quantity=quantity
+            catalog_item.marked_price=marked_price
+            catalog_item.save()
+
+        self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on Catalog Item."""

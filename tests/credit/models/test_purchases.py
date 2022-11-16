@@ -8,8 +8,9 @@ from elites_franchise_portal.debit.models import (
     InventoryRecord, Inventory, InventoryInventoryItem, InventoryItem)
 from elites_franchise_portal.warehouses.models import (
     WarehouseRecord, Warehouse, WarehouseItem)
-
-from elites_franchise_portal.credit.models import Purchase
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_franchise_portal.catalog.models import Catalog
+from elites_franchise_portal.credit.models import Purchase, PurchaseItem
 
 from model_bakery import baker
 
@@ -20,7 +21,7 @@ class TestPurchase(TestCase):
     def test_create_purchase_record(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-F/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -51,9 +52,6 @@ class TestPurchase(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
-            is_active=True, enterprise=enterprise_code)
         master_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
             is_master=True, is_active=True, inventory_type='WORKING STOCK',
@@ -61,26 +59,40 @@ class TestPurchase(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
         baker.make(
             InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
+        supplier = baker.make(Enterprise, name='LG Supplier')
         purchase = baker.make(
-            Purchase, item=item, quantity_purchased=10, total_price=10000,
+            Purchase, invoice_number='INV-001', supplier=supplier, enterprise=enterprise_code)
+        purchase_item = baker.make(
+            PurchaseItem,purchase=purchase, item=item, quantity_purchased=10, total_price=10000,
             recommended_retail_price=100, quantity_to_inventory=40,
             quantity_to_inventory_on_display=10, quantity_to_inventory_in_warehouse=30,
             enterprise=enterprise_code)
 
-        purchase.refresh_from_db()
-        assert float(purchase.unit_price) == 83.34
+        purchase_item.refresh_from_db()
+        assert float(purchase_item.unit_price) == 83.34
 
         assert Warehouse.objects.count() == 1
         assert WarehouseRecord.objects.count() == 2
-        assert InventoryRecord.objects.count() == 2
+        assert InventoryRecord.objects.count() == 1
 
         warehouse_record1 = WarehouseRecord.objects.get(
-            warehouse_item__item=purchase.item, record_type='ADD')
+            warehouse_item__item=purchase_item.item, record_type='ADD')
         assert warehouse_record1.opening_quantity == 0
         assert warehouse_record1.opening_total_amount == 0
         assert warehouse_record1.quantity_recorded == 120
@@ -89,15 +101,15 @@ class TestPurchase(TestCase):
         assert warehouse_record1.closing_total_amount == 12000
 
         warehouse_record2 = WarehouseRecord.objects.get(
-            warehouse_item__item=purchase.item, record_type='REMOVE', removal_type='INVENTORY')
+            warehouse_item__item=purchase_item.item, record_type='REMOVE', removal_type='INVENTORY')
 
-        assert warehouse_record2.quantity_recorded == purchase.quantity_to_inventory
-        assert warehouse_record2.unit_price == purchase.recommended_retail_price
-        assert warehouse_record2.warehouse_item.item == purchase.item
+        assert warehouse_record2.quantity_recorded == purchase_item.quantity_to_inventory
+        assert warehouse_record2.unit_price == purchase_item.recommended_retail_price
+        assert warehouse_record2.warehouse_item.item == purchase_item.item
         assert warehouse_record2.record_type == 'REMOVE'
         assert warehouse_record2.removal_type == 'INVENTORY'
-        assert warehouse_record2.removal_quantity_leaving_warehouse == purchase.quantity_to_inventory_on_display    # noqa
-        assert warehouse_record2.removal_quantity_remaining_in_warehouse == purchase.quantity_to_inventory_in_warehouse # noqa
+        assert warehouse_record2.removal_quantity_leaving_warehouse == purchase_item.quantity_to_inventory_on_display    # noqa
+        assert warehouse_record2.removal_quantity_remaining_in_warehouse == purchase_item.quantity_to_inventory_in_warehouse # noqa
 
         assert warehouse_record2.opening_quantity == 120
         assert warehouse_record2.opening_total_amount == 12000
@@ -107,7 +119,7 @@ class TestPurchase(TestCase):
         assert warehouse_record2.closing_total_amount == 8000
 
         inventory_record1 = InventoryRecord.objects.get(
-            inventory__inventory_type='AVAILABLE', inventory_item__item=purchase.item, record_type='ADD')
+            inventory__inventory_type='AVAILABLE', inventory_item__item=purchase_item.item, record_type='ADD')
         assert inventory_record1.quantity_recorded == warehouse_record2.quantity_recorded == 40
         assert inventory_record1.unit_price == warehouse_record2.unit_price == 100
         assert inventory_record1.total_amount_recorded == warehouse_record2.total_amount_recorded == 4000    # noqa
@@ -149,18 +161,21 @@ class TestPurchase(TestCase):
         baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             is_active=True, enterprise=enterprise_code)
+        supplier = baker.make(Enterprise, name='LG Supplier')
         purchase = baker.make(
-            Purchase, item=item, quantity_purchased=10, total_price=10000,
+            Purchase, invoice_number='INV-001', supplier=supplier, enterprise=enterprise_code)
+        purchase_item = baker.make(
+            PurchaseItem, purchase=purchase, item=item, quantity_purchased=10, total_price=10000,
             enterprise=enterprise_code)
 
-        purchase.refresh_from_db()
-        assert float(purchase.unit_price) == 83.34
+        purchase_item.refresh_from_db()
+        assert float(purchase_item.unit_price) == 83.34
 
         assert WarehouseItem.objects.count() == 1
         assert WarehouseRecord.objects.count() == 1
 
-        store_record = WarehouseRecord.objects.get(warehouse_item__item=purchase.item)
+        warehouse_record = WarehouseRecord.objects.get(warehouse_item__item=purchase_item.item)
 
-        assert store_record.quantity_recorded == 120
-        assert store_record.quantity_recorded == purchase.sale_units_purchased
-        assert store_record.unit_price == purchase.recommended_retail_price
+        assert warehouse_record.quantity_recorded == 120
+        assert warehouse_record.quantity_recorded == purchase_item.sale_units_purchased
+        assert warehouse_record.unit_price == purchase_item.recommended_retail_price

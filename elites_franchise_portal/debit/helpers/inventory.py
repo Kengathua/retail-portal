@@ -1,6 +1,6 @@
 """Inventory model helpers."""
 
-from elites_franchise_portal.restrictions_mgt.helpers import get_valid_enterprise_setup_rules
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 from elites_franchise_portal.debit.models import InventoryRecord
 
 

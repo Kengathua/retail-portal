@@ -1,7 +1,7 @@
 """Debit side serializers."""
 
 from rest_framework.fields import CharField
-from rest_framework.fields import SerializerMethodField
+from rest_framework.fields import SerializerMethodField, ReadOnlyField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.debit import models
@@ -61,6 +61,8 @@ class InventoryRecordSerializer(BaseSerializerMixin):
 class SaleSerializer(BaseSerializerMixin):
     """Sale serializer class."""
 
+    customer_name = CharField(source='customer.full_name')
+    order_number = CharField(source='order.order_number', read_only=True)
     class Meta:
         """Sale Meta class."""
 
@@ -68,11 +70,26 @@ class SaleSerializer(BaseSerializerMixin):
         fields = '__all__'
 
 
-class SaleRecordSerializer(BaseSerializerMixin):
-    """Sale Record serializer class."""
+class SaleItemSerializer(BaseSerializerMixin):
+    """Sale Item serializer class."""
+
+    item_name = CharField(source='catalog_item.inventory_item.item.item_name', read_only=True)
 
     class Meta:
-        """Sale Record Meta class."""
+        """Sale Item Meta class."""
 
-        model = models.SaleRecord
+        model = models.SaleItem
+        fields = '__all__'
+
+
+class PurchasesReturnSerializer(BaseSerializerMixin):
+    """Purchases Return serializer class."""
+
+    item_name = ReadOnlyField(source='purchase_item.item.item_name')
+    purchase = ReadOnlyField(source='purchase.id')
+
+    class Meta:
+        """Purchases Return Meta class."""
+
+        model = models.PurchasesReturn
         fields = '__all__'

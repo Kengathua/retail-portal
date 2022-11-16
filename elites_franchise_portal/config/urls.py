@@ -50,8 +50,9 @@ v1_patterns = [
         ('elites_franchise_portal.enterprises.urls', 'enterprises'), namespace='enterprises')),
     path(r'transactions/', include(
         ('elites_franchise_portal.transactions.urls', 'transactions'), namespace='transactions')),
-    path(r'restrictions_mgt/', include(
-        ('elites_franchise_portal.restrictions_mgt.urls', 'restrictions_mgt'), namespace='restrictions_mgt')),
+    path(r'enterprise_mgt/', include(
+        ('elites_franchise_portal.enterprise_mgt.urls', 'enterprise_mgt'),
+        namespace='enterprise_mgt')),
 ]
 
 urlpatterns = [

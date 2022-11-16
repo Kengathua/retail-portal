@@ -10,6 +10,8 @@ from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_franchise_portal.catalog.models import Catalog
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -105,7 +107,7 @@ class TestWarehouseWarehouseItem(TestCase):
 class TestwarehouseRecord(TestCase):
     """."""
 
-    def test_add_to_warehouse_record(self):
+    def test_warehouse_record_add_to_warehouse(self):
         """."""
         enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
         enterprise_code = enterprise.enterprise_code
@@ -137,7 +139,7 @@ class TestwarehouseRecord(TestCase):
         assert warehouse_record.quantity_recorded == 10
         assert warehouse_record.closing_total_amount == 3000.0
 
-    def test_remove_from_warehouse_record(self):
+    def test_warehouse_record_remove_from_warehouse(self):
         """."""
         enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
         enterprise_code = enterprise.enterprise_code
@@ -155,8 +157,25 @@ class TestwarehouseRecord(TestCase):
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             enterprise=enterprise_code)
+
+        master_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
+        available_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
         warehouse = baker.make(
-            Warehouse, warehouse_name='Elites Private Warehouse', enterprise=enterprise_code)
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=warehouse,
+            default_warehouse=warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             enterprise=enterprise_code)
@@ -171,13 +190,6 @@ class TestwarehouseRecord(TestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         inventory_item = baker.make(
             InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(

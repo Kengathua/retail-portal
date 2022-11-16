@@ -25,8 +25,6 @@ def refresh_order(order):
 
     if not customer.is_enterprise:
         carts.update(customer=customer)
-    import pdb
-    # pdb.set_trace()
     pass
     # Get all sales attached to this order
     # Get all the order items

@@ -13,8 +13,10 @@ from elites_franchise_portal.items.models import (
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryInventoryItem, InventoryItem, InventoryRecord)
 from elites_franchise_portal.warehouses.models import (
-    Warehouse, WarehouseItem, WarehouseWarehouseItem, WarehouseRecord)
-from elites_franchise_portal.catalog.models import CatalogItem
+    Warehouse, WarehouseItem, WarehouseRecord)
+from elites_franchise_portal.catalog.models import (
+    CatalogItem, Catalog, CatalogCatalogItem)
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_franchise_portal.orders.models import (
     Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem,
     Installment)
@@ -99,11 +101,23 @@ class TestOrder(TestCase):
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
-            Inventory, inventory_name='Elites Working Inventory', is_master=True,
-            inventory_type='WORKING STOCK', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
         available_inventory = baker.make(
-            Inventory, inventory_name='Available Inventory', is_master=False,
-            inventory_type='AVAILABLE', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
         inventory_item3 = baker.make(InventoryItem, item=item3, enterprise=enterprise_code)
@@ -144,6 +158,18 @@ class TestOrder(TestCase):
             CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
         catalog_item3 = baker.make(
             CatalogItem, inventory_item=inventory_item3, enterprise=enterprise_code)
+
+
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item1,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item2,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item3,
+            enterprise=enterprise_code)
+
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -237,6 +263,17 @@ class TestInsantOrderItem(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -247,6 +284,9 @@ class TestInsantOrderItem(TestCase):
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -255,78 +295,6 @@ class TestInsantOrderItem(TestCase):
             Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
-            enterprise=enterprise_code)
-        order = baker.make(Order, customer=customer, enterprise=enterprise_code)
-        instant_order_item = baker.make(
-            InstantOrderItem, order=order, enterprise=franchise.enterprise_code,
-            cart_item=cart_item, confirmation_status='CONFIRMED', amount_paid=350)
-        assert instant_order_item
-        assert InstantOrderItem.objects.count() == 1
-
-    def test_create_instant_order_items_more_than_available_quantity(self):
-        """."""
-        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
-        enterprise_code = franchise.enterprise_code
-        cat = baker.make(
-            Category, category_name='Cat One',
-            enterprise=enterprise_code)
-        item_type = baker.make(
-            ItemType, category=cat, type_name='Cooker',
-            enterprise=enterprise_code)
-        brand = baker.make(
-            Brand, brand_name='Samsung', enterprise=enterprise_code)
-        baker.make(
-            BrandItemType, brand=brand, item_type=item_type,
-            enterprise=enterprise_code)
-        item_model = baker.make(
-            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
-            enterprise=enterprise_code)
-        item = baker.make(
-            Item, item_model=item_model, barcode='83838388383', make_year=2020,
-            enterprise=enterprise_code)
-        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
-        s_units.item_types.set([item_type])
-        s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
-        baker.make(
-            ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
-            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-
-        warehouse = baker.make(
-            Warehouse, warehouse_name='Elites Default Warehouse', enterprise=enterprise_code)
-        warehouse_item = baker.make(WarehouseItem, item=item, enterprise=enterprise_code)
-        baker.make(
-            WarehouseRecord, warehouse=warehouse, warehouse_item=warehouse_item,
-            record_type='ADD', quantity_recorded=30, unit_price=300, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
-        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
-        baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
-            record_type='ADD', quantity_recorded=10, unit_price=350, enterprise=enterprise_code)
-        catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
-        customer = baker.make(
-            Customer, customer_number=9876, first_name='John',
-            last_name='Wick', other_names='Baba Yaga',
-            phone_no='+254712345678', email='johnwick@parabellum.com')
-        cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
-        cart_item = baker.make(
-            CartItem, cart=cart, catalog_item=catalog_item, quantity_added=25,
             enterprise=enterprise_code)
         order = baker.make(Order, customer=customer, enterprise=enterprise_code)
         instant_order_item = baker.make(
@@ -381,6 +349,17 @@ class TestInsantOrderItem(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -391,6 +370,9 @@ class TestInsantOrderItem(TestCase):
             record_type='ADD', quantity_recorded=10, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -454,6 +436,17 @@ class TestInstallmentOrderItem(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -464,6 +457,9 @@ class TestInstallmentOrderItem(TestCase):
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -521,6 +517,17 @@ class TestInstallmentOrderItem(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -531,6 +538,9 @@ class TestInstallmentOrderItem(TestCase):
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -608,11 +618,23 @@ class TestInstallmentOrderItem(TestCase):
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
-            Inventory, inventory_name='Elites Working Inventory', is_master=True,
-            inventory_type='WORKING STOCK', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
         available_inventory = baker.make(
-            Inventory, inventory_name='Available Inventory', is_master=False,
-            inventory_type='AVAILABLE', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
         inventory_item3 = baker.make(InventoryItem, item=item3, enterprise=enterprise_code)
@@ -650,6 +672,18 @@ class TestInstallmentOrderItem(TestCase):
             CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
         catalog_item3 = baker.make(
             CatalogItem, inventory_item=inventory_item3, enterprise=enterprise_code)
+
+
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item1,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item2,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item3,
+            enterprise=enterprise_code)
+
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -744,11 +778,23 @@ class TestInstallmentOrderItem(TestCase):
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
-            Inventory, inventory_name='Elites Working Inventory', is_master=True,
-            inventory_type='WORKING STOCK', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
         available_inventory = baker.make(
-            Inventory, inventory_name='Available Inventory', is_master=False,
-            inventory_type='AVAILABLE', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
         inventory_item3 = baker.make(InventoryItem, item=item3, enterprise=enterprise_code)
@@ -786,6 +832,18 @@ class TestInstallmentOrderItem(TestCase):
             CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
         catalog_item3 = baker.make(
             CatalogItem, inventory_item=inventory_item3, enterprise=enterprise_code)
+
+
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item1,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item2,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item3,
+            enterprise=enterprise_code)
+
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -877,11 +935,23 @@ class TestInstallmentOrderItem(TestCase):
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
         master_inventory = baker.make(
-            Inventory, inventory_name='Elites Working Inventory', is_master=True,
-            inventory_type='WORKING STOCK', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
+            is_master=True, is_active=True, inventory_type='WORKING STOCK',
+            enterprise=enterprise_code)
         available_inventory = baker.make(
-            Inventory, inventory_name='Available Inventory', is_master=False,
-            inventory_type='AVAILABLE', enterprise=enterprise_code)
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
         inventory_item3 = baker.make(InventoryItem, item=item3, enterprise=enterprise_code)
@@ -919,6 +989,18 @@ class TestInstallmentOrderItem(TestCase):
             CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
         catalog_item3 = baker.make(
             CatalogItem, inventory_item=inventory_item3, enterprise=enterprise_code)
+
+
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item1,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item2,
+            enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item3,
+            enterprise=enterprise_code)
+
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -1012,6 +1094,17 @@ class TestInstallment(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -1022,6 +1115,9 @@ class TestInstallment(TestCase):
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga',
@@ -1083,6 +1179,17 @@ class TestInstallment(TestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -1093,6 +1200,9 @@ class TestInstallment(TestCase):
             record_type='ADD', quantity_recorded=5, unit_price=35000, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, title='Mr', first_name='John',
             last_name='Wick', other_names='Baba Yaga', gender='MALE',
@@ -1114,7 +1224,8 @@ class TestInstallment(TestCase):
 
         with pytest.raises(ValidationError) as ve:
             installment2.make()
-        msg = 'Please select a different item to process installments for Mr John Wick. His Ford Mustang Boss 429 Car is already cleared'   # noqa
+        msg = 'Please select a different item to process installments for Mr John Baba Yaga Wick. '\
+            'His FORD Mustang Boss 429 CAR is already cleared'
         assert msg in ve.value.messages
 
         assert installment1

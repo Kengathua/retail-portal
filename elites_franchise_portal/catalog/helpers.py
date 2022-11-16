@@ -1,7 +1,7 @@
 """."""
 
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.restrictions_mgt.helpers import get_valid_enterprise_setup_rules
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
 
 def get_catalog_item_available_quantity(catalog_item, include_encounters=True):
@@ -23,7 +23,8 @@ def get_catalog_item_available_quantity(catalog_item, include_encounters=True):
             billings = encounters.values_list('billing', flat=True)
             unprocessed_encounter_quantities = []
             for billing in billings:
-                quantities = [bill['quantity'] for bill in billing]
+                quantities = [bill['quantity'] for bill in billing if bill[
+                    'catalog_item'] == str(catalog_item.id)]
                 unprocessed_encounter_quantities.extend(quantities)
             unprocessed_encounters_quantity = sum(unprocessed_encounter_quantities)
 

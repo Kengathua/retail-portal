@@ -13,7 +13,7 @@ from elites_franchise_portal.orders.models import (
     Order, InstallmentsOrderItem, Installment,
     InstantOrderItem, OrderTransaction)
 from elites_franchise_portal.orders.models import Cart
-from elites_franchise_portal.debit.models import Sale, SaleRecord
+from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.orders import serializers, filters
 from elites_franchise_portal.debit.tasks import process_sale
 from elites_franchise_portal.orders.helpers.orders import refresh_order

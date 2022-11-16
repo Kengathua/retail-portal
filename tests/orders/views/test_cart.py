@@ -10,8 +10,11 @@ from elites_franchise_portal.items.models import (
     ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
     InventoryItem, InventoryRecord, Inventory, InventoryInventoryItem)
+from elites_franchise_portal.warehouses.models import Warehouse
+from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.catalog.models import CatalogItem
+from elites_franchise_portal.catalog.models import (
+    CatalogItem, Catalog, CatalogCatalogItem)
 from elites_franchise_portal.orders.models import Cart, CartItem
 from elites_franchise_portal.customers.models import Customer
 
@@ -28,7 +31,7 @@ class TestCartView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         customer = baker.make(
@@ -48,7 +51,7 @@ class TestCartItemView(APITests, APITestCase):
     def setUp(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Franchise One', enterprise_code='EAL-E/FO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
@@ -86,6 +89,17 @@ class TestCartItemView(APITests, APITestCase):
         available_inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        receiving_warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRule, master_inventory=master_inventory,
+            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
+            default_warehouse=receiving_warehouse, standard_catalog=catalog,
+            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
             InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
@@ -96,6 +110,9 @@ class TestCartItemView(APITests, APITestCase):
             record_type='ADD', quantity_recorded=15, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        baker.make(
+            CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
+            enterprise=enterprise_code)
         test_user = get_user_model().objects.create_superuser(
             email='testuser@email.com', first_name='Test', last_name='User',
             guid=uuid.uuid4(), password='Testpass254$', enterprise=enterprise_code)

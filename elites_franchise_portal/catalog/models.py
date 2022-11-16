@@ -6,7 +6,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.common.choices import CURRENCY_CHOICES
-from elites_franchise_portal.debit.models import Inventory, InventoryItem
+from elites_franchise_portal.debit.models import (
+    Inventory, InventoryItem, InventoryRecord)
 from elites_franchise_portal.items.models import ItemUnits, ItemAttribute
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.common.validators import (
@@ -20,6 +21,15 @@ from django.core.validators import MinValueValidator
 
 KSH = 'KSH'
 
+AUDIT_RECORD_TYPE_CHOICES = (
+    ('ADD', 'ADD'),
+    ('REMOVE', 'REMOVE')
+)
+
+AUDIT_OPERATIONS_TYPE_CHOICES = (
+    ('CREATE', 'CREATE'),
+    ('UPDATE', 'CREATE'),
+)
 
 class Section(AbstractBase):
     """Sections for items in the premise."""
@@ -136,7 +146,7 @@ class CatalogItem(AbstractBase):
 
     def get_quantity(self):
         """Get quantity."""
-        from elites_franchise_portal.restrictions_mgt.helpers import (
+        from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         inventories = Inventory.objects.filter(is_active=True, enterprise=self.enterprise)
 
@@ -148,10 +158,10 @@ class CatalogItem(AbstractBase):
         if not self.quantity:
             quantity = 0
             enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
-            default_inventory = enterprise_setup_rules.default_inventory
-            if not default_inventory.summary == []:
+            available_inventory = enterprise_setup_rules.available_inventory
+            if not available_inventory.summary == []:
                 quantities = [
-                    data['quantity'] for data in default_inventory.summary
+                    data['quantity'] for data in available_inventory.summary
                     if data['inventory_item'] == self.inventory_item]
 
                 quantity = quantities[0] if quantities else 0
@@ -287,3 +297,54 @@ class CatalogCatalogItem(AbstractBase):
         related_name='catalog_item_catalogcatalogitem')
     is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
+
+
+class CatalogItemAuditLog(AbstractBase):
+    """Catalog Item Log Audit Log."""
+
+    catalog_item = models.ForeignKey(
+        CatalogItem, on_delete=models.PROTECT,
+        related_name='catalog_item_audit_log')
+    quantity_before = models.FloatField(default=0)
+    quantity_recorded = models.FloatField(default=0)
+    quantity_after = models.FloatField(default=0)
+    selling_price_before = models.FloatField(default=0)
+    selling_price_recorded = models.FloatField(default=0)
+    selling_price_after = models.FloatField(default=0)
+    marked_price_before = models.FloatField(default=0)
+    marked_price_recorded = models.FloatField(default=0)
+    marked_price_after = models.FloatField(default=0)
+    threshold_price_before = models.FloatField(default=0)
+    threshold_price_recorded = models.FloatField(default=0)
+    threshold_price_after = models.FloatField(default=0)
+    discount_amount_before = models.FloatField(default=0)
+    discount_amount_recorded = models.FloatField(default=0)
+    discount_amount_after = models.FloatField(default=0)
+    record_type = models.CharField(max_length=300, choices=AUDIT_RECORD_TYPE_CHOICES)
+    operation_type = models.CharField(max_length=300, choices=AUDIT_OPERATIONS_TYPE_CHOICES)
+    inventory_record = models.ForeignKey(InventoryRecord, on_delete=models.PROTECT)
+
+    def get_quantity_before(self):
+        pass
+
+    def get_quantity_after(self):
+        if not self.quantity_after:
+            self.quantity_after = self.quantity_before + self.quantity_recorded
+
+    def validate_quantity_after(self):
+        expected_closing_quantity = self.quantity_before + self.quantity_recorded
+        if not self.quantity_after == expected_closing_quantity:
+            msg = 'The closing quantity is {} is not equal to '\
+                'the expected closing quantity {}'.format(
+                    self.quantity_after, expected_closing_quantity)
+            raise ValidationError(
+                {'closing_quantity': msg})
+
+    def clean(self) -> None:
+        self.validate_quantity_after()
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        self.get_quantity_before()
+        self.get_quantity_after()
+        return super().save(*args, **kwargs)

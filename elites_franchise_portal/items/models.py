@@ -205,7 +205,7 @@ class Item(AbstractBase):
     item_model = models.OneToOneField(
         ItemModel, null=False, blank=False, on_delete=PROTECT)
     barcode = models.CharField(
-        null=False, blank=False, max_length=250)
+        null=True, blank=True, max_length=250)
     item_name = models.CharField(
         null=True, blank=True, max_length=250)
     item_code = models.CharField(
@@ -251,37 +251,29 @@ class Item(AbstractBase):
         """Str representation for item model."""
         return f'{self.item_name}'
 
-    def activate(self, user):
+    def activate(self, user=None):
         """Activate a product by setting it up in inventory and catalog."""
-        from elites_franchise_portal.restrictions_mgt.helpers import (
+        from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         from elites_franchise_portal.items.helpers import (
             activate_warehouse_item, activate_inventory_item)
 
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         if not enterprise_setup_rules:
-            msg = 'You do not have setup rules for your enterprise. Please set that up first'
+            msg = 'You do not have rules for your enterprise. Please set that up first'
             raise ValidationError({'enterprise_setup_rules': msg})
 
-        if enterprise_setup_rules.receiving_warehouse:
-            activate_warehouse_item(
-                enterprise_setup_rules.receiving_warehouse, self, user)
+        audit_fields = {
+            'created_by': user.id if user else self.created_by,
+            'updated_by': user.id if user else self.updated_by,
+            'enterprise': user.enterprise if user else self.enterprise,
+        }
 
-        if enterprise_setup_rules.default_warehouse:
-            activate_warehouse_item(
-                enterprise_setup_rules.default_warehouse, self, user)
+        inventories = enterprise_setup_rules.inventories.all()
+        activate_inventory_item(self, audit_fields, inventories)
 
-        if enterprise_setup_rules.master_inventory:
-            activate_inventory_item(
-                enterprise_setup_rules.master_inventory, self, user)
-
-        if enterprise_setup_rules.default_inventory:
-            activate_inventory_item(
-                enterprise_setup_rules.default_inventory, self, user)
-
-        if enterprise_setup_rules.allocated_inventory:
-            activate_inventory_item(
-                enterprise_setup_rules.allocated_inventory, self, user)
+        warehouses = enterprise_setup_rules.warehouses.all()
+        activate_warehouse_item(self, audit_fields, warehouses)
 
         self.is_active = True
         self.save()
@@ -447,35 +439,40 @@ class ItemUnits(AbstractBase):
     purchases_units = models.ForeignKey(
         Units, null=False, blank=False,
         related_name='purchasing_units', on_delete=PROTECT)  # eg Pieces
-    quantity_of_sale_units_per_purchase_unit = models.FloatField()  # eg 12
+    quantity_of_sale_units_per_purchase_unit = models.FloatField(default=1)  # eg 12
     is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
     def validate_unique_active_item_units_for_item(self):
+        """Vaidate item units are unique for the item."""
         if self.__class__.objects.filter(
-            item=self.item, is_active=True).exclude(id=self.id).exists():
+                item=self.item, is_active=True).exclude(id=self.id).exists():
             raise ValidationError(
-                {'item': 'This item already has an active units instance registered to it. '\
-                    'Kindly deactivate the existing units registered to it or select a different item'})
+                {'item': 'This item already has an active units instance registered to it. '
+                    'Kindly deactivate the existing units registered to it or '
+                    'select a different item'})
 
-    def validate_registered_units_are_active(self):
+    def validate_selected_units_are_active(self):
+        """Validate that the unit used are active."""
         if not self.sales_units.is_active:
             units_name = self.sales_units.units_name
             raise ValidationError(
-                {'sales_units': 'Sales Units {} has been deactivated. Kindly activate it or '\
-                    'select the correct units to register'.format(units_name)})
+                {'sales_units': 'Sales Units {} has been deactivated. '
+                 'Kindly activate it or select the correct units to register'.format(
+                     units_name)})
 
         if not self.purchases_units.is_active:
             units_name = self.purchases_units.units_name
             raise ValidationError(
-                {'purchases_units': 'Purchases Units {} has been deactivated. Kindly activate it or '\
-                    'select the correct units to register'.format(units_name)})
+                {'purchases_units': 'Purchases Units {} has been deactivated. '
+                 'Kindly activate it or select the correct units to register'.format(
+                     units_name)})
 
     def clean(self) -> None:
         """Clean Item Units model."""
         self.validate_unique_active_item_units_for_item()
-        self.validate_registered_units_are_active()
+        self.validate_selected_units_are_active()
         return super().clean()
 
 

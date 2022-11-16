@@ -67,8 +67,6 @@ class MpesaGateWay:
         # simulation = self.simulate_c2b_transaction()
         # registration1 = self.register_urls1()
         # registration2 = self.register_urls2()
-        # import pdb
-        # pdb.set_trace()
 
     def get_access_token(self):
         """Get access token."""
@@ -177,9 +175,6 @@ class MpesaGateWay:
             "TransactionDesc": "Test",
         }
 
-        import pdb
-        pdb.set_trace()
-
         res = requests.post(
             STK_PUSH_URL, json=req_data, headers=self.headers, timeout=30
         )
@@ -191,8 +186,6 @@ class MpesaGateWay:
         if res.ok and request:
             payload["ip"] = request.META.get("REMOTE_ADDR")
             payload["checkout_request_id"] = res_data["CheckoutRequestID"]
-            import pdb
-            pdb.set_trace()
 
         return status_code, res_data
 
@@ -280,8 +273,6 @@ class MpesaGateWay:
             "ConfirmationURL": f"{self.base_url}/v1/adapters/mobile_money/safaricom/c2b/confirmation/",    # noqa
         }
         response = requests.post(api_url, json=options, headers=headers)
-        import pdb
-        pdb.set_trace()
         # response = requests.post(api_url, json=options, headers=headers, verify=False)
 
         return HttpResponse(response.text)
@@ -321,8 +312,6 @@ class MpesaGateWay:
 
         response = requests.post(api_url, json=payload, headers=headers)
 
-        import pdb
-        pdb.set_trace()
         # response = requests.post(api_url, json=request, headers=headers, verify=False)
 
         print(response.text)
