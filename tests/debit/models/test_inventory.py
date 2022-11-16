@@ -261,6 +261,8 @@ class TestInventoryRecord(TestCase):
         assert catalog_item.marked_price == 0
         assert catalog_item.quantity == 0
 
+        assert not CatalogItemAuditLog.objects.count()
+
         record1 = baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
             record_type='ADD', quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
@@ -268,6 +270,9 @@ class TestInventoryRecord(TestCase):
         assert CatalogItem.objects.count() == 1
         assert catalog_item.marked_price == record1.unit_price == 300
         assert catalog_item.quantity == record1.quantity_recorded == 15
+
+        latest_audit = CatalogItemAuditLog.objects.filter().latest('created_on')
+        assert latest_audit.quantity_after == 15
 
         record2 = baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
@@ -278,11 +283,17 @@ class TestInventoryRecord(TestCase):
         assert catalog_item.marked_price == record2.unit_price == 370
         assert catalog_item.quantity == expected_total == 30
 
+        latest_audit = CatalogItemAuditLog.objects.filter().latest('created_on')
+        assert latest_audit.quantity_after == expected_total == 30
+
         record1.save()
         catalog_item.refresh_from_db()
         assert CatalogItem.objects.count() == 1
         assert catalog_item.marked_price == record2.unit_price == 370
         assert catalog_item.quantity == expected_total == 30
+
+        latest_audit = CatalogItemAuditLog.objects.filter().latest('created_on')
+        assert latest_audit.quantity_after == expected_total == 30
 
         record1.quantity_recorded = 10
         record1.unit_price = 330
@@ -293,6 +304,9 @@ class TestInventoryRecord(TestCase):
         assert catalog_item.marked_price == record2.unit_price == 370
         assert catalog_item.quantity == expected_total == 25
 
+        latest_audit = CatalogItemAuditLog.objects.filter().latest('created_on')
+        assert latest_audit.quantity_after == expected_total == 25
+
         record2.quantity_recorded = 18
         expected_total = expected_total + 3
         record2.unit_price = 400
@@ -301,6 +315,9 @@ class TestInventoryRecord(TestCase):
         assert CatalogItem.objects.count() == 1
         assert catalog_item.marked_price == record2.unit_price == 400
         assert catalog_item.quantity == expected_total == 28
+
+        latest_audit = CatalogItemAuditLog.objects.filter().latest('created_on')
+        assert latest_audit.quantity_after == expected_total == 28
 
         record3 = baker.make(
             InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
@@ -311,8 +328,10 @@ class TestInventoryRecord(TestCase):
         assert catalog_item.marked_price == record3.unit_price == 320
         assert catalog_item.quantity == expected_total == 48
 
-        # assert CatalogItemAuditLog.objects.filter().latest('created_on').quantity_after == 48
+        latest_audit = CatalogItemAuditLog.objects.filter().latest('created_on')
+        assert latest_audit.quantity_after == 48
 
+        assert CatalogItemAuditLog.objects.count() == 5
 
     def test_fail_remove_from_empty_inventory(self):
         """."""

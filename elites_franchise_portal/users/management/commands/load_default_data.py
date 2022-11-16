@@ -45,6 +45,9 @@ class Command(BaseCommand):
         if not super_admin_group:
             super_admin_group = Group.objects.create(name='Super Admin Group', **audit_fields)
 
+        user.group = super_admin_group
+        user.save()
+
         for key, value in BASE_ROLES_MAPPER.items():
             role = Role.objects.filter(name=key, value=value).first()
             if not role:

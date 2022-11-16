@@ -325,25 +325,7 @@ class CatalogItemAuditLog(AbstractBase):
     inventory_record = models.ForeignKey(InventoryRecord, on_delete=models.PROTECT)
 
     def get_quantity_before(self):
-        if not self.quantity_before:
-            self.quantity_before = 0
-            previous_logs = self.__class__.objects.filter(catalog_item=self.catalog_item).exclude(id=self.id)
-            if previous_logs.exists():
-                inventory_record_logs = previous_logs.filter(inventory_record=self.inventory_record)
-                if inventory_record_logs.exists():
-                    latest_log = inventory_record_logs.latest('created_on')
-                    self.quantity_before = latest_log.quantity_after
-                    if self.operation_type == 'UPDATE':
-                        self.quantity_before = latest_log.quantity_before
-                        if latest_log.quantity_recorded != self.quantity_recorded:
-                            diff = self.quantity_recorded - latest_log.quantity_recorded
-                            self.quantity_before = previous_logs.latest('inventory_record__created_on').quantity_after
-                            self.quantity_recorded = diff
-                            self.quantity_after = self.quantity_before + self.quantity_recorded
-
-                else:
-                    self.quantity_before = previous_logs.latest('created_on').quantity_after
-
+        pass
 
     def get_quantity_after(self):
         if not self.quantity_after:
