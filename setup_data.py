@@ -15,7 +15,8 @@ from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.config import settings
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_franchise_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleCatalog, EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
 
 # if settings.DEBUG:
 enterprise = Enterprise.objects.create(
@@ -52,8 +53,18 @@ standard_catalog, _ = Catalog.objects.update_or_create(
     description='Will have all items being sold at the shop',
     is_standard=True, **audit_fields)
 
-EnterpriseSetupRule.objects.update_or_create(
-    master_inventory=master_inventory, default_inventory=default_inventory,
-    receiving_warehouse=receiving_warehouse, default_warehouse=receiving_warehouse,
-    standard_catalog=standard_catalog, default_catalog=standard_catalog,
+rule,_ = EnterpriseSetupRule.objects.update_or_create(
+    name='Elites Age Supermarket', is_default=True,
     is_active=True, **audit_fields)
+
+EnterpriseSetupRuleCatalog.objects.update_or_create(
+    rule=rule, catalog=standard_catalog, **audit_fields)
+
+EnterpriseSetupRuleInventory.objects.update_or_create(
+    rule=rule, inventory=default_inventory, **audit_fields)
+
+EnterpriseSetupRuleInventory.objects.update_or_create(
+    rule=rule, inventory=master_inventory, **audit_fields)
+
+EnterpriseSetupRuleWarehouse.objects.update_or_create(
+    rule=rule, warehouse=receiving_warehouse, **audit_fields)

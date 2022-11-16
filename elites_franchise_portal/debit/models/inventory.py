@@ -402,69 +402,80 @@ class InventoryRecord(AbstractBase):
         available_inventory = enterprise_setup_rules.available_inventory
         standard_catalog = enterprise_setup_rules.standard_catalog
 
-        if self.inventory.inventory_type == available_inventory.inventory_type:
-            catalog_items = standard_catalog.catalog_items.filter(
-                inventory_item=self.inventory_item, is_active=True, enterprise=self.enterprise)
-            catalog_item = catalog_items.first()
+        if not self.inventory.inventory_type == available_inventory.inventory_type:
+            self.__class__.objects.filter(id=self.id).update(updated_catalog=False)
+            return
 
-            if catalog_item:
-                audit_fields = {
-                    'created_by': self.created_by,
-                    'updated_by': self.updated_by,
-                    'enterprise': self.enterprise,
-                }
+        catalog_items = standard_catalog.catalog_items.filter(
+            inventory_item=self.inventory_item, is_active=True, enterprise=self.enterprise)
+        catalog_item = catalog_items.first()
 
-                catalog_item_audit_payload = {
-                    'catalog_item': catalog_item,
-                    'inventory_record': self,
-                    'operation_type': 'CREATE',
-                    'record_type': self.record_type,
-                }
+        if not catalog_item:
+            self.__class__.objects.filter(id=self.id).update(updated_catalog=False)
+            return
 
-                catalog_item_audit_logs = CatalogItemAuditLog.objects.filter(catalog_item=catalog_item)
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'enterprise': self.enterprise,
+        }
 
-                if self.record_type == ADD:
-                    details_payload = {
-                        'quantity_recorded': self.quantity_recorded,
-                        'marked_price_recorded': self.unit_price
-                    }
+        catalog_item_audit_payload = {
+            'catalog_item': catalog_item,
+            'inventory_record': self,
+            'operation_type': 'CREATE',
+            'record_type': self.record_type,
+        }
 
-                    if catalog_item_audit_logs.exists():
-                        catalog_item_audit_payload['operation_type'] = 'UPDATE'
-                        record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
-                        if record_audit_logs.exists():
-                            latest_catalog_audit_log = record_audit_logs.latest('created_on')
-                            if latest_catalog_audit_log.quantity_recorded != self.quantity_recorded or latest_catalog_audit_log.marked_price_recorded != self.unit_price:
-                                diff = self.quantity_recorded - latest_catalog_audit_log.quantity_recorded
-                                catalog_item.quantity += diff
-                                latest_inventory_record_log = catalog_item_audit_logs.latest('inventory_record__created_on')
-                                catalog_item.marked_price = latest_inventory_record_log.marked_price_recorded
-                                if latest_inventory_record_log.inventory_record == self:
-                                    catalog_item.marked_price = self.unit_price
-                                catalog_item.save()
+        catalog_item_audit_logs = CatalogItemAuditLog.objects.filter(catalog_item=catalog_item)
 
-                        else:
-                            catalog_item.quantity += self.quantity_recorded
-                            catalog_item.marked_price = self.unit_price
-                            catalog_item.save()
+        if self.record_type == ADD:
+            details_payload = {
+                'quantity_before': catalog_item.quantity,
+                'quantity_recorded': self.quantity_recorded,
+                'marked_price_recorded': self.unit_price
+            }
 
-                    else:
-                        catalog_item.quantity = self.quantity_recorded
-                        catalog_item.marked_price = self.unit_price
-                        catalog_item.save()
+            if not catalog_item_audit_logs.exists():
+                catalog_item.quantity = self.quantity_recorded
+                catalog_item.marked_price = self.unit_price
+                catalog_item.save()
+                CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+                return
 
-                    CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+            catalog_item_audit_payload['operation_type'] = 'UPDATE'
+            record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
+            if not record_audit_logs.exists():
+                catalog_item.quantity += self.quantity_recorded
+                catalog_item.marked_price = self.unit_price
+                catalog_item.save()
+                CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+                return
 
-                if self.record_type == REMOVE:
-                    marked_price = catalog_item.marked_price
-                    quantity = catalog_item.quantity - self.quantity_recorded
-                    catalog_item.quantity=quantity
-                    catalog_item.marked_price=marked_price
-                    catalog_item.save()
+            latest_catalog_audit_log = record_audit_logs.latest('created_on')
+            if latest_catalog_audit_log.quantity_recorded == self.quantity_recorded and latest_catalog_audit_log.marked_price_recorded == self.unit_price:
+                # Early return
+                return
 
-                if not self.updated_catalog:
-                    self.updated_catalog = True
-                    self.save()
+            diff = self.quantity_recorded - latest_catalog_audit_log.quantity_recorded
+            catalog_item.quantity += diff
+            details_payload['quantity_recorded'] = diff
+            latest_inventory_record_log = catalog_item_audit_logs.latest('inventory_record__created_on')
+            catalog_item.marked_price = latest_inventory_record_log.marked_price_recorded
+            if latest_inventory_record_log.inventory_record == self:
+                catalog_item.marked_price = self.unit_price
+            catalog_item.save()
+            CatalogItemAuditLog.objects.create(**catalog_item_audit_payload, **details_payload, **audit_fields)
+            return
+
+        if self.record_type == REMOVE:
+            marked_price = catalog_item.marked_price
+            quantity = catalog_item.quantity - self.quantity_recorded
+            catalog_item.quantity=quantity
+            catalog_item.marked_price=marked_price
+            catalog_item.save()
+
+        self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on Catalog Item."""
