@@ -1,8 +1,12 @@
 """Catalog views file."""
 
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from elites_franchise_portal.catalog import serializers
 from elites_franchise_portal.catalog.models import (
-    Catalog, CatalogItem, CatalogCatalogItem, Section)
+    Catalog, CatalogItem, CatalogCatalogItem, CatalogItemAuditLog, Section)
 from elites_franchise_portal.common.views import BaseViewMixin
 from elites_franchise_portal.catalog import filters
 
@@ -54,6 +58,15 @@ class CatalogItemViewSet(BaseViewMixin):
     #     return super(CatalogItemViewSet, self).dispatch(*args, **kwargs)
 
 
+    @action(methods=['post'], detail=True)
+    def add_to_catalogs(self, request, *args, **kwargs):
+        user = request.user
+        catalog_item = self.get_object()
+        catalogs = Catalog.objects.filter(id__in=request.data['catalogs'])
+        catalog_item.add_to_catalogs(user, catalogs)
+
+        return Response(data={"status": "OK"}, status=status.HTTP_200_OK)
+
 class CatalogCatalogItemViewSet(BaseViewMixin):
     """CatalogCatalogItem Viewset class."""
 
@@ -65,3 +78,17 @@ class CatalogCatalogItemViewSet(BaseViewMixin):
         'catalog_item__inventory_item__item__item_name',
         'catalog_item__inventory_item__item__item_code',
         'catalog_item__inventory_item__item__barcode')
+
+
+class CatalogItemAuditLogViewSet(BaseViewMixin):
+    """Viewset for CatalogItemAuditLog model."""
+
+    queryset = CatalogItemAuditLog.objects.all().order_by('created_on')
+    serializer_class = serializers.CatalogItemAuditLogSerializer
+    filterset_class = filters.CatalogItemAuditLogFilter
+    search_fields = (
+        'catalog_item__inventory_item__item__item_name',
+        'catalog_item__inventory_item__item__item_code',
+        'catalog_item__inventory_item__item__barcode',
+        'record_type', 'operation_type',
+    )

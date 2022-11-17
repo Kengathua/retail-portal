@@ -42,3 +42,13 @@ class CatalogCatalogItemFilter(SearchComboboxBaseFilter):
 
         model = models.CatalogCatalogItem
         fields = '__all__'
+
+
+class CatalogItemAuditLogFilter(SearchComboboxBaseFilter):
+    """Filter individual catalog audit logs."""
+
+    class Meta:
+        """Restrict filter fields."""
+
+        model = models.CatalogItemAuditLog
+        fields = '__all__'
