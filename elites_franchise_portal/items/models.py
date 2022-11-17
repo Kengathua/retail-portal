@@ -253,6 +253,7 @@ class Item(AbstractBase):
 
     def activate(self, user=None):
         """Activate a product by setting it up in inventory and catalog."""
+        from elites_franchise_portal.catalog.models import CatalogItem, CatalogCatalogItem
         from elites_franchise_portal.enterprise_mgt.helpers import (
             get_valid_enterprise_setup_rules)
         from elites_franchise_portal.items.helpers import (
@@ -274,6 +275,12 @@ class Item(AbstractBase):
 
         warehouses = enterprise_setup_rules.warehouses.all()
         activate_warehouse_item(self, audit_fields, warehouses)
+
+        catalog_item = CatalogItem.objects.filter(inventory_item__item=self, is_active=True).first()
+        if catalog_item:
+            catalog = enterprise_setup_rules.standard_catalog
+            if not CatalogCatalogItem.objects.filter(catalog=catalog, catalog_item=catalog_item).exists():
+                CatalogCatalogItem.objects.create(catalog=catalog, catalog_item=catalog_item, **audit_fields)
 
         self.is_active = True
         self.save()

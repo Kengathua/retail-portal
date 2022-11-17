@@ -3,6 +3,7 @@
 from decimal import Decimal
 from django.db import models
 from django.core.cache import cache
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 from elites_franchise_portal.common.choices import CURRENCY_CHOICES
@@ -93,6 +94,15 @@ class CatalogItem(AbstractBase):
     pushed_to_edi = models.BooleanField(default=False)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
+
+    @property
+    def catalogs_names(self):
+        names = ''
+        catalog_catalog_items = CatalogCatalogItem.objects.filter(catalog_item=self, is_active=True)
+        if catalog_catalog_items.exists():
+            names = list(set(catalog_catalog_items.values_list('catalog__catalog_name', flat=True)))
+            names = ", ".join(names)
+        return names
 
     def compose_item_heading(self):
         """Compose an item heading to display item."""
@@ -228,6 +238,19 @@ class CatalogItem(AbstractBase):
                 raise ValidationError(
                     {'item_units': msg})
 
+    def add_to_catalogs(self, user, catalogs):
+        """Add catalog item to the specified Catalogs"""
+        if not catalogs:
+            raise ValidationError({'catalogs': 'Please select the catalogs you want to add the item to'})
+        audit_fields = {
+            'created_by': user.id,
+            'updated_by': user.id,
+            'enterprise': user.enterprise,
+        }
+        for catalog in catalogs:
+            if not CatalogCatalogItem.objects.filter(catalog=catalog, catalog_item=self).exists():
+                CatalogCatalogItem.objects.create(catalog=catalog, catalog_item=self, **audit_fields)
+
     def clean(self) -> None:
         """Clean Catalog Item."""
         self.validate_item_is_active()
@@ -305,6 +328,7 @@ class CatalogItemAuditLog(AbstractBase):
     catalog_item = models.ForeignKey(
         CatalogItem, on_delete=models.PROTECT,
         related_name='catalog_item_audit_log')
+    audit_date = models.DateTimeField(db_index=True, default=timezone.now)
     quantity_before = models.FloatField(default=0)
     quantity_recorded = models.FloatField(default=0)
     quantity_after = models.FloatField(default=0)
