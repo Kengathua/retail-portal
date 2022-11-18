@@ -1,6 +1,6 @@
 """Encounter models serializers file."""
 
-from rest_framework.fields import CharField, SerializerMethodField
+from rest_framework.fields import SerializerMethodField, CharField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.encounters import models

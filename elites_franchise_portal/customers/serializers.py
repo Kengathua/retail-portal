@@ -9,7 +9,7 @@ from elites_franchise_portal.common.serializers import BaseSerializerMixin
 class CustomerSerializer(BaseSerializerMixin):
     """Customer serializer class."""
 
-    full_name = CharField(read_only=True)
+    full_name = ReadOnlyField()
 
     class Meta:
         """Serializer Meta class."""
