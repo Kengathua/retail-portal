@@ -1,6 +1,6 @@
 """Restriction Rules serializers file."""
 
-from rest_framework.fields import SerializerMethodField
+from rest_framework.fields import SerializerMethodField, ReadOnlyField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.enterprise_mgt import models
@@ -66,4 +66,47 @@ class EnterpriseSetupRuleSerializer(BaseSerializerMixin):
         """EnterpriseSetupRule serializer Meta class."""
 
         model = models.EnterpriseSetupRule
+        fields = '__all__'
+
+
+class EnterpriseSetupRuleInventorySerializer(BaseSerializerMixin):
+    """EnterpriseSetupRule Inventory Serializer"""
+
+    inventory_name = ReadOnlyField(source='inventory.inventory_name')
+    is_master_inventory = ReadOnlyField(source='inventory.is_master')
+    inventory_type = ReadOnlyField(source='inventory.inventory_type')
+
+    class Meta:
+        """EnterpriseSetupRuleInventory serializer Meta class."""
+
+        model = models.EnterpriseSetupRuleInventory
+        fields = '__all__'
+
+
+class EnterpriseSetupRuleWarehouseSerializer(BaseSerializerMixin):
+    """EnterpriseSetupRule Warehouse Serializer"""
+
+    warehouse_name = ReadOnlyField(source='warehouse.warehouse_name')
+    is_default_warehouse = ReadOnlyField(source='warehouse.is_default')
+    warehouse_type = ReadOnlyField(source='warehouse.warehouse_type')
+    is_receiving_warehouse = ReadOnlyField(source='warehouse.is_receiving')
+
+    class Meta:
+        """EnterpriseSetupRuleWarehouse serializer Meta class."""
+
+        model = models.EnterpriseSetupRuleWarehouse
+        fields = '__all__'
+
+
+class EnterpriseSetupRuleCatalogSerializer(BaseSerializerMixin):
+    """EnterpriseSetupRule Catalog Serializer"""
+
+    catalog_name = ReadOnlyField(source='catalog.catalog_name')
+    catalog_type = ReadOnlyField(source='catalog.catalog_type')
+    is_standard_catalog = ReadOnlyField(source='catalog.is_standard')
+
+    class Meta:
+        """EnterpriseSetupRuleCatalog serializer Meta class."""
+
+        model = models.EnterpriseSetupRuleCatalog
         fields = '__all__'

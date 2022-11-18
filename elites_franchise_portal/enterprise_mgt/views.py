@@ -4,7 +4,7 @@ from elites_franchise_portal.common.views import BaseViewMixin
 
 from elites_franchise_portal.enterprise_mgt import serializers
 from elites_franchise_portal.enterprise_mgt.models import (
-    EnterpriseSetup, EnterpriseSetupRule)
+    EnterpriseSetup, EnterpriseSetupRule, EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse, EnterpriseSetupRuleCatalog)
 
 
 class EnterpriseSetupViewSet(BaseViewMixin):
@@ -19,3 +19,24 @@ class EnterpriseSetupRuleViewSet(BaseViewMixin):
 
     queryset = EnterpriseSetupRule.objects.all()
     serializer_class = serializers.EnterpriseSetupRuleSerializer
+
+
+class EnterpriseSetupRuleInventoryViewSet(BaseViewMixin):
+    """EnterpriseSetupRule Inventory ViewSet class."""
+
+    queryset = EnterpriseSetupRuleInventory.objects.all()
+    serializer_class = serializers.EnterpriseSetupRuleInventorySerializer
+
+
+class EnterpriseSetupRuleWarehouseViewSet(BaseViewMixin):
+    """EnterpriseSetupRule Warehouse ViewSet class."""
+
+    queryset = EnterpriseSetupRuleWarehouse.objects.all()
+    serializer_class = serializers.EnterpriseSetupRuleWarehouseSerializer
+
+
+class EnterpriseSetupRuleCatalogViewSet(BaseViewMixin):
+    """EnterpriseSetupRule Catalog ViewSet class."""
+
+    queryset = EnterpriseSetupRuleCatalog.objects.all()
+    serializer_class = serializers.EnterpriseSetupRuleCatalogSerializer
