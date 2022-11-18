@@ -90,7 +90,7 @@ class EnterpriseSetupRule(AbstractBase):
 class EnterpriseSetupRuleInventory(AbstractBase):
     rule = models.ForeignKey(EnterpriseSetupRule, on_delete=models.CASCADE)
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def validate_unique_inventory_for_rule(self):
         """Validate an inventory is unique for the given rule."""
@@ -107,7 +107,7 @@ class EnterpriseSetupRuleInventory(AbstractBase):
 class EnterpriseSetupRuleWarehouse(AbstractBase):
     rule = models.ForeignKey(EnterpriseSetupRule, on_delete=models.CASCADE)
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def validate_unique_warehouse_for_rule(self):
         """Validate a warehouse is unique for the given rule."""
@@ -124,7 +124,7 @@ class EnterpriseSetupRuleWarehouse(AbstractBase):
 class EnterpriseSetupRuleCatalog(AbstractBase):
     rule = models.ForeignKey(EnterpriseSetupRule, on_delete=models.CASCADE)
     catalog = models.ForeignKey(Catalog, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def validate_unique_catalog_for_rule(self):
         """Validate a catalog is unique for the given rule."""
