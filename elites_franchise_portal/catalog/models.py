@@ -300,6 +300,7 @@ class Catalog(AbstractBase):
     catalog_code = models.CharField(max_length=300, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     is_standard = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)
     deactivated_on = models.DateTimeField(null=True, blank=True)
     deactivation_reason = models.TextField(null=True, blank=True)
     catalog_type = models.CharField(max_length=300, choices=CATALOG_TYPE_CHOICES, default=ON_SITE)
