@@ -1,0 +1,18 @@
+purchases   => Work around updated purchase Items
+            => Work around for when the receiving warehouse and default warehouse are not the same
+
+
+
+warehouse   => Frontend -> is default flag not working in the form
+                        -> Add a is receiving field to the form to
+
+
+inventory   => Frontend -> Add is_master flag to the form
+                        -> Add is_default flag to the form
+
+            => Backend  -> Check if enterprise supports lipa mdogo mdogo to validate it has an allocated inventory
+                        -> Check if enterprise has an active allocated inventory to and
+                            validate that the available inventory is not the master inventory
+
+
+catalog     => Frontend -> Add is_standard and is_default flags on the UI
