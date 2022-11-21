@@ -25,14 +25,14 @@ class EnterpriseSetupRule(AbstractBase):
 
     @property
     def master_inventory(self):
-        inventory = self.inventories.filter(is_master=True, is_active=True)
+        inventory = self.inventories.filter(enterprise=self.enterprise, is_master=True, is_active=True)
         if not inventory.exists():
-            msg = 'You do not have an active master inventory hooked up to this rule. Kindly set that up first'
+            msg = 'You do not have an active master inventory hooked up to the enterprise. Kindly set that up first'
             raise ValidationError(
                 {'master_inventory':msg})
 
         if not inventory.count() == 1:
-            msg = 'You can only have one active master inventory hooked up to this rule.'
+            msg = 'You can only have one active master inventory hooked up to the enterprise.'
             raise ValidationError(
                 {'master_inventory':msg})
 
@@ -40,15 +40,15 @@ class EnterpriseSetupRule(AbstractBase):
 
     @property
     def allocated_inventory(self):
-        inventory = self.inventories.filter(
+        inventory = self.inventories.filter(enterprise=self.enterprise,
             inventory_type='ALLOCATED', is_active=True)
         if not inventory.exists():
-            msg = 'You do not have an active allocated inventory hooked up to this rule. Kindly set that up first'
+            msg = 'You do not have an active allocated inventory hooked up to the enterprise. Kindly set that up first'
             raise ValidationError(
                 {'allocated_inventory':msg})
 
         if not inventory.count() == 1:
-            msg = 'You can only have one active allocated inventory hooked up to this rule.'
+            msg = 'You can only have one active allocated inventory hooked up to the enterprise.'
             raise ValidationError(
                 {'allocated_inventory':msg})
 
@@ -56,54 +56,103 @@ class EnterpriseSetupRule(AbstractBase):
 
     @property
     def available_inventory(self):
-        inventory = self.inventories.filter(
+        inventory = self.inventories.filter(enterprise=self.enterprise,
             inventory_type='AVAILABLE', is_active=True)
         if not inventory.exists():
-            msg = 'You do not have an active available inventory hooked up to this rule. Kindly set that up first'
+            msg = 'You do not have an active available inventory hooked up to the enterprise. Kindly set that up first'
             raise ValidationError(
                 {'available_inventory':msg})
 
         if not inventory.count() == 1:
-            msg = 'You can only have one active available inventory hooked up to this rule.'
+            msg = 'You can only have one active available inventory hooked up to the enterprise.'
             raise ValidationError(
                 {'available_inventory':msg})
+
+        return inventory.first()
+
+    @property
+    def default_inventory(self):
+        inventory = self.inventories.filter(enterprise=self.enterprise,
+            is_default=True, is_active=True)
+        if not inventory.exists():
+            msg = 'You do not have an active available inventory hooked up to the enterprise. Kindly set that up first'
+            raise ValidationError(
+                {'default_inventory':msg})
+
+        if not inventory.count() == 1:
+            msg = 'You can only have one active available inventory hooked up to the enterprise.'
+            raise ValidationError(
+                {'default_inventory':msg})
 
         return inventory.first()
 
     @property
     def standard_catalog(self):
-        inventory = self.catalogs.filter(
-            catalog_type='ON SITE',
+        catalog = self.catalogs.filter(
+            catalog_type='ON SITE', enterprise=self.enterprise,
             is_standard=True, is_active=True)
-        if not inventory.exists():
-            msg = 'You do not have an active standard catalog hooked up to this rule. Kindly set that up first'
+        if not catalog.exists():
+            msg = 'You do not have an active standard catalog hooked up to the enterprise. Kindly set that up first'
             raise ValidationError(
                 {'standard_catalog':msg})
 
-        if not inventory.count() == 1:
-            msg = 'You can only have one active available inventory hooked up to this rule.'
+        if not catalog.count() == 1:
+            msg = 'You can only have one active available catalog hooked up to the enterprise.'
             raise ValidationError(
                 {'standard_catalog':msg})
 
-        return inventory.first()
+        return catalog.first()
 
     @property
     def default_catalog(self):
-        inventory = self.catalogs.filter(
-            catalog_type='ON SITE',
+        catalog = self.catalogs.filter(
+            catalog_type='ON SITE', enterprise=self.enterprise,
             is_default=True, is_active=True)
-        if not inventory.exists():
-            msg = 'You do not have an active standard catalog hooked up to this rule. Kindly set that up first'
+        if not catalog.exists():
+            msg = 'You do not have an active standard catalog hooked up to the enterprise. Kindly set that up first'
             raise ValidationError(
                 {'standard_catalog':msg})
 
-        if not inventory.count() == 1:
-            msg = 'You can only have one active available inventory hooked up to this rule.'
+        if not catalog.count() == 1:
+            msg = 'You can only have one active available catalog hooked up to the enterprise.'
             raise ValidationError(
                 {'standard_catalog':msg})
 
-        return inventory.first()
+        return catalog.first()
 
+    @property
+    def default_warehouse(self):
+        warehouse = self.warehouses.filter(
+            warehouse_type='PRIVATE', enterprise=self.enterprise,
+            is_default=True, is_active=True)
+        if not warehouse.exists():
+            msg = 'You do not have an active default private warehouse hooked up to the enterprise. Kindly set that up first'
+            raise ValidationError(
+                {'default_warehouse':msg})
+
+        if not warehouse.count() == 1:
+            msg = 'You can only have one active default private warehouse hooked up to the enterprise.'
+            raise ValidationError(
+                {'default_warehouse':msg})
+
+        return warehouse.first()
+
+    @property
+    def receiving_warehouse(self):
+        warehouse = self.warehouses.filter(
+            warehouse_type='PRIVATE', enterprise=self.enterprise,
+            is_receiving=True, is_active=True)
+        if not warehouse.exists():
+            msg = 'You do not have an active receiving private warehouse hooked up to the enterprise. Kindly set that up first'
+            raise ValidationError(
+                {'receiving_warehouse':msg})
+
+        if not warehouse.count() == 1:
+            msg = 'You can only have one active available warehouse hooked up to the enterprise.'
+            raise ValidationError(
+                {'receiving_warehouse':msg})
+
+        return warehouse.first()
 
 class EnterpriseSetupRuleInventory(AbstractBase):
     rule = models.ForeignKey(EnterpriseSetupRule, on_delete=models.CASCADE)
