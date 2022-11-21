@@ -13,6 +13,7 @@ from elites_franchise_portal.warehouses.models import (
 from elites_franchise_portal.items.models import Item, ItemUnits
 from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.debit import models as debit_models
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
 class Purchase(AbstractBase):
     """Purchases model."""
@@ -68,6 +69,7 @@ class PurchaseItem(AbstractBase):
     quantity_to_inventory_on_display = models.FloatField(null=True, blank=True)
     quantity_to_inventory_in_warehouse = models.FloatField(null=True, blank=True)
     move_in_bulk = models.BooleanField(default=False)
+    added_to_warehouse = models.BooleanField(default=False)
 
     def get_unit_cost(self):
         """Calculate buying price per unit."""
@@ -86,6 +88,14 @@ class PurchaseItem(AbstractBase):
             total_no_of_items = sale_units_per_purchase_unit * self.quantity_purchased
             self.sale_units_purchased = total_no_of_items
 
+    def validate_enterprise_has_setup_rules(self):
+        rule = get_valid_enterprise_setup_rules(self.enterprise)
+        # These are self checks which will raise validation errors if the values do not exist
+        rule.default_inventory
+        rule.default_catalog
+        rule.default_warehouse
+        rule.receiving_warehouse
+
     def validate_unique_item_per_purchase(self):
         if self.__class__.objects.filter(purchase=self.purchase, item=self.item).exclude(id=self.id).exists():
             msg = 'The item {} already exists in this purchase instance. '\
@@ -99,8 +109,23 @@ class PurchaseItem(AbstractBase):
             raise ValidationError(
                 {'item_units': 'Please register the units used to record this item'})
 
+    def validate_quantity_to_inventory_less_than_quantity_purchased(self):
+        if self.quantity_to_inventory > self.quantity_purchased:
+            msg = '{} items to inventory cannot be more that the quantity purchased {}'.format(
+                self.quantity_to_inventory, self.quantity_purchased)
+            raise ValidationError(
+                {'quantity_to_inventory': msg})
+
+        if self.quantity_to_inventory_on_display > self.quantity_purchased:
+            msg = '{} items to display cannot be more that the quantity purchased {}'.format(
+                self.quantity_to_inventory_on_display, self.quantity_purchased)
+            raise ValidationError(
+                {'quantity_to_inventory_on_display': msg})
+
     def clean(self) -> None:
         """Clean the Purchases model."""
+        self.validate_enterprise_has_setup_rules()
+        self.validate_quantity_to_inventory_less_than_quantity_purchased()
         self.validate_unique_item_per_purchase()
         self.validate_item_has_units_registered_to_it()
         return super().clean()
@@ -110,33 +135,42 @@ class PurchaseItem(AbstractBase):
         self.get_total_no_of_items()
         self.get_unit_cost()
         super().save(*args, **kwargs)
-        audit_fields = {
-            'created_by': self.created_by,
-            'updated_by': self.updated_by,
-            'enterprise': self.enterprise,
-        }
+        if not self.added_to_warehouse:
+            audit_fields = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'enterprise': self.enterprise,
+            }
 
-        if not WarehouseItem.objects.filter(item=self.item, enterprise=self.enterprise).exists():
-            WarehouseItem.objects.create(
-                item=self.item, **audit_fields)
+            if not WarehouseItem.objects.filter(item=self.item, enterprise=self.enterprise).exists():
+                WarehouseItem.objects.create(
+                    item=self.item, **audit_fields)
 
-        warehouse_item = WarehouseItem.objects.get(item=self.item, enterprise=self.enterprise)
-        warehouse = Warehouse.objects.get(
-            warehouse_type='PRIVATE', is_default=True, enterprise=self.enterprise, is_active=True)
-        if not self.move_in_bulk:
-            quantity_recorded = self.sale_units_purchased
-        else:
-            quantity_recorded = self.quantity_purchased
+            warehouse_item = WarehouseItem.objects.get(item=self.item, enterprise=self.enterprise)
+            rule = get_valid_enterprise_setup_rules(self.enterprise)
+            receiving_warehouse = rule.receiving_warehouse
 
-        WarehouseRecord.objects.create(
-            warehouse=warehouse, warehouse_item=warehouse_item, record_type='ADD',
-            quantity_recorded=quantity_recorded, unit_price=self.recommended_retail_price,
-            **audit_fields)
+            if not self.move_in_bulk:
+                quantity_recorded = self.sale_units_purchased
+            else:
+                quantity_recorded = self.quantity_purchased
 
-        if self.quantity_to_inventory:
             WarehouseRecord.objects.create(
-                warehouse=warehouse, warehouse_item=warehouse_item, record_type='REMOVE',
-                quantity_recorded=self.quantity_to_inventory, removal_type='INVENTORY',
-                removal_quantity_leaving_warehouse=self.quantity_to_inventory_on_display,
-                removal_quantity_remaining_in_warehouse=self.quantity_to_inventory_in_warehouse,
-                unit_price=self.recommended_retail_price, **audit_fields)
+                warehouse=receiving_warehouse, warehouse_item=warehouse_item, record_type='ADD',
+                quantity_recorded=quantity_recorded, unit_price=self.recommended_retail_price,
+                **audit_fields)
+
+            if self.quantity_to_inventory:
+                if rule.receiving_warehouse == rule.default_warehouse:
+                    WarehouseRecord.objects.create(
+                        warehouse=receiving_warehouse, warehouse_item=warehouse_item, record_type='REMOVE',
+                        quantity_recorded=self.quantity_to_inventory, removal_type='INVENTORY',
+                        removal_quantity_leaving_warehouse=self.quantity_to_inventory_on_display,
+                        removal_quantity_remaining_in_warehouse=self.quantity_to_inventory_in_warehouse,
+                        unit_price=self.recommended_retail_price, **audit_fields)
+
+                    self.added_to_warehouse = True
+                    self.save()
+                else:
+                    # TODO Add record to the default warehouse then move them to the default inventory form the default warehouse
+                    pass

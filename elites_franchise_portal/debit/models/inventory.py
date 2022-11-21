@@ -156,6 +156,7 @@ class Inventory(AbstractBase):
         InventoryItem, through='InventoryInventoryItem', related_name='inventoryinventoryitems')
     description = models.TextField(null=True, blank=True)
     is_master = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     pushed_to_edi = models.BooleanField(default=False)
 
@@ -213,8 +214,14 @@ class Inventory(AbstractBase):
             msg = 'You can only have one active {} inventory'.format(self.inventory_type.title())
             raise ValidationError({'inventory': msg})
 
+    def validate_unique_default_inventory_per_enterprise(self):
+        if self.__class__.objects.filter(
+            is_active=True, is_default=True, enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = "You can only have one active default inventory"
+            raise ValidationError({'default_inventory': msg})
 
     def clean(self) -> None:
+        self.validate_unique_default_inventory_per_enterprise()
         self.validate_unique_active_master_inventory_for_enterprise()
         self.validate_unique_active_inventory_per_type_for_enterprise()
         return super().clean()
