@@ -63,7 +63,7 @@ class PurchaseItem(AbstractBase):
     item = models.ForeignKey(
         Item, null=False, blank=False, on_delete=models.PROTECT)
     quantity_purchased = models.FloatField(null=False, blank=False)
-    total_quantity_puchased = models.FloatField(null=False, blank=False)
+    total_quantity_puchased = models.FloatField(null=True, blank=True)
     sale_units_purchased = models.FloatField(null=True, blank=True)
     unit_cost = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
