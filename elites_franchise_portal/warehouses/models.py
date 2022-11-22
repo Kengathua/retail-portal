@@ -271,6 +271,9 @@ class WarehouseRecord(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
+        if self.record_type == REMOVE:
+            self.removal_quantity_remaining_in_warehouse = (
+                self.quantity_recorded - self.removal_quantity_leaving_warehouse)
         self.get_unit_price()
         self.calculate_total_amount_recorded()
         super().save(*args, **kwargs)
