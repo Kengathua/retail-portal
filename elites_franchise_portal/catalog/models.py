@@ -40,6 +40,13 @@ AUDIT_OPERATIONS_TYPE_CHOICES = (
     ('UPDATE', 'CREATE'),
 )
 
+CATALOG_ITEM_AUDIT_SOURCES = (
+    ('CATALOG ITEM', 'CATALOG ITEM'),
+    ('INVENTORY RECORD', 'INVENTORY RECORD')
+)
+
+INVENTORY_RECORD = 'INVENTORY RECORD'
+
 class Section(AbstractBase):
     """Sections for items in the premise."""
 
@@ -278,6 +285,13 @@ class CatalogItem(AbstractBase):
         self.get_quantity()
         self.get_threshold_price()
         super().save(*args, **kwargs)
+        if not CatalogItemAuditLog.objects.filter(catalog_item=self).exists():
+            CatalogItemAuditLog.objects.create(
+                catalog_item=self, quantity_recorded=self.quantity,
+                marked_price_recorded=self.marked_price, discount_amount_recorded=self.discount_amount,
+                selling_price_recorded=self.selling_price, threshold_price_recorded=self.threshold_price,
+                record_type='ADD', operation_type='CREATE', audit_source='CATALOG ITEM',
+                created_by=self.created_by, updated_by=self.updated_by, enterprise=self.enterprise)
 
         cache.delete('catalog_items_objects')
 
@@ -356,7 +370,8 @@ class CatalogItemAuditLog(AbstractBase):
     discount_amount_after = models.FloatField(default=0)
     record_type = models.CharField(max_length=300, choices=AUDIT_RECORD_TYPE_CHOICES)
     operation_type = models.CharField(max_length=300, choices=AUDIT_OPERATIONS_TYPE_CHOICES)
-    inventory_record = models.ForeignKey(InventoryRecord, on_delete=models.PROTECT)
+    audit_source = models.CharField(max_length=300, choices=CATALOG_ITEM_AUDIT_SOURCES, default=INVENTORY_RECORD)
+    inventory_record = models.ForeignKey(InventoryRecord, null=True, blank=True, on_delete=models.PROTECT)
 
     def get_quantity_before(self):
         pass
@@ -364,6 +379,11 @@ class CatalogItemAuditLog(AbstractBase):
     def get_quantity_after(self):
         if not self.quantity_after:
             self.quantity_after = self.quantity_before + self.quantity_recorded
+
+    def validate_inventory_record_source_has_inventory_record_attached(self):
+        if self.audit_source == INVENTORY_RECORD and not self.inventory_record:
+            msg = 'An audit coming from inventory records should have the inventory record atached to it'
+            raise ValidationError({'inventory_record': msg})
 
     def validate_quantity_after(self):
         expected_closing_quantity = self.quantity_before + self.quantity_recorded
@@ -375,6 +395,7 @@ class CatalogItemAuditLog(AbstractBase):
                 {'closing_quantity': msg})
 
     def clean(self) -> None:
+        self.validate_inventory_record_source_has_inventory_record_attached()
         self.validate_quantity_after()
         return super().clean()
 

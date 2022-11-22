@@ -177,6 +177,14 @@ class ItemModel(AbstractBase):
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
+    def validate_unique_model_name(self):
+        """Validate that the model name is uniques for the enterprise."""
+        if self.__class__.objects.filter(
+            model_name=self.model_name, brand=self.brand, item_type=self.item_type,
+            enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = 'The {} {} {} model number already exists. Please enter a new model number'.format(self.model_name, self.brand.brand_name, self.item_type.type_name)
+            raise ValidationError({"model_name":msg})
+
     def create_model_code(self):
         """Create a code for the item model."""
         if not self.model_code:
@@ -184,8 +192,12 @@ class ItemModel(AbstractBase):
 
     def clean(self) -> None:
         """Clean the ItemModel model."""
-        self.create_model_code()
+        self.validate_unique_model_name()
         return super().clean()
+
+    def save(self, *args, **kwargs):
+        self.create_model_code()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         """Str representation for the item-models model."""
@@ -276,11 +288,14 @@ class Item(AbstractBase):
         warehouses = enterprise_setup_rules.warehouses.all()
         activate_warehouse_item(self, audit_fields, warehouses)
 
-        catalog_item = CatalogItem.objects.filter(inventory_item__item=self, is_active=True).first()
+        catalog_item = CatalogItem.objects.filter(
+            inventory_item__item=self, is_active=True).first()
         if catalog_item:
             catalog = enterprise_setup_rules.standard_catalog
-            if not CatalogCatalogItem.objects.filter(catalog=catalog, catalog_item=catalog_item).exists():
-                CatalogCatalogItem.objects.create(catalog=catalog, catalog_item=catalog_item, **audit_fields)
+            if not CatalogCatalogItem.objects.filter(
+                    catalog=catalog, catalog_item=catalog_item).exists():
+                CatalogCatalogItem.objects.create(
+                    catalog=catalog, catalog_item=catalog_item, **audit_fields)
 
         self.is_active = True
         self.save()

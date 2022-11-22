@@ -15,6 +15,7 @@ from elites_franchise_portal.enterprises.models import Enterprise
 from elites_franchise_portal.debit import models as debit_models
 from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
+
 class Purchase(AbstractBase):
     """Purchases model."""
 
@@ -27,24 +28,31 @@ class Purchase(AbstractBase):
 
     @property
     def total_cost(self):
-        items_costs = PurchaseItem.objects.filter(purchase=self).values_list('total_cost', flat=True)
+        """Get the total cost."""
+        items_costs = PurchaseItem.objects.filter(
+            purchase=self).values_list('total_cost', flat=True)
         items_cost = sum(items_costs)
-        returns_prices = debit_models.PurchasesReturn.objects.filter(purchase_item__purchase=self).values_list('total_price', flat=True)
+        returns_prices = debit_models.PurchasesReturn.objects.filter(
+            purchase_item__purchase=self).values_list('total_price', flat=True)
         returns_price = sum(returns_prices)
 
         return float(items_cost) - float(returns_price)
 
     def validate_unique_invoice_number_per_supplier(self):
+        """Validate invoice number is unique for the given supplier."""
         if self.__class__.objects.filter(
                 invoice_number=self.invoice_number, enterprise=self.enterprise,
                 supplier=self.supplier).exclude(id=self.id).exists():
             msg = 'A purchase from {} for the invoice number {} already exists. '\
-                'Kindly enter a new invoice number or update the existing record'.format(self.supplier.name, self.invoice_number)
+                'Kindly enter a new invoice number or update the existing record'.format(
+                    self.supplier.name, self.invoice_number)
             raise ValidationError({'invoice_number': msg})
 
     def clean(self) -> None:
+        """Clean the purchase model."""
         self.validate_unique_invoice_number_per_supplier()
         return super().clean()
+
 
 class PurchaseItem(AbstractBase):
     """Purchase Item model."""
@@ -55,6 +63,7 @@ class PurchaseItem(AbstractBase):
     item = models.ForeignKey(
         Item, null=False, blank=False, on_delete=models.PROTECT)
     quantity_purchased = models.FloatField(null=False, blank=False)
+    total_quantity_puchased = models.FloatField(null=False, blank=False)
     sale_units_purchased = models.FloatField(null=True, blank=True)
     unit_cost = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
@@ -89,6 +98,7 @@ class PurchaseItem(AbstractBase):
             self.sale_units_purchased = total_no_of_items
 
     def validate_enterprise_has_setup_rules(self):
+        """Validate that enterprise has set up rules."""
         rule = get_valid_enterprise_setup_rules(self.enterprise)
         # These are self checks which will raise validation errors if the values do not exist
         rule.default_inventory
@@ -97,9 +107,12 @@ class PurchaseItem(AbstractBase):
         rule.receiving_warehouse
 
     def validate_unique_item_per_purchase(self):
-        if self.__class__.objects.filter(purchase=self.purchase, item=self.item).exclude(id=self.id).exists():
+        """Validate that an item is unique for each purchase."""
+        if self.__class__.objects.filter(
+                purchase=self.purchase, item=self.item).exclude(id=self.id).exists():
             msg = 'The item {} already exists in this purchase instance. '\
-                'Kindly select a new item or update the existing record'.format(self.item.item_name)
+                'Kindly select a new item or update the existing record'.format(
+                    self.item.item_name)
             raise ValidationError({'item': msg})
 
     def validate_item_has_units_registered_to_it(self):
@@ -109,29 +122,35 @@ class PurchaseItem(AbstractBase):
             raise ValidationError(
                 {'item_units': 'Please register the units used to record this item'})
 
-    def validate_quantity_to_inventory_less_than_quantity_purchased(self):
-        if self.quantity_to_inventory > self.quantity_purchased:
+    def validate_quantity_moved_less_than_quantity_purchased(self):
+        """Validate the quantity moved if less than the quantity purchased."""
+        if self.quantity_to_inventory > self.total_quantity_puchased:
             msg = '{} items to inventory cannot be more that the quantity purchased {}'.format(
-                self.quantity_to_inventory, self.quantity_purchased)
+                self.quantity_to_inventory, self.total_quantity_puchased)
             raise ValidationError(
                 {'quantity_to_inventory': msg})
 
-        if self.quantity_to_inventory_on_display > self.quantity_purchased:
+        if self.quantity_to_inventory_on_display > self.total_quantity_puchased:
             msg = '{} items to display cannot be more that the quantity purchased {}'.format(
-                self.quantity_to_inventory_on_display, self.quantity_purchased)
+                self.quantity_to_inventory_on_display, self.total_quantity_puchased)
             raise ValidationError(
                 {'quantity_to_inventory_on_display': msg})
 
     def clean(self) -> None:
         """Clean the Purchases model."""
         self.validate_enterprise_has_setup_rules()
-        self.validate_quantity_to_inventory_less_than_quantity_purchased()
+        self.validate_quantity_moved_less_than_quantity_purchased()
         self.validate_unique_item_per_purchase()
         self.validate_item_has_units_registered_to_it()
         return super().clean()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
+        item_units = ItemUnits.objects.get(item=self.item)
+        self.total_quantity_puchased = (
+            item_units.quantity_of_sale_units_per_purchase_unit * self.quantity_purchased)
+        self.quantity_to_inventory_in_warehouse = (
+            self.quantity_to_inventory - self.quantity_to_inventory_on_display)
         self.get_total_no_of_items()
         self.get_unit_cost()
         super().save(*args, **kwargs)
@@ -142,7 +161,8 @@ class PurchaseItem(AbstractBase):
                 'enterprise': self.enterprise,
             }
 
-            if not WarehouseItem.objects.filter(item=self.item, enterprise=self.enterprise).exists():
+            if not WarehouseItem.objects.filter(
+                    item=self.item, enterprise=self.enterprise).exists():
                 WarehouseItem.objects.create(
                     item=self.item, **audit_fields)
 
@@ -163,8 +183,9 @@ class PurchaseItem(AbstractBase):
             if self.quantity_to_inventory:
                 if rule.receiving_warehouse == rule.default_warehouse:
                     WarehouseRecord.objects.create(
-                        warehouse=receiving_warehouse, warehouse_item=warehouse_item, record_type='REMOVE',
-                        quantity_recorded=self.quantity_to_inventory, removal_type='INVENTORY',
+                        warehouse=receiving_warehouse, warehouse_item=warehouse_item,
+                        record_type='REMOVE', quantity_recorded=self.quantity_to_inventory,
+                        removal_type='INVENTORY',
                         removal_quantity_leaving_warehouse=self.quantity_to_inventory_on_display,
                         removal_quantity_remaining_in_warehouse=self.quantity_to_inventory_in_warehouse,
                         unit_price=self.recommended_retail_price, **audit_fields)
