@@ -16,3 +16,7 @@ inventory   => Frontend -> Add is_master flag to the form
 
 
 catalog     => Frontend -> Add is_standard and is_default flags on the UI
+			-> Clear catalog item form after submit
+			-> Add Cancel functionalities
+	    => Backend	-> Add audit the first time an item is created
+			-> Move audit to be a post save of the catalog item
