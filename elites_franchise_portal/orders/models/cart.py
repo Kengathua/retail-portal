@@ -31,7 +31,7 @@ class Cart(AbstractBase):
     is_empty = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_checked_out = models.BooleanField(default=False)
-    is_enterprise = models.BooleanField(default=False)
+    on_site = models.BooleanField(default=False)
 
     # TODO set the is_empty flag as a property field
 
@@ -87,39 +87,36 @@ class Cart(AbstractBase):
 
     def checkout_cart(self):
         """Checkout all items in cart."""
+        from elites_franchise_portal.orders.models import (
+            Order, InstantOrderItem, InstallmentsOrderItem)
+        prices = []
         cart_items = CartItem.objects.filter(cart=self, enterprise=self.enterprise)
         if not cart_items.exists():
             raise ValidationError({
-                'cart item': 'Cart is empty. '
-                'Please add items to checkout'
+                'cart item': 'Cart is empty. Please add items to checkout'
             })
 
-        prices = []
-
+        order = Order.objects.filter(id=self.order_guid)
         audit_fields = {
             'enterprise': self.enterprise,
             'created_by': self.created_by,
             'updated_by': self.updated_by,
         }
 
-        from elites_franchise_portal.orders.models import (
-            Order, InstantOrderItem, InstallmentsOrderItem)
-
-        customer_orders = Order.objects.filter(
-            customer=self.customer, is_cleared=False, is_active=True)
-
-        if not customer_orders.exists():
+        if not order.exists():
+            order_number = '#{}'.format(random.randint(100000, 999999))
+            customer_name = self.customer.full_name if self.customer else ''
+            order_name = customer_name + order_number
             order = Order.objects.create(
-                cart_code=self.cart_code, customer=self.customer, order_name="#{}".format(
-                    self.enterprise),
-                order_number='#{}'.format(random.randint(1001, 9999)), **audit_fields)
+                customer=self.customer, order_name=order_name, order_number=order_number,
+                is_cleared=False, is_active=True, **audit_fields)
+            self.order_guid = order.id
+            self.save()
 
         else:
-            update_data = {
-                'is_enterprise': self.is_enterprise,
-            }
-            customer_orders.filter(cart_code=self.cart_code).update(**update_data)
-            order = customer_orders.first()
+            order = order.first()
+            order.on_site = self.on_site
+            order.save()
 
         for cart_item in cart_items:
             quantity = cart_item.closing_quantity
@@ -131,6 +128,7 @@ class Cart(AbstractBase):
             payload = {
                 'confirmation_status': 'PENDING',
                 'quantity': quantity,
+                'unit_price': cart_item.selling_price,
             }
             if cart_item.is_installment:
                 installment_order_item = InstallmentsOrderItem.objects.filter(**filters)
@@ -138,7 +136,6 @@ class Cart(AbstractBase):
                     installment_order_item.update(**payload)
                 else:
                     InstallmentsOrderItem.objects.create(**filters, **payload, **audit_fields)
-
             else:
                 instant_order_item = InstantOrderItem.objects.filter(**filters)
                 if instant_order_item.exists():
@@ -181,7 +178,7 @@ class Cart(AbstractBase):
 
         else:
             update_data = {
-                'is_enterprise': self.is_enterprise,
+                'on_site': self.on_site,
                 'customer': Customer.objects.get(id=self.updated_by)
             }
             customer_orders.filter(cart_code=self.cart_code).update(**update_data)
@@ -205,8 +202,8 @@ class Cart(AbstractBase):
 
     def check_if_on_site_cart(self):
         """Check if item is being processed under the company's default customers."""
-        if self.customer and self.customer.is_enterprise:
-            self.is_enterprise = True
+        if not self.customer:
+            self.on_site = True
 
     def validate_one_empty_active_cart_per_customer(self):
         """Validate one active cart per customer."""
@@ -228,9 +225,10 @@ class Cart(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
+        # self.on_site = False if not self.customer else False
         if not self.cart_code:
             self.cart_code ='#{}'.format(random.randint(1001, 9999))
-        self.check_if_on_site_cart()
+        # self.check_if_on_site_cart()
         super().save(*args, **kwargs)
 
     class Meta:

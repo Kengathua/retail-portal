@@ -42,8 +42,14 @@ SUPPLIER_TYPE_CHOICES = (
     ('INDEPENDENT SUPPLIER', 'INDEPENDENT SUPPLIER'),
 )
 
-FRANCHISE = 'FRANCHISE'
+STAFF_TYPE_CHOICES = (
+    ('CASUAL', 'CASUAL'),
+    ('CONTRACT', 'CONTRACT'),
+    ('EMPLOYEE', 'EMPLOYEE'),
+)
 
+EMPLOYEE = 'EMPLOYEE'
+FRANCHISE = 'FRANCHISE'
 SHOP = 'SHOP'
 
 
@@ -144,10 +150,12 @@ class Platform(BaseModel):
         return super().clean()
 
 
-class Employee(BioData):
+class Staff(BioData):
     """Employee model class."""
 
-    employee_number = models.CharField(max_length=300)
+    staff_number = models.CharField(max_length=300)
+    staff_type = models.CharField(
+        max_length=300, choices=STAFF_TYPE_CHOICES, default=EMPLOYEE)
 
 
 class Agent(BioData):

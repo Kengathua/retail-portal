@@ -20,3 +20,4 @@ catalog     => Frontend -> Add is_standard and is_default flags on the UI
 			-> Add Cancel functionalities
 	    => Backend	-> Add audit the first time an item is created
 			-> Move audit to be a post save of the catalog item
+

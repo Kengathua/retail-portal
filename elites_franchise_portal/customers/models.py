@@ -2,7 +2,7 @@
 
 from django.db import models
 from django.utils import timezone
-from elites_franchise_portal.common.models import AbstractBase, BioData
+from elites_franchise_portal.common.models import BioData
 from elites_franchise_portal.users.models import retrieve_user_email
 from django.core.exceptions import ValidationError
 from elites_franchise_portal.users.models import User
