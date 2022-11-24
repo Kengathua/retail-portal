@@ -95,10 +95,12 @@ class Transaction(AbstractBase):
     def process_transaction(self):
         """Process transaction for instant and installment order items."""
         # Process Cash transactions
-        from elites_franchise_portal.orders.models import (
-            Order)
+        from elites_franchise_portal.orders.models import Order, OrderTransaction
         from elites_franchise_portal.transactions.helpers.transactions import (
             create_order_transaction)
+        
+        if OrderTransaction.objects.filter(transaction=self).exists():
+            return
 
         if self.transaction_means == CASH:
             if self.transaction_type == DEPOSIT:
@@ -168,7 +170,7 @@ class Transaction(AbstractBase):
         self.initialize_balance()
         self.get_customer()
         super().save(*args, **kwargs)
-        self.process_transaction()
+        # self.process_transaction()
 
 
 class Payment(AbstractBase):
@@ -232,10 +234,16 @@ class Payment(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
+        from elites_franchise_portal.orders.models import Order, OrderTransaction
         super().save(*args, **kwargs)
         self.refresh_from_db()
         if self.is_confirmed:
             customer = self.customer
+            audit_fields = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'enterprise': self.enterprise,
+            }
             if not self.customer:
                 customers = Customer.objects.filter(
                     Q(account_number=self.account_number) | Q(
@@ -248,13 +256,19 @@ class Payment(AbstractBase):
                 'payment_code': self.payment_code,
                 'account_number': self.account_number,
                 'amount': self.paid_amount,
-                'created_by': self.created_by,
-                'updated_by': self.updated_by,
-                'enterprise': self.enterprise,
                 'transaction_means': self.payment_method,
                 'customer': customer,
             }
-            Transaction.objects.create(**transaction_payload)
+            transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
+            transaction.refresh_from_db()
+
+            order = Order.objects.get(id=self.encounter.order_guid)
+            order_transaction_payload = {
+                'amount': transaction.balance,
+                'order': order,
+                'transaction': transaction,
+            }
+            OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
 
 
 class PaymentRequest(AbstractBase):

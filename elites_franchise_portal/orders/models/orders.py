@@ -94,7 +94,7 @@ class Order(AbstractBase):
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
-    is_enterprise = models.BooleanField(default=False)
+    on_site = models.BooleanField(default=False)
 
     @property
     def summary(self):
@@ -262,6 +262,9 @@ class AbstractOrderItem(AbstractBase):
     cart_item = models.ForeignKey(
         CartItem, null=False, blank=False, on_delete=PROTECT)
     quantity = models.FloatField(default=0)
+    unit_price = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0)
     confirmation_status = models.CharField(
         null=False, blank=False, max_length=250,
         choices=ORDER_CONFIRMATION_STATUS_CHOICES, default=PENDING)
@@ -282,13 +285,11 @@ class AbstractOrderItem(AbstractBase):
     quantity_returned = models.IntegerField(default=0)
     is_cleared = models.BooleanField(default=False)
 
-    @property
-    def unit_price(self):
+    def get_unit_price(self):
         """Get the price per item."""
-        quantity = self.quantity if self.quantity else 1
-        unit_price = float(self.total_amount) / quantity
-
-        return unit_price
+        if not self.unit_price:
+            quantity = self.quantity if self.quantity else 1
+            self.unit_price = float(self.total_amount) / quantity
 
     def validate_item_exists_in_inventory_or_cleared_from_store(self):
         """Validate that item exists in catalog, inventory and store."""
@@ -331,6 +332,7 @@ class AbstractOrderItem(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
+        self.get_unit_price()
         self.get_quantity()
         self.get_total_amount()
         self.get_quantity_awaiting_clearance()
@@ -663,7 +665,6 @@ class OrderTransaction(AbstractBase):
                                 'amount': installment_amount,
                             }
                             Installment.objects.create(**installment_data)
-
 
             for installment_order_item in installment_order_items:
                 installment_order_item.refresh_from_db()

@@ -33,7 +33,7 @@ def process_customer_encounter(encounter_id):
         for bill in encounter.billing:
             catalog_item = CatalogItem.objects.get(id=bill['catalog_item'])
             sale_type = bill['sale_type']
-            payload = {
+            cart_item_payload = {
                 'cart': cart,
                 'catalog_item': catalog_item,
                 'quantity_added': bill['quantity'],
@@ -41,18 +41,19 @@ def process_customer_encounter(encounter_id):
                 'is_installment': True if sale_type == 'INSTALLMENT' else False
             }
 
-            CartItem.objects.create(**payload, **audit_fields)
+            CartItem.objects.create(**cart_item_payload, **audit_fields)
 
         cart.checkout_cart()
-        order = Order.objects.get(
-            customer=cart.customer, cart_code=cart.cart_code, is_active=True,
-            is_processed=False, is_cleared=False, enterprise=encounter.enterprise)
+        encounter.refresh_from_db()
+        if not encounter.cart_guid:
+            import pdb
+            pdb.set_trace()
+        order = Order.objects.get(id=cart.order_guid, enterprise=encounter.enterprise)
 
-        encounters.update(order_guid=order.id)
+        encounter.order_guid = order.id
         encounter.processing_status = 'BILLING DONE'
         encounter.save()
         order.process_order()
-
         encounter.refresh_from_db()
         payments = encounter.payments
         for count, payment in enumerate(payments):
