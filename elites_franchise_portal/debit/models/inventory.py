@@ -216,7 +216,7 @@ class Inventory(AbstractBase):
             raise ValidationError({'inventory': msg})
 
     def validate_unique_default_inventory_per_enterprise(self):
-        if self.__class__.objects.filter(
+        if self.is_default and self.__class__.objects.filter(
             is_active=True, is_default=True, enterprise=self.enterprise).exclude(id=self.id).exists():
             msg = "You can only have one active default inventory"
             raise ValidationError({'default_inventory': msg})

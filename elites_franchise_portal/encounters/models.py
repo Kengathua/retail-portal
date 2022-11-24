@@ -6,7 +6,8 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.customers.models import Customer
-from .helpers.validators import validate_billing
+from elites_franchise_portal.encounters.helpers.validators import validate_billing
+from elites_franchise_portal.enterprises.models import Staff
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -27,11 +28,14 @@ PENDING = 'PENDING'
 class Encounter(AbstractBase):
     """Customer encounter model."""
 
-    customer = models.ForeignKey(
-        Customer, null=True, blank=True, on_delete=models.PROTECT)
     billing = models.JSONField(null=False, blank=False)
     payments = models.JSONField(null=True, blank=True)
-    served_by = models.JSONField(null=True, blank=True)
+    customer = models.ForeignKey(
+        Customer, null=True, blank=True, on_delete=models.PROTECT)
+    served_by = models.ForeignKey(
+        Staff, null=True, blank=True, on_delete=models.PROTECT, related_name='served_by_staff')
+    sales_person = models.ForeignKey(
+        Staff, null=True, blank=True, on_delete=models.PROTECT,  related_name='sales_person_staff')
     submitted_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)

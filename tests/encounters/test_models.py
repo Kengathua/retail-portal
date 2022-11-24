@@ -16,7 +16,10 @@ from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.catalog.models import (
     Catalog, CatalogCatalogItem, CatalogItem)
 from elites_franchise_portal.encounters.models import Encounter
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_franchise_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleCatalog,
+    EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
+from elites_franchise_portal.encounters.tasks import process_customer_encounter
 
 from model_bakery import baker
 
@@ -72,39 +75,44 @@ class TestEncounter(TestCase):
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True,
+            enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item1)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item2)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item1)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item2)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item1,
             record_type='ADD', quantity_recorded=2, unit_price=1500, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item2,
             record_type='ADD', quantity_recorded=2, unit_price=2000, enterprise=enterprise_code)
         catalog_item1 = baker.make(
             CatalogItem, inventory_item=inventory_item1, quantity=5, enterprise=enterprise_code)
@@ -114,7 +122,7 @@ class TestEncounter(TestCase):
         baker.make(CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item2)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
-            last_name='Wick', other_names='Baba Yaga',
+            last_name='Wick', other_names='Baba Yaga', enterprise=enterprise_code,
             phone_no='+254712345678', email='johnwick@parabellum.com')
         billing = [
             {
@@ -152,3 +160,6 @@ class TestEncounter(TestCase):
             submitted_amount=7000, enterprise=enterprise_code)
 
         mock_process_customer_encounter.assert_called_once_with(encounter.id)
+        process_customer_encounter(encounter.id)
+
+        assert Encounter.objects.count() == 1
