@@ -24,5 +24,5 @@ class StaffViewSet(BaseViewMixin):
     serializer_class = serializers.StaffSerializer
     filterset_class = filters.StaffFilter
     search_fields = (
-        'first_name', 'last_name', 'other_names', 'full_name',
-        'staff_number', 'staff_type', 'phone_no', 'email')
+        'first_name', 'last_name', 'other_names', 'gender',
+        'id_no', 'staff_number', 'staff_type', 'phone_no', 'email')
