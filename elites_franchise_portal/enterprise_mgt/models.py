@@ -19,7 +19,7 @@ class EnterpriseSetupRule(AbstractBase):
         Warehouse, through='EnterpriseSetupRuleWarehouse', related_name='rulewarehouse')
     catalogs = models.ManyToManyField(
         Catalog, through='EnterpriseSetupRuleCatalog', related_name='rulecatalog')
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     is_default = models.BooleanField(default=True)
     supports_installment_sales = models.BooleanField(default=False)
 
