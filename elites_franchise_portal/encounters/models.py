@@ -94,6 +94,31 @@ class Encounter(AbstractBase):
 
             self.submitted_amount = sum(payments_made)
 
+    def get_payable_amount(self):
+        """Get payable amount."""
+        instant_sale_amounts = []
+        payable_deposits = []
+        if self.billing:
+            for bill in self.billing:
+                if bill['sale_type'] == 'INSTANT':
+                    total = float(bill['quantity']) * float(bill['unit_price'])
+                    instant_sale_amounts.append(total)
+
+                if bill['sale_type'] == 'INSTALLMENT':
+                    deposit = bill.get('deposit', 0) or 0
+                    payable_deposits.append(float(deposit))
+
+        self.total_deposit = sum(payable_deposits)
+        self.payable_amount = sum(instant_sale_amounts) + self.total_deposit
+
+    def get_balance_amount(self):
+        self.balance_amount = self.submitted_amount - self.payable_amount
+
+        if self.submitted_amount < self.payable_amount:
+            msg = "The submitted amount KSh. {:,.2f} is less to the total payable amount KSh. {:,.2f} by KSh. {:,.2f}".format(
+                self.submitted_amount, self.payable_amount, self.balance_amount)
+            raise ValidationError({'submitted_amount': msg})
+
     def check_customer(self):
         if not self.customer:
             user = get_user_model().objects.filter(
@@ -106,50 +131,6 @@ class Encounter(AbstractBase):
                 if customer.exists():
                     customer = customer.first()
                     self.customer = customer
-
-    def process_billing(self):
-        """Process billing."""
-        payable_amounts = []
-        payable_deposits = []
-        if self.billing:
-            for bill in self.billing:
-                if bill['sale_type'] == 'INSTANT':
-                    total = float(bill['quantity']) * float(bill['unit_price'])
-                    payable_amounts.append(total)
-
-                if bill['sale_type'] == 'INSTALLMENT':
-                    deposit = bill.get('deposit', 0)
-                    payable_deposits.append(deposit)
-
-        total_payable_deposit = sum(payable_deposits)
-        if self.total_deposit:
-            if total_payable_deposit > self.total_deposit:
-                raise ValidationError(
-                    {'payable_deposits': 'Total deposits per item {} '
-                     'is greater than the specified total deposit {}'.format(
-                         total_payable_deposit, self.total_deposit)})
-
-        total_payable_amount = sum(payable_amounts)
-        total_payable_deposit = total_payable_deposit if total_payable_deposit >= float(
-            self.total_deposit) else self.total_deposit
-
-        total_payable_amount += total_payable_deposit
-        total_balance_amount = float(self.submitted_amount) - float(total_payable_amount)
-
-        self.payable_amount = total_payable_amount
-        self.balance_amount = total_balance_amount
-
-    def validate_payments_equal_to_submitted_amount(self):
-        if self.payments and self.submitted_amount:
-            all_payments = []
-            for payment in self.payments:
-                all_payments.append(float(payment['amount']))
-
-            total_payments = sum(all_payments)
-
-            if self.submitted_amount < total_payments:
-                raise ValidationError(
-                    {'submitted_amount': 'The specified submitted amount is less to the total payments'})
 
     def create_receipt_number(self):
         if not self.receipt_number:
@@ -171,15 +152,15 @@ class Encounter(AbstractBase):
         """Clean the encounter model."""
         if not self.processing_status == 'STALLED':
             validate_billing(self)
-        self.validate_payments_equal_to_submitted_amount()
         super().clean()
-        self.process_billing()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actins."""
         from elites_franchise_portal.encounters.tasks import (
             process_customer_encounter)
         self.get_submitted_amount()
+        self.get_payable_amount()
+        self.get_balance_amount()
         self.check_customer()
         self.create_receipt_number()
         self.create_encounter_number()

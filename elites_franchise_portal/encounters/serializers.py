@@ -1,6 +1,6 @@
 """Encounter models serializers file."""
 
-from rest_framework.fields import SerializerMethodField, CharField
+from rest_framework.fields import SerializerMethodField, ReadOnlyField
 
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.encounters import models
@@ -11,6 +11,7 @@ class EncounterSerializer(BaseSerializerMixin):
     customer_name = SerializerMethodField()
     cart = SerializerMethodField()
     order = SerializerMethodField()
+    sales_person_name = ReadOnlyField(source='sales_person.full_name')
 
     def get_customer_name(self, encounter):
         customer_name = None
