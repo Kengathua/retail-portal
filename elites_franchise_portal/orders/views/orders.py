@@ -1,8 +1,7 @@
 """Order views file."""
 
-from sys import audit
-from elites_franchise_portal.debit.models.sales import PENDING
-from elites_franchise_portal.orders.models.cart import CartItem
+from django.db import transaction
+
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,13 +11,13 @@ from elites_franchise_portal.common.views import BaseViewMixin
 from elites_franchise_portal.orders.models import (
     Order, InstallmentsOrderItem, Installment,
     InstantOrderItem, OrderTransaction)
-from elites_franchise_portal.orders.models import Cart
+from elites_franchise_portal.orders.models import Cart, CartItem
 from elites_franchise_portal.debit.models import Sale
 from elites_franchise_portal.orders import serializers, filters
 from elites_franchise_portal.debit.tasks import process_sale
 from elites_franchise_portal.orders.helpers.orders import refresh_order
-from elites_franchise_portal.transactions.models import Payment
-
+from elites_franchise_portal.transactions.models import Payment, Transaction
+from elites_franchise_portal.customers.models import Customer
 
 class OrderViewSet(BaseViewMixin):
     """Order viewset class."""
@@ -120,6 +119,57 @@ class InstallmentViewSet(BaseViewMixin):
 
     queryset = Installment.objects.all().order_by('-installment_date')
     serializer_class = serializers.InstallmentSerializer
+
+    @transaction.atomic()
+    def create(self, request, *args, **kwargs):
+        audit_fields = {
+            "created_by": self.request.user.id,
+            "updated_by": self.request.user.id,
+            "enterprise": self.request.user.enterprise,
+            }
+
+        installment_item = InstallmentsOrderItem.objects.get(id=request.data['installment_item'])
+        customer = Customer.objects.get(id=request.data['customer'])
+
+        payment_payload = {
+            'payment_code': request.data['payment_code'],
+            'account_number': customer.account_number,
+            'customer': customer,
+            'paid_amount': request.data['amount'],
+            'payment_method': request.data['payment_method'],
+        }
+        payment = Payment.objects.create(**payment_payload, **audit_fields)
+        payment.refresh_from_db()
+
+        transaction_payload = {
+            'payment_code': payment.payment_code,
+            'account_number': customer.account_number,
+            'amount': request.data['amount'],
+            'transaction_means': request.data['payment_method'],
+            'customer': customer,
+        }
+        transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
+        transaction.refresh_from_db()
+
+        order_transaction_payload = {
+            'amount': transaction.balance,
+            'order': installment_item.order,
+            'transaction': transaction,
+            'is_installment': True,
+        }
+        OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
+
+        installment_payload = {
+            'installment_item': installment_item,
+            'amount': request.data['amount'],
+            'note': request.data['note'],
+            'is_direct_installment': True
+        }
+
+        installment = Installment.objects.create(**installment_payload, **audit_fields)
+        serializer = serializers.InstallmentSerializer(installment, many=False)
+
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 
 class OrderTransactionViewSet(BaseViewMixin):

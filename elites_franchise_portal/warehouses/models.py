@@ -250,13 +250,23 @@ class WarehouseRecord(AbstractBase):
             enterprise_setup_rules = EnterpriseSetupRule.objects.get(
                 enterprise=self.enterprise, is_active=True)
             default_inventory = enterprise_setup_rules.default_inventory
+            audit_fields = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'enterprise': self.enterprise,
+            }
             inventory_items = InventoryItem.objects.filter(
                 item=self.warehouse_item.item, enterprise=self.enterprise, is_active=True)
             inventory_item = inventory_items.first()
             if not inventory_items.exists():
                 inventory_item = InventoryItem.objects.create(
-                    item=self.warehouse_item.item, created_by=self.created_by, updated_by=self.updated_by,
-                    enterprise=self.enterprise)
+                    item=self.warehouse_item.item, **audit_fields)
+
+            if not InventoryInventoryItem.objects.filter(
+                    inventory=default_inventory, inventory_item=inventory_item,
+                    enterprise=self.enterprise).exists():
+                InventoryInventoryItem.objects.create(
+                    inventory=default_inventory, inventory_item=inventory_item, **audit_fields)
 
             inventory_items = default_inventory.inventory_items.filter(id=inventory_item.id)
             inventory_item = inventory_items.first()
@@ -266,7 +276,7 @@ class WarehouseRecord(AbstractBase):
                 quantity_recorded=self.quantity_recorded, unit_price=self.unit_price,
                 record_type=ADD, quantity_of_stock_on_display=self.removal_quantity_leaving_warehouse,
                 quantity_of_stock_in_warehouse=self.removal_quantity_remaining_in_warehouse,
-                created_by=self.created_by, updated_by=self.updated_by, enterprise=self.enterprise)
+                **audit_fields)
             return record
 
     def save(self, *args, **kwargs):

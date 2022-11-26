@@ -184,7 +184,7 @@ class Payment(AbstractBase):
         Encounter, null=True, blank=True, on_delete=models.PROTECT)
     required_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=False, blank=False)
+        null=True, blank=True)
     paid_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
@@ -194,6 +194,7 @@ class Payment(AbstractBase):
     payment_method = models.CharField(max_length=300, default=CASH)
     is_confirmed = models.BooleanField(default=False)
     is_processed = models.BooleanField(default=False)
+    is_installment = models.BooleanField(default=False)
 
     def make_payment_request(
         self, service, amount=None, request_from_number=None, client_account_number=None, service_type=None):   # noqa
@@ -237,7 +238,7 @@ class Payment(AbstractBase):
         from elites_franchise_portal.orders.models import Order, OrderTransaction
         super().save(*args, **kwargs)
         self.refresh_from_db()
-        if self.is_confirmed:
+        if self.is_confirmed and not self.is_installment:
             customer = self.customer
             audit_fields = {
                 'created_by': self.created_by,
