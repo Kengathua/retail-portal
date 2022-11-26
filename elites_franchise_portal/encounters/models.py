@@ -1,5 +1,7 @@
 """Customer Encounters models file."""
 
+from decimal import Decimal
+
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -112,7 +114,7 @@ class Encounter(AbstractBase):
         self.payable_amount = sum(instant_sale_amounts) + self.total_deposit
 
     def get_balance_amount(self):
-        self.balance_amount = self.submitted_amount - self.payable_amount
+        self.balance_amount = Decimal(float(self.submitted_amount) - float(self.payable_amount))
 
         if self.submitted_amount < self.payable_amount:
             msg = "The submitted amount KSh. {:,.2f} is less to the total payable amount KSh. {:,.2f} by KSh. {:,.2f}".format(

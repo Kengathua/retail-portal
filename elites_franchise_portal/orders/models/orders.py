@@ -540,6 +540,7 @@ class OrderTransaction(AbstractBase):
     balance = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
+    is_installment = models.BooleanField(default=False)
 
     def initialize_balance(self):
         """Initialize Balance."""
@@ -555,137 +556,138 @@ class OrderTransaction(AbstractBase):
         """Process a transaction for an order."""
         from elites_franchise_portal.debit.models import (
             InventoryRecord)
-        instant_order_items = InstantOrderItem.objects.filter(
-            order=self.order, is_cleared=False)
-        installment_order_items = InstallmentsOrderItem.objects.filter(
-            order=self.order, is_cleared=False)
-        enterprise_setup_rules = EnterpriseSetupRule.objects.get(
-            enterprise=self.enterprise, is_active=True)
-        default_inventory = enterprise_setup_rules.default_inventory
-        audit_fields = {
-            'created_by': self.created_by,
-            'updated_by': self.updated_by,
-            'enterprise': self.enterprise
-            }
+        if not self.is_installment:
+            instant_order_items = InstantOrderItem.objects.filter(
+                order=self.order, is_cleared=False)
+            installment_order_items = InstallmentsOrderItem.objects.filter(
+                order=self.order, is_cleared=False)
+            enterprise_setup_rules = EnterpriseSetupRule.objects.get(
+                enterprise=self.enterprise, is_active=True)
+            default_inventory = enterprise_setup_rules.default_inventory
+            audit_fields = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'enterprise': self.enterprise
+                }
 
-        if instant_order_items.exists():
-            instant_order_items_totals = instant_order_items.values_list(
-                'total_amount', flat=True)
-            instant_order_items_total_amount = sum(instant_order_items_totals)
-            if self.balance >= instant_order_items_total_amount:
-                for instant_order_item in instant_order_items:
-                    updates = {
-                        'quantity_awaiting_clearance': 0,
-                        'quantity_cleared': instant_order_item.quantity,
-                        'confirmation_status': 'CONFIRMED',
-                        'is_cleared': True,
-                        'payment_status': 'PAID',
-                        'amount_paid': instant_order_item.total_amount,
-                    }
-                    instant_order_items.filter(id=instant_order_item.id).update(**updates)
+            if instant_order_items.exists():
+                instant_order_items_totals = instant_order_items.values_list(
+                    'total_amount', flat=True)
+                instant_order_items_total_amount = sum(instant_order_items_totals)
+                if self.balance >= instant_order_items_total_amount:
+                    for instant_order_item in instant_order_items:
+                        updates = {
+                            'quantity_awaiting_clearance': 0,
+                            'quantity_cleared': instant_order_item.quantity,
+                            'confirmation_status': 'CONFIRMED',
+                            'is_cleared': True,
+                            'payment_status': 'PAID',
+                            'amount_paid': instant_order_item.total_amount,
+                        }
+                        instant_order_items.filter(id=instant_order_item.id).update(**updates)
 
-                new_balance = Decimal(self.balance) - Decimal(instant_order_items_total_amount)
-                self.balance = new_balance
-                self.__class__.objects.filter(id=self.id).update(balance=new_balance)
-
-            else:
-                for instant_order_item in instant_order_items:
-                    no_of_clearable_items = int(float(self.balance) / instant_order_item.unit_price)
-                    quantity_cleared = no_of_clearable_items if no_of_clearable_items >= 1 else 0
-                    deficit = Decimal(instant_order_item.total_amount) - Decimal(self.balance)  # noqa
-                    new_balance = float(self.balance) % instant_order_item.unit_price
-                    instant_order_item.quantity_cleared = quantity_cleared
-                    instant_order_item.save()
+                    new_balance = Decimal(self.balance) - Decimal(instant_order_items_total_amount)
                     self.balance = new_balance
                     self.__class__.objects.filter(id=self.id).update(balance=new_balance)
-                    LOGGER.info('{} was less with KSH {}'.format(
-                        instant_order_item.cart_item.catalog_item.inventory_item.item.item_name, deficit))
 
-            for instant_order_item in instant_order_items:
-                instant_order_item.refresh_from_db()
-                inventory_item = instant_order_item.cart_item.catalog_item.inventory_item
-                InventoryRecord.objects.create(
-                    inventory=default_inventory, inventory_item=inventory_item,
-                    quantity_recorded=instant_order_item.quantity_cleared,
-                    unit_price=instant_order_item.unit_price,
-                    quantity_sold=instant_order_item.quantity_cleared,
-                    record_type='REMOVE', removal_type='SALES', **audit_fields)
-
-        if installment_order_items.exists():
-            installment_order_items_totals = installment_order_items.values_list(
-                'total_amount', flat=True)
-            installment_order_items_total_amount = sum(installment_order_items_totals)
-            if self.balance >= installment_order_items_total_amount:
-                for installment_order_item in installment_order_items:
-                    if not installment_order_item.deposit_amount:
-                        installment_order_item.amount_paid = installment_order_item.total_amount    # noqa
-                        installment_order_item.save()
-                        new_balance = Decimal(self.balance) - Decimal(
-                            installment_order_items_total_amount)
+                else:
+                    for instant_order_item in instant_order_items:
+                        no_of_clearable_items = int(float(self.balance) / instant_order_item.unit_price)
+                        quantity_cleared = no_of_clearable_items if no_of_clearable_items >= 1 else 0
+                        deficit = Decimal(instant_order_item.total_amount) - Decimal(self.balance)  # noqa
+                        new_balance = float(self.balance) % instant_order_item.unit_price
+                        instant_order_item.quantity_cleared = quantity_cleared
+                        instant_order_item.save()
                         self.balance = new_balance
                         self.__class__.objects.filter(id=self.id).update(balance=new_balance)
-                        # TODO check any other fields that require processing
+                        LOGGER.info('{} was less with KSH {}'.format(
+                            instant_order_item.cart_item.catalog_item.inventory_item.item.item_name, deficit))
 
-                    else:
-                        # TODO clear item and transfer balance to wallet
-                        pass
-            else:
-                installment_order_items = installment_order_items.order_by('-order__order_date')    # noqa
-                for installment_order_item in installment_order_items:
-                    if not installment_order_item.deposit_amount:
-                        installment_order_item.deposit_amount = self.balance if self.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
-                        installment_order_item.amount_paid = installment_order_item.deposit_amount
-                        installment_order_item.save()
-                        new_balance = Decimal(self.balance) - installment_order_item.amount_paid
-                        self.balance = new_balance
-                        self.__class__.objects.filter(id=self.id).update(balance=new_balance)
-                    else:
-                        if self.balance <= Decimal(installment_order_item.amount_due):
-                            installment_amount = self.balance
-                            installment_data = {
-                                'created_by': installment_order_item.created_by,
-                                'updated_by': installment_order_item.updated_by,
-                                'enterprise': installment_order_item.enterprise,
-                                'installment_item': installment_order_item,
-                                'amount': installment_amount,
-                            }
-                            Installment.objects.create(**installment_data)
-                        else:
-                            # TODO clear an item using an installment
-                            installment_amount = installment_order_item.amount_due
-                            order_transaction = self.__class__.objects.filter(id=self.id).first()
-                            order_transaction.balance -= installment_amount
-                            new_balance = order_transaction.balance
+                for instant_order_item in instant_order_items:
+                    instant_order_item.refresh_from_db()
+                    inventory_item = instant_order_item.cart_item.catalog_item.inventory_item
+                    InventoryRecord.objects.create(
+                        inventory=default_inventory, inventory_item=inventory_item,
+                        quantity_recorded=instant_order_item.quantity_cleared,
+                        unit_price=instant_order_item.unit_price,
+                        quantity_sold=instant_order_item.quantity_cleared,
+                        record_type='REMOVE', removal_type='SALES', **audit_fields)
+
+            if installment_order_items.exists():
+                installment_order_items_totals = installment_order_items.values_list(
+                    'total_amount', flat=True)
+                installment_order_items_total_amount = sum(installment_order_items_totals)
+                if self.balance >= installment_order_items_total_amount:
+                    for installment_order_item in installment_order_items:
+                        if not installment_order_item.deposit_amount:
+                            installment_order_item.amount_paid = installment_order_item.total_amount    # noqa
+                            installment_order_item.save()
+                            new_balance = Decimal(self.balance) - Decimal(
+                                installment_order_items_total_amount)
+                            self.balance = new_balance
                             self.__class__.objects.filter(id=self.id).update(balance=new_balance)
-                            installment_data = {
-                                'created_by': installment_order_item.created_by,
-                                'updated_by': installment_order_item.updated_by,
-                                'enterprise': installment_order_item.enterprise,
-                                'installment_item': installment_order_item,
-                                'amount': installment_amount,
-                            }
-                            Installment.objects.create(**installment_data)
+                            # TODO check any other fields that require processing
 
-            for installment_order_item in installment_order_items:
-                installment_order_item.refresh_from_db()
-                inventory_item = installment_order_item.cart_item.catalog_item.inventory_item
-                InventoryRecord.objects.create(
-                    inventory=default_inventory, inventory_item=inventory_item,
-                    quantity_recorded=installment_order_item.quantity_cleared,
-                    unit_price=installment_order_item.unit_price,
-                    record_type='REMOVE', removal_type='SALES', **audit_fields)
+                        else:
+                            # TODO clear item and transfer balance to wallet
+                            pass
+                else:
+                    installment_order_items = installment_order_items.order_by('-order__order_date')    # noqa
+                    for installment_order_item in installment_order_items:
+                        if not installment_order_item.deposit_amount:
+                            installment_order_item.deposit_amount = self.balance if self.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
+                            installment_order_item.amount_paid = installment_order_item.deposit_amount
+                            installment_order_item.save()
+                            new_balance = Decimal(self.balance) - installment_order_item.amount_paid
+                            self.balance = new_balance
+                            self.__class__.objects.filter(id=self.id).update(balance=new_balance)
+                        else:
+                            if self.balance <= Decimal(installment_order_item.amount_due):
+                                installment_amount = self.balance
+                                installment_data = {
+                                    'created_by': installment_order_item.created_by,
+                                    'updated_by': installment_order_item.updated_by,
+                                    'enterprise': installment_order_item.enterprise,
+                                    'installment_item': installment_order_item,
+                                    'amount': installment_amount,
+                                }
+                                Installment.objects.create(**installment_data)
+                            else:
+                                # TODO clear an item using an installment
+                                installment_amount = installment_order_item.amount_due
+                                order_transaction = self.__class__.objects.filter(id=self.id).first()
+                                order_transaction.balance -= installment_amount
+                                new_balance = order_transaction.balance
+                                self.__class__.objects.filter(id=self.id).update(balance=new_balance)
+                                installment_data = {
+                                    'created_by': installment_order_item.created_by,
+                                    'updated_by': installment_order_item.updated_by,
+                                    'enterprise': installment_order_item.enterprise,
+                                    'installment_item': installment_order_item,
+                                    'amount': installment_amount,
+                                }
+                                Installment.objects.create(**installment_data)
 
-        else:
-            # Order is present but there are no order items
-            # TODO Push the balance to Customer's wallet.
+                for installment_order_item in installment_order_items:
+                    installment_order_item.refresh_from_db()
+                    inventory_item = installment_order_item.cart_item.catalog_item.inventory_item
+                    InventoryRecord.objects.create(
+                        inventory=default_inventory, inventory_item=inventory_item,
+                        quantity_recorded=installment_order_item.quantity_cleared,
+                        unit_price=installment_order_item.unit_price,
+                        record_type='REMOVE', removal_type='SALES', **audit_fields)
 
-            pass
+            else:
+                # Order is present but there are no order items
+                # TODO Push the balance to Customer's wallet.
 
-        order_transaction = self.__class__.objects.get(id=self.id)
-        self.transaction._meta.model.objects.filter(
-            id=self.transaction.id).update(balance=order_transaction.balance)
+                pass
 
-        # TODO Assert that the order processing updates the transaction itself too
+            order_transaction = self.__class__.objects.get(id=self.id)
+            self.transaction._meta.model.objects.filter(
+                id=self.transaction.id).update(balance=order_transaction.balance)
+
+            # TODO Assert that the order processing updates the transaction itself too
 
     def process_order_clearance(self):
         instant_order_items = InstantOrderItem.objects.filter(order=self.order)
@@ -745,6 +747,8 @@ class Installment(AbstractBase):
         null=False, blank=False)
     installment_date = models.DateTimeField(db_index=True, default=timezone.now)
     next_installment_date = models.DateField(null=True, blank=True)
+    note = models.TextField(null=True, blank=True)
+    is_direct_installment = models.BooleanField(default=False)
 
     @property
     def previous_installment_date(self):
