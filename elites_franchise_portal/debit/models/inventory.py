@@ -464,6 +464,7 @@ class InventoryRecord(AbstractBase):
                 catalog_item.save()
                 CatalogItemAuditLog.objects.create(
                     **catalog_item_audit_payload, **details_payload, **audit_fields)
+                self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
                 return
 
             catalog_item_audit_payload['operation_type'] = 'UPDATE'
@@ -474,11 +475,12 @@ class InventoryRecord(AbstractBase):
                 catalog_item.save()
                 CatalogItemAuditLog.objects.create(
                     **catalog_item_audit_payload, **details_payload, **audit_fields)
+                self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
                 return
 
             latest_catalog_audit_log = record_audit_logs.latest('created_on')
             if latest_catalog_audit_log.quantity_recorded == self.quantity_recorded and latest_catalog_audit_log.marked_price_recorded == self.unit_price:  # noqa
-                # Early return
+                # Early return Quantities and Prices look good
                 return
 
             diff = self.quantity_recorded - latest_catalog_audit_log.quantity_recorded
@@ -492,20 +494,41 @@ class InventoryRecord(AbstractBase):
             catalog_item.save()
             CatalogItemAuditLog.objects.create(
                 **catalog_item_audit_payload, **details_payload, **audit_fields)
+            self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
             return
 
         if self.record_type == REMOVE:
-            marked_price = catalog_item.marked_price
-            quantity = catalog_item.quantity - self.quantity_recorded
-            catalog_item.quantity = quantity
-            catalog_item.marked_price = marked_price
-            catalog_item.save()
+            catalog_item.refresh_from_db()
+            details_payload = {
+                'quantity_before': catalog_item.quantity,
+                'quantity_recorded': -self.quantity_recorded,
+            }
 
-        self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
+            record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
+            if not record_audit_logs.exists():
+                catalog_item.quantity -= self.quantity_recorded
+                catalog_item.save()
+                CatalogItemAuditLog.objects.create(
+                    **catalog_item_audit_payload, **details_payload, **audit_fields)
+                self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
+                return
+
+            latest_catalog_audit_log = record_audit_logs.latest('created_on')
+            if latest_catalog_audit_log.quantity_recorded == -self.quantity_recorded:  # noqa
+                # Early return quantities look good
+                return
+
+            diff = latest_catalog_audit_log.quantity_recorded - self.quantity_recorded
+            catalog_item.quantity += diff
+            details_payload['quantity_recorded'] = diff
+            catalog_item.save()
+            CatalogItemAuditLog.objects.create(
+                **catalog_item_audit_payload, **details_payload, **audit_fields)
+            self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
+            return
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions on Catalog Item."""
-        # NOTE the order
         if not self.record_code:
             from random import randint
             self.record_code = str(randint(10000, 10000000))
@@ -521,8 +544,5 @@ class InventoryRecord(AbstractBase):
         ordering = ['inventory_item__item__item_name']
 
 
-
-
 def get_latest_inventory_record(inventory, inventory_item):
     InventoryRecord.objects.filter(inventory=inventory, inventory_item=inventory_item).latest('record_date')
-
