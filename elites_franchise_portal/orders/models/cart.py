@@ -96,14 +96,14 @@ class Cart(AbstractBase):
                 'cart item': 'Cart is empty. Please add items to checkout'
             })
 
-        order = Order.objects.filter(id=self.order_guid)
+        order = Order.objects.filter(id=self.order_guid).first()
         audit_fields = {
             'enterprise': self.enterprise,
             'created_by': self.created_by,
             'updated_by': self.updated_by,
         }
 
-        if not order.exists():
+        if not order:
             order_number = '#{}'.format(random.randint(100000, 999999))
             customer_name = self.customer.full_name if self.customer else ''
             order_name = customer_name + order_number
@@ -114,7 +114,6 @@ class Cart(AbstractBase):
             self.save()
 
         else:
-            order = order.first()
             order.on_site = self.on_site
             order.save()
 

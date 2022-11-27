@@ -154,6 +154,7 @@ class Encounter(AbstractBase):
         """Clean the encounter model."""
         if not self.processing_status == 'STALLED':
             validate_billing(self)
+        # TODO Check for this error (SAMSUNG S-001 TV is not hooked up to an active Allocated Inventory. Please set that up first)
         super().clean()
 
     def save(self, *args, **kwargs):
@@ -169,8 +170,8 @@ class Encounter(AbstractBase):
         super().save(*args, **kwargs)
         encounter = self.__class__.objects.filter(id=self.id).first()
         if encounter and self.processing_status == 'PENDING':
-            process_customer_encounter.delay(encounter.id)
-            # process_customer_encounter(encounter.id)
+            # process_customer_encounter.delay(encounter.id)
+            process_customer_encounter(encounter.id)
 
     # TODO Create a stall button to stall an encounter.
     # NOTE Add a fuctionality to send feedback to the customer advising them
