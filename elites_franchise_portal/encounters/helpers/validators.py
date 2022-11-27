@@ -4,6 +4,7 @@ from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_
 from elites_franchise_portal.catalog.helpers import (
     get_catalog_item_available_quantity)
 from elites_franchise_portal.catalog.models import CatalogItem, CatalogCatalogItem
+from elites_franchise_portal.debit.models import InventoryInventoryItem
 
 def validate_catalog_item(item_name, enterprise_code, catalog_item=None):
     if not catalog_item:
@@ -22,6 +23,10 @@ def validate_catalog_item(item_name, enterprise_code, catalog_item=None):
             }
         CatalogCatalogItem.objects.create(catalog_item=catalog_item, catalog=default_catalog, **audit_fields)
 
+    if not InventoryInventoryItem.objects.filter(
+        inventory_item=catalog_item.inventory_item, enterprise=enterprise_code).exists():
+        item = catalog_item.inventory_item.item
+        item.activate()
 
 def validate_billing(encounter):
     """Valdiate new sale encounter data."""

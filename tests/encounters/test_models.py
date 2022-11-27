@@ -1,14 +1,15 @@
 """Encounters models test file."""
 
+import time
 from unittest import mock
 from django.test import TestCase
 
-from elites_franchise_portal.items.models import (
-    Brand, BrandItemType, Category, Item, ItemModel, ItemType,
-    ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem,
     InventoryRecord)
+from elites_franchise_portal.items.models import (
+    Brand, BrandItemType, Category, Item, ItemModel, ItemType,
+    ItemUnits, UnitsItemType, Units)
 from elites_franchise_portal.warehouses.models import (
     Warehouse)
 from elites_franchise_portal.enterprises.models import Enterprise
@@ -19,7 +20,8 @@ from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleCatalog,
     EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
-from elites_franchise_portal.encounters.tasks import process_customer_encounter
+from elites_franchise_portal.orders.models import Order, Cart, OrderTransaction
+from elites_franchise_portal.transactions.models import Payment, Transaction
 
 from model_bakery import baker
 
@@ -29,11 +31,11 @@ MK_ROOT = 'elites_franchise_portal.encounters'
 class TestEncounter(TestCase):
     """."""
 
-    @mock.patch(MK_ROOT+'.tasks.process_customer_encounter.delay')
-    def test_create_encounter(self, mock_process_customer_encounter):
+    # @mock.patch(MK_ROOT+'.tasks.process_customer_encounter.delay')
+    def test_create_encounter(self):
         """."""
-        franchise = baker.make(Enterprise, name='Elites Age Supermarket')
-        enterprise_code = franchise.enterprise_code
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
             enterprise=enterprise_code)
@@ -79,6 +81,9 @@ class TestEncounter(TestCase):
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
             is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        allocated_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Allocated Inventory',
+            is_active=True, inventory_type='ALLOCATED', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
             is_default=True,
@@ -91,6 +96,9 @@ class TestEncounter(TestCase):
             EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
         baker.make(
             EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=allocated_inventory,
             enterprise=enterprise_code)
         baker.make(
             EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
@@ -108,6 +116,10 @@ class TestEncounter(TestCase):
             InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
         baker.make(
             InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
+        baker.make(
+            InventoryInventoryItem, inventory=allocated_inventory, inventory_item=inventory_item1)
+        baker.make(
+            InventoryInventoryItem, inventory=allocated_inventory, inventory_item=inventory_item2)
         baker.make(
             InventoryRecord, inventory=inventory, inventory_item=inventory_item1,
             record_type='ADD', quantity_recorded=2, unit_price=1500, enterprise=enterprise_code)
@@ -159,7 +171,9 @@ class TestEncounter(TestCase):
             Encounter, customer=customer, billing=billing, payments=payments,
             submitted_amount=7000, enterprise=enterprise_code)
 
-        mock_process_customer_encounter.assert_called_once_with(encounter.id)
-        process_customer_encounter(encounter.id)
-
         assert Encounter.objects.count() == 1
+        assert Cart.objects.count() == 1
+        assert Order.objects.count() ==  1
+        assert Payment.objects.count() == 2
+        assert Transaction.objects.count() == 2
+        assert OrderTransaction.objects.count() == 2

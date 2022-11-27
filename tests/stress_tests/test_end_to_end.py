@@ -13,32 +13,30 @@ from elites_franchise_portal.debit.models import (
 from elites_franchise_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_franchise_portal.orders.models import (
-    Cart, CartItem, Order, OrderTransaction, InstantOrderItem)
+    Cart, CartItem, Order, OrderTransaction, InstantOrderItem, InstallmentsOrderItem, Installment)
 from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord)
 from elites_franchise_portal.credit.models import Purchase, PurchaseItem
 from elites_franchise_portal.encounters.models import Encounter
-from elites_franchise_portal.encounters.tasks import process_customer_encounter
 from elites_franchise_portal.transactions.models import (
-    Transaction)
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+    Payment, Transaction)
+from elites_franchise_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleInventory,
+    EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
 
-from tests.enterprise_mgt.test_models import TestEnterpriseSetupRule
 
-class TesTEndToEnd(TestEnterpriseSetupRule):
+class TesTEndToEnd(TestCase):
     """."""
 
-    MK_ROOT = 'elites_franchise_portal.encounters'
-    @mock.patch(MK_ROOT+'.tasks.process_customer_encounter.delay')
-    def test_create_reference_catalog(self, mock_process_customer_encounter):
-        franchise = Enterprise.objects.filter().first()
-        if not franchise:
-            franchise = baker.make(Enterprise, name='Elites Age Supermarket')
-        enterprise_code = franchise.enterprise_code
+    def test_create_reference_catalog(self):
+        """Test End To End for daily recurrent instances."""
+
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = enterprise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
             enterprise=enterprise_code)
@@ -50,11 +48,21 @@ class TesTEndToEnd(TestEnterpriseSetupRule):
         baker.make(
             BrandItemType, brand=brand, item_type=item_type,
             enterprise=enterprise_code)
-        item_model = baker.make(
+        item_model1 = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             enterprise=enterprise_code)
-        item = baker.make(
-            Item, item_model=item_model, barcode='83838388383', make_year=2020,
+        item_model2 = baker.make(
+            ItemModel, brand=brand, item_type=item_type, model_name='WRTHY46-G DAT',
+            enterprise=enterprise_code)
+        baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            description='Standard Catalog', is_standard=True,
+            enterprise=enterprise_code)
+        item1 = baker.make(
+            Item, item_model=item_model1, barcode='83838388383', make_year=2020,
+            enterprise=enterprise_code)
+        item2 = baker.make(
+            Item, item_model=item_model2, barcode='83838388383', make_year=2020,
             enterprise=enterprise_code)
         s_units = baker.make(Units, units_name='packet', enterprise=enterprise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
@@ -65,168 +73,283 @@ class TesTEndToEnd(TestEnterpriseSetupRule):
         p_units.item_types.set([item_type])
         p_units.save()
         baker.make(
-            ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
+            ItemUnits, item=item1, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=self.master_inventory, inventory_item=inventory_item,
+            ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
+            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
+        inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
+            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+        allocated_inventory = baker.make(
+            Inventory, inventory_name='Elites Age Supermarket Allocated Inventory',
+            is_active=True, inventory_type='ALLOCATED', enterprise=enterprise_code)
+        catalog = baker.make(
+            Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
+            description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
+        warehouse = baker.make(
+            Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True,
+            enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=self.default_inventory, inventory_item=inventory_item,
+            EnterpriseSetupRuleInventory, rule=rule, inventory=allocated_inventory,
             enterprise=enterprise_code)
-        catalog_item = baker.make(
-            CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         baker.make(
-            CatalogCatalogItem, catalog=self.standard_catalog, catalog_item=catalog_item,
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
             enterprise=enterprise_code)
-
-        warehouse_item = baker.make(WarehouseItem, item=item, enterprise=enterprise_code)
-        warehouse_record1 = baker.make(
-            WarehouseRecord, warehouse=self.receiving_warehouse, warehouse_item=warehouse_item,
-            record_type='ADD', quantity_recorded=15, unit_price=300, enterprise=enterprise_code)
-        assert warehouse_record1
-        warehouse_record2 = baker.make(
-            WarehouseRecord, warehouse=self.receiving_warehouse, warehouse_item=warehouse_item,
-            record_type='REMOVE', removal_type='INVENTORY', quantity_recorded=10,
-            unit_price=300, enterprise=enterprise_code)
-        assert warehouse_record2
-        # assert self.master_inventory.summary[0]['quantity'] == 10
-        # assert self.default_inventory.summary[0]['quantity'] == 10
-        inventory_record1 = baker.make(
-            InventoryRecord, inventory=self.default_inventory, inventory_item=inventory_item,
-            record_type='REMOVE', removal_type='SALES', quantity_recorded=4, unit_price=320,
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
             enterprise=enterprise_code)
-        assert inventory_record1
+        inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
+        inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
+        baker.make(
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
+        baker.make(
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
+        baker.make(
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
+        baker.make(
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
+        baker.make(
+            InventoryInventoryItem, inventory=allocated_inventory, inventory_item=inventory_item1)
+        baker.make(
+            InventoryInventoryItem, inventory=allocated_inventory, inventory_item=inventory_item2)
+        baker.make(
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item1,
+            record_type='ADD', quantity_recorded=4, unit_price=1500, enterprise=enterprise_code)
+        baker.make(
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item2,
+            record_type='ADD', quantity_recorded=5, unit_price=2000, enterprise=enterprise_code)
+        catalog_item1 = baker.make(
+            CatalogItem, inventory_item=inventory_item1, enterprise=enterprise_code)
+        catalog_item2 = baker.make(
+            CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
 
-        # assert self.master_inventory.summary[0]['quantity'] == 6
-        # assert self.default_inventory.summary[0]['quantity'] == 6
-        catalog_item.refresh_from_db()
+        catalog_item1.refresh_from_db()
+        catalog_item2.refresh_from_db()
+        assert catalog_item1.quantity == 4
+        assert catalog_item2.quantity == 5
 
-        inventory_record2 = baker.make(
-            InventoryRecord, inventory=self.default_inventory, inventory_item=inventory_item,
-            record_type='ADD', quantity_recorded=20, unit_price=300, enterprise=enterprise_code)
-
-        assert inventory_record2
-        # assert self.master_inventory.summary[0]['quantity'] == 26
-        # assert self.default_inventory.summary[0]['quantity'] == 26
-
-        inventory_record3 = baker.make(
-            InventoryRecord, inventory=self.default_inventory, inventory_item=inventory_item,
-            record_type='REMOVE', removal_type='SALES', quantity_recorded=14, unit_price=320,
-            enterprise=enterprise_code)
-        assert inventory_record3
-        # assert self.master_inventory.summary[0]['quantity'] == 12
-        # assert self.default_inventory.summary[0]['quantity'] == 12
-        supplier = baker.make(Enterprise, name='LG Suppplier', enterprise_type='SUPPLIER')
-        purchase = baker.make(
-            Purchase, supplier = supplier, enterprise=enterprise_code)
-        purchase = baker.make(
-            PurchaseItem, purchase=purchase, item=item, quantity_purchased=30,
-            total_price=31000, recommended_retail_price=330, quantity_to_inventory=25,
-            quantity_to_inventory_on_display=10, enterprise=enterprise_code)
-
-        assert purchase
-        # assert self.master_inventory.summary[0]['quantity'] == 25+12 == 37
-        # assert self.default_inventory.summary[0]['quantity'] == 25+12 == 37
-        # assert reference_catalog.available_quantity == 25+12 == 37
+        baker.make(CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item1)
+        baker.make(CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item2)
 
         customer = baker.make(
-            Customer, customer_number=9876, first_name='John',
-            last_name='Wick', other_names='Baba Yaga', account_number='712345678',
+            Customer, customer_number=9876, first_name='John', gender='MALE',
+            last_name='Wick', other_names='Baba Yaga', enterprise=enterprise_code,
             phone_no='+254712345678', email='johnwick@parabellum.com')
         billing = [
             {
-                'catalog_item': str(catalog_item.id),
-                'item_name': catalog_item.inventory_item.item.item_name,
-                'quantity': 5,
-                'unit_price': 330,
-                'total': 1650,
-                'sale_type': 'INSTANT'                                  # Instant item
+                'catalog_item': str(catalog_item1.id),
+                'item_name': catalog_item1.inventory_item.item.item_name,
+                'quantity': 2,
+                'unit_price': 1600,
+                'total': 3200,
+                'deposit': None,
+                'sale_type': 'INSTANT'
             },
-        ]
-        payments = [{'means': 'CASH', 'amount': 5000, }]
-
-        encounter = baker.make(
-            Encounter, customer=customer, billing=billing, payments=payments,
-            enterprise=enterprise_code)
-
-        assert encounter
-        # assert self.master_inventory.summary[0]['quantity'] == 37
-        # assert self.default_inventory.summary[0]['quantity'] == 37
-        catalog_item.refresh_from_db()
-        # reference_catalog.refresh_from_db()
-        # assert reference_catalog.updated_on > catalog_item.updated_on
-        # assert reference_catalog.available_quantity == 37-5 == 32
-
-        process_customer_encounter(encounter.id)
-        catalog_item.refresh_from_db()
-        # reference_catalog.refresh_from_db()
-        # assert reference_catalog.available_quantity == 32
-
-        billing = [
             {
-                'catalog_item': str(catalog_item.id),
-                'item_name': catalog_item.inventory_item.item.item_name,
-                'quantity': 5,
-                'unit_price': 330,
-                'total': 1650,
-                'sale_type': 'INSTALLMENT'                                  # Installment item
+                'catalog_item': str(catalog_item2.id),
+                'item_name': catalog_item2.inventory_item.item.item_name,
+                'quantity': 3,
+                'unit_price': 2200,
+                'deposit': 3000,
+                'total': 6600,
+                'sale_type': 'INSTALLMENT'
             },
         ]
-        payments = [{'means': 'CASH', 'amount': 5000, }]
+        payments = [
+            {
+                'means': 'CASH',
+                'amount': 5000
+            },
+            {
+                'means': 'MPESA TILL',
+                'amount': 2000
+            }
+        ]
 
         encounter = baker.make(
             Encounter, customer=customer, billing=billing, payments=payments,
-            enterprise=enterprise_code)
-        # assert reference_catalog.available_quantity == 32
-        assert Order.objects.count() == 1
-        order1 = Order.objects.first()
-        assert order1.is_cleared == True
-        # assert reference_catalog.available_quantity == 32
+            submitted_amount=7000, enterprise=enterprise_code)
 
-        cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
-        cart_item = baker.make(
-            CartItem, cart=cart, catalog_item=catalog_item, quantity_added=9,
-            enterprise=enterprise_code)
-        assert cart
-        assert cart_item
-        # assert reference_catalog.available_quantity == 32
+        assert encounter.balance_amount == 7000 - (3000+3200) == 800
 
-        cart.checkout_cart()
-        # assert reference_catalog.available_quantity == 32
-        assert Order.objects.count() == 2
+        assert Encounter.objects.count() == 1
+        assert Cart.objects.count() == 1
+        assert Order.objects.count() ==  1
+        assert Payment.objects.count() == 2
+        assert Transaction.objects.count() == 1
         assert OrderTransaction.objects.count() == 1
-        order2 = Order.objects.filter().exclude(id=order1.id).first()
-        transaction = baker.make(
-            Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
-            customer=customer, account_number=customer.account_number, amount=2000,
-            transaction_means="CASH", enterprise=enterprise_code)
+        assert InstantOrderItem.objects.count() == 1
+        assert InstallmentsOrderItem.objects.count() == 1
 
-        assert transaction
-        assert OrderTransaction.objects.count() == 2
+        transaction1 = Transaction.objects.first()
+        assert transaction1.amount == 6200
+        assert transaction1.balance == 6200
 
-        # assert reference_catalog.available_quantity == 32-9 == 23
+        instant_order_item = InstantOrderItem.objects.first()
+        installments_order_item = InstallmentsOrderItem.objects.first()
+        order1 = installments_order_item.order
 
-        cart = baker.make(
-            Cart, cart_code='EAS-C-10002', customer=customer, enterprise=enterprise_code)
-        cart_item = baker.make(
-            CartItem, cart=cart, catalog_item=catalog_item, quantity_added=7,
-            enterprise=enterprise_code)
+        assert instant_order_item.is_cleared
+        assert instant_order_item.payment_is_processed
+        assert instant_order_item.payment_status == 'PAID'
+        assert instant_order_item.quantity == 2
+        assert instant_order_item.quantity_awaiting_clearance == 0
+        assert instant_order_item.quantity_cleared == 2
+        assert instant_order_item.unit_price == 1600
+        assert instant_order_item.total_amount == 3200
 
-        order3 = baker.make(Order, customer=customer, enterprise=enterprise_code)
-        instant_order_item = baker.make(
-            InstantOrderItem, order=order3, enterprise=enterprise_code,
-            cart_item=cart_item, confirmation_status='CONFIRMED', amount_paid=2100)
-        assert instant_order_item
-        # assert reference_catalog.available_quantity == 23
-        order3.process_order()
-        # assert reference_catalog.available_quantity == 23
-        transaction = baker.make(
-            Transaction, transaction_code='#8765', transaction_type='DEPOSIT',
-            customer=customer, account_number=customer.account_number, amount=2100,
-            transaction_means="CASH", enterprise=enterprise_code)
-        # assert reference_catalog.available_quantity == 23 - 7 == 16
+        assert installments_order_item.amount_due == 3600
+        assert installments_order_item.amount_paid == 3000
+        assert installments_order_item.confirmation_status == 'PENDING'
+        assert installments_order_item.deposit_amount == 3000
+        assert not installments_order_item.is_cleared
+        assert not installments_order_item.payment_is_processed
 
-        # TODO Create Sale
-        # assert available quantity, quantity_on_installment_plan
+        assert installments_order_item.quantity == 3
+        assert installments_order_item.quantity_awaiting_clearance == 3
+        assert installments_order_item.quantity_cleared == 0
+        assert installments_order_item.quantity_on_full_deposit == 0
+
+        assert installments_order_item.quantity_on_partial_deposit == 3
+        assert installments_order_item.quantity_without_deposit ==0
+        assert installments_order_item.unit_price == 2200
+        assert installments_order_item.total_amount == 6600
+
+        catalog_item1.refresh_from_db()
+        catalog_item2.refresh_from_db()
+
+        assert catalog_item1.quantity == 4-2 == 2
+        assert catalog_item2.quantity == 5
+
+        supplier = baker.make(Enterprise, name='LG Suppplier', enterprise_type='SUPPLIER')
+        purchase = baker.make(
+            Purchase, supplier = supplier, enterprise=enterprise_code)
+        purchase_item1 = baker.make(
+            PurchaseItem, purchase=purchase, item=item1, quantity_purchased=5,
+            total_cost=7500, recommended_retail_price=2000, quantity_to_inventory=5,
+            quantity_to_inventory_on_display=5, enterprise=enterprise_code)
+
+        purchase_item2 = baker.make(
+            PurchaseItem, purchase=purchase, item=item2, quantity_purchased=6,
+            total_cost=12000, recommended_retail_price=2500, quantity_to_inventory=6,
+            quantity_to_inventory_on_display=6, enterprise=enterprise_code)
+
+        catalog_item1.refresh_from_db()
+        catalog_item2.refresh_from_db()
+
+        assert catalog_item1.quantity == 2 + 5 == 7
+        assert catalog_item2.quantity == 5 + 6 == 11
+
+        payment2 = baker.make(Payment, paid_amount=400, is_installment=True, enterprise=enterprise_code)
+        transaction2 = baker.make(Transaction, amount=payment2.final_amount, enterprise=enterprise_code)
+        payment2.transaction_guid = transaction2.id
+        order_transaction2 = baker.make(
+            OrderTransaction, transaction=transaction2, order=installments_order_item.order,
+            amount=transaction2.amount, enterprise=enterprise_code)
+        installment1 = baker.make(
+            Installment, order_transaction=order_transaction2, is_direct_installment=True, amount=order_transaction2.amount,
+            installment_item=installments_order_item, enterprise=enterprise_code)
+
+        assert installment1
+        installments_order_item.refresh_from_db()
+        assert installments_order_item.amount_paid == 3000 + 400 == 3400
+        assert installments_order_item.quantity == 3
+        assert installments_order_item.quantity_cleared == 1
+        assert installments_order_item.quantity_awaiting_clearance == 2
+
+        order1.refresh_from_db()
+        assert not order1.is_cleared
+
+        payment3 = baker.make(Payment, paid_amount=999, is_installment=True, enterprise=enterprise_code)
+        transaction3 = baker.make(Transaction, amount=payment3.final_amount, enterprise=enterprise_code)
+        payment3.transaction_guid = transaction3.id
+        order_transaction3 = baker.make(
+            OrderTransaction, transaction=transaction3, order=installments_order_item.order,
+            amount=transaction3.amount, enterprise=enterprise_code)
+        installment2 = baker.make(
+            Installment, order_transaction=order_transaction3, is_direct_installment=True, amount=order_transaction3.amount,
+            installment_item=installments_order_item, enterprise=enterprise_code)
+
+        assert installment2
+        installments_order_item.refresh_from_db()
+        assert installments_order_item.amount_paid == 3400 + 999 == 4399
+        assert installments_order_item.quantity == 3
+        assert installments_order_item.quantity_cleared == 1
+        assert installments_order_item.quantity_awaiting_clearance == 2
+
+        order1.refresh_from_db()
+        assert not order1.is_cleared
+
+        payment4 = baker.make(Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
+        transaction4 = baker.make(Transaction, amount=payment4.final_amount, enterprise=enterprise_code)
+        payment4.transaction_guid = transaction4.id
+        order_transaction4 = baker.make(
+            OrderTransaction, transaction=transaction4, order=installments_order_item.order,
+            amount=transaction4.amount, enterprise=enterprise_code)
+        installment3 = baker.make(
+            Installment, order_transaction=order_transaction4, is_direct_installment=True, amount=order_transaction4.amount,
+            installment_item=installments_order_item, enterprise=enterprise_code)
+
+        assert installment3
+        installments_order_item.refresh_from_db()
+        assert installments_order_item.amount_paid == 4399 + 1 == 4400
+        assert installments_order_item.quantity == 3
+        assert installments_order_item.quantity_cleared == 2
+        assert installments_order_item.quantity_awaiting_clearance == 1
+
+        order1.refresh_from_db()
+        assert not order1.is_cleared
+
+        payment5 = baker.make(Payment, paid_amount=2200, is_installment=True, enterprise=enterprise_code)
+        transaction5 = baker.make(Transaction, amount=payment5.final_amount, enterprise=enterprise_code)
+        payment5.transaction_guid = transaction5.id
+        order_transaction5 = baker.make(
+            OrderTransaction, transaction=transaction5, order=installments_order_item.order,
+            amount=transaction5.amount, enterprise=enterprise_code)
+        installment4 = baker.make(
+            Installment, order_transaction=order_transaction5, is_direct_installment=True, amount=order_transaction5.amount,
+            installment_item=installments_order_item, enterprise=enterprise_code)
+
+        assert installment4
+        installments_order_item.refresh_from_db()
+        assert installments_order_item.amount_paid == 4400 + 2200 == 6600
+        assert installments_order_item.quantity == 3
+        assert installments_order_item.quantity_cleared == 3
+        assert installments_order_item.quantity_awaiting_clearance == 0
+
+        order1.refresh_from_db()
+        assert order1.is_cleared
+
+        payment6 = baker.make(Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
+        transaction6 = baker.make(Transaction, amount=payment6.final_amount, enterprise=enterprise_code)
+        payment6.transaction_guid = transaction6.id
+        order_transaction6 = baker.make(
+            OrderTransaction, transaction=transaction6, order=installments_order_item.order,
+            amount=transaction6.amount, enterprise=enterprise_code)
+        installment5_recipe = Recipe(
+            Installment, order_transaction=order_transaction6, is_direct_installment=True, amount=order_transaction6.amount,
+            installment_item=installments_order_item, enterprise=enterprise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            installment5_recipe.make()
+
+        msg = 'Please select a different item to process installments for John Baba Yaga Wick. His SAMSUNG WRTHY46-G DAT COOKER is already cleared'
+        assert msg in ve.value.messages
+
+        installments_order_item.refresh_from_db()
+        assert installments_order_item.quantity == 3
+        assert installments_order_item.quantity_cleared == 3
+        assert installments_order_item.quantity_awaiting_clearance == 0
+
+        order1.refresh_from_db()
+        assert order1.is_cleared
+        assert order1.is_processed

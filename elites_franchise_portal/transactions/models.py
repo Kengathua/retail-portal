@@ -1,5 +1,7 @@
 """Transactions file model."""
 
+from decimal import Decimal
+
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -177,6 +179,7 @@ class Payment(AbstractBase):
     """Payment Requests model."""
 
     payment_code = models.CharField(max_length=300, null=True, blank=True)
+    transaction_code = models.CharField(max_length=300, null=True, blank=True)
     account_number = models.CharField(max_length=300, null=True, blank=True)
     customer = models.ForeignKey(
         Customer, null=True, blank=True, on_delete=models.PROTECT)
@@ -187,14 +190,18 @@ class Payment(AbstractBase):
         null=True, blank=True)
     paid_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=True, blank=True)
+        null=False, blank=False)
     balance_amount = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0)
+    final_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
     payment_method = models.CharField(max_length=300, default=CASH)
     is_confirmed = models.BooleanField(default=False)
     is_processed = models.BooleanField(default=False)
     is_installment = models.BooleanField(default=False)
+    transaction_guid = models.UUIDField(null=True, blank=True)
 
     def make_payment_request(
         self, service, amount=None, request_from_number=None, client_account_number=None, service_type=None):   # noqa
@@ -235,41 +242,8 @@ class Payment(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        from elites_franchise_portal.orders.models import Order, OrderTransaction
+        self.final_amount = Decimal(float(self.paid_amount) - float(self.balance_amount))
         super().save(*args, **kwargs)
-        self.refresh_from_db()
-        if self.is_confirmed and not self.is_installment:
-            customer = self.customer
-            audit_fields = {
-                'created_by': self.created_by,
-                'updated_by': self.updated_by,
-                'enterprise': self.enterprise,
-            }
-            if not self.customer:
-                customers = Customer.objects.filter(
-                    Q(account_number=self.account_number) | Q(
-                        phone_no=self.account_number) | Q(
-                            customer_number=self.account_number), enterprise=self.enterprise)
-                if customers.exists():
-                    customer = customers.first()
-
-            transaction_payload = {
-                'payment_code': self.payment_code,
-                'account_number': self.account_number,
-                'amount': self.paid_amount,
-                'transaction_means': self.payment_method,
-                'customer': customer,
-            }
-            transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
-            transaction.refresh_from_db()
-
-            order = Order.objects.get(id=self.encounter.order_guid)
-            order_transaction_payload = {
-                'amount': transaction.balance,
-                'order': order,
-                'transaction': transaction,
-            }
-            OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
 
 
 class PaymentRequest(AbstractBase):
