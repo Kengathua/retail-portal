@@ -142,7 +142,6 @@ class InstallmentViewSet(BaseViewMixin):
         payment.refresh_from_db()
 
         transaction_payload = {
-            'payment_code': payment.payment_code,
             'account_number': customer.account_number,
             'amount': request.data['amount'],
             'transaction_means': request.data['payment_method'],
@@ -150,6 +149,8 @@ class InstallmentViewSet(BaseViewMixin):
         }
         transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
         transaction.refresh_from_db()
+        payment.transaction_guid = transaction.id
+        payment.save()
 
         order_transaction_payload = {
             'amount': transaction.balance,
@@ -157,9 +158,10 @@ class InstallmentViewSet(BaseViewMixin):
             'transaction': transaction,
             'is_installment': True,
         }
-        OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
+        order_transaction = OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
 
         installment_payload = {
+            'order_transaction': order_transaction,
             'installment_item': installment_item,
             'amount': request.data['amount'],
             'note': request.data['note'],

@@ -1,11 +1,16 @@
 """Encounters tasks file."""
 
-from elites_franchise_portal.encounters.models import Encounter
+import random
+from decimal import Decimal
+
 from elites_franchise_portal.catalog.models import (
     CatalogItem)
+from elites_franchise_portal.encounters.models import Encounter
 from elites_franchise_portal.orders.models import (
-    CartItem, Cart, Order)
-from elites_franchise_portal.transactions.models import Payment
+    CartItem, Cart, Order, OrderTransaction)
+from elites_franchise_portal.orders.helpers.orders import process_order_transaction
+
+from elites_franchise_portal.transactions.models import Payment, Transaction
 
 from celery import shared_task
 
@@ -45,9 +50,6 @@ def process_customer_encounter(encounter_id):
 
         cart.checkout_cart()
         encounter.refresh_from_db()
-        if not encounter.cart_guid:
-            import pdb
-            pdb.set_trace()
         order = Order.objects.get(id=cart.order_guid, enterprise=encounter.enterprise)
 
         encounter.order_guid = order.id
@@ -56,6 +58,9 @@ def process_customer_encounter(encounter_id):
         order.process_order()
         encounter.refresh_from_db()
         payments = encounter.payments
+        transaction_code = f"{random.randint(10000, 999999)}"
+        encounter_payments = []
+
         for count, payment in enumerate(payments):
             means = payment['means']
             amount = payment['amount']
@@ -69,10 +74,54 @@ def process_customer_encounter(encounter_id):
                     'required_amount': amount,
                     'encounter': encounter,
                     'account_number':account_number,
+                    'transaction_code': transaction_code
                 }
                 payment = Payment.objects.create(**payment_payload, **audit_fields)
+                encounter_payments.append(payment)
                 encounter.payments[count]['payment_guid'] = str(payment.id)
 
+        for payment in encounter_payments:
+            transaction_filter = {
+                'transaction_code': transaction_code,
+                'enterprise': encounter.enterprise,
+            }
+            transaction = Transaction.objects.filter(**transaction_filter).first()
+
+            if transaction:
+                transaction.amount += payment.paid_amount
+                transaction.balance += payment.paid_amount
+                transaction.save()
+                payment.transaction_guid = transaction.id
+                payment.save()
+
+            else:
+                transaction_payload = {
+                    'account_number': payment.account_number,
+                    'amount': payment.paid_amount,
+                    'transaction_means': payment.payment_method,
+                    'customer': encounter.customer,
+                    'transaction_code': payment.transaction_code,
+                }
+                transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
+                payment.transaction_guid = transaction.id
+                payment.save()
+
+        # Update transaction amounts using the encounter balance
+        transaction.refresh_from_db()
+        transaction.amount -= Decimal(encounter.balance_amount)
+        transaction.balance -= Decimal(encounter.balance_amount)
+        transaction.save()
+
+        order = Order.objects.get(id=encounter.order_guid)
+        order_transaction_payload = {
+            'amount': transaction.balance,
+            'order': order,
+            'transaction': transaction,
+        }
+        order_transaction = OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
+        order_transaction.refresh_from_db()
+        process_order_transaction(order_transaction)
         encounter.processing_status = 'SUCCESS'
         encounter.save()
+
     return encounter

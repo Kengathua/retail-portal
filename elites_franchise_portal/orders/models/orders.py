@@ -17,6 +17,7 @@ from elites_franchise_portal.customers.models import Customer
 from elites_franchise_portal.transactions.models import Transaction
 from elites_franchise_portal.users.models import retrieve_user_email
 from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_franchise_portal.encounters.models import Encounter
 
 LOGGER = logging.getLogger(__name__)
 
@@ -88,9 +89,15 @@ class Order(AbstractBase):
     order_name = models.CharField(null=True, blank=True, max_length=300)
     order_date = models.DateTimeField(
         db_index=True, editable=False, default=timezone.now)
-    instant_order_total = models.FloatField(null=True, blank=True)
-    installment_order_total = models.FloatField(null=True, blank=True)
-    order_total = models.FloatField(null=True, blank=True)
+    instant_order_items_total = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0)
+    installment_order_items_total = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0)
+    order_total = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True, default=0)
     is_processed = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
@@ -189,8 +196,8 @@ class Order(AbstractBase):
 
     def get_order_total(self):
         """Get order total."""
-        instant_order_total = 0
-        installment_order_total = 0
+        instant_order_items_total = 0
+        installment_order_items_total = 0
         order_total = 0
         instant_items = InstantOrderItem.objects.filter(order=self)
         if instant_items.exists():
@@ -200,7 +207,12 @@ class Order(AbstractBase):
                 total_price = price * item.cart_item.closing_quantity
                 prices.append(total_price)
 
-            instant_order_total = sum(prices)
+            instant_order_items_total = sum(prices)
+            if not float(instant_order_items_total) != float(self.instant_order_items_total):
+                msg = "Expected instant order items total {} is not equal to the specified total {}".format(
+                    instant_order_items_total, self.instant_order_items_total)
+                # raise ValidationError(
+                #     {'instant_order_items_total': msg})
 
         installment_items = InstallmentsOrderItem.objects.filter(
             order=self)
@@ -211,11 +223,11 @@ class Order(AbstractBase):
                 total_price = price * item.cart_item.closing_quantity
                 prices.append(total_price)
 
-            installment_order_total = sum(prices)
+            installment_order_items_total = sum(prices)
 
-        order_total = instant_order_total + installment_order_total
-        self.instant_order_total = instant_order_total
-        self.installment_order_total = installment_order_total
+        order_total = instant_order_items_total + installment_order_items_total
+        self.instant_order_items_total = instant_order_items_total
+        self.installment_order_items_total = installment_order_items_total
         self.order_total = order_total
 
     def clean(self) -> None:
@@ -431,10 +443,16 @@ class InstallmentsOrderItem(AbstractOrderItem):
         if self.deposit_amount == 0 and self.amount_paid > 0 and self.amount_paid < self.total_amount:  # noqa
             self.deposit_amount = self.minimum_deposit
 
-    def initialize_quantity_without_deposit(self):
+    def get_quantity_without_deposit(self):
         """Initialize the number of items that do not have a deposit."""
         if not self.quantity_without_deposit:
             self.quantity_without_deposit = self.quantity
+
+        if self.quantity_on_partial_deposit:
+            self.quantity_without_deposit = self.quantity - self.quantity_on_partial_deposit
+
+        if self.quantity_on_full_deposit:
+            self.quantity_without_deposit = self.quantity - self.quantity_on_full_deposit
 
     def calculate_speculated_end_date(self):
         """Calculate the speculated end date of paying installements based on a 3 months rule"""    # noqa
@@ -453,7 +471,7 @@ class InstallmentsOrderItem(AbstractOrderItem):
     def get_amount_due(self):
         """Calculate amount due."""
         amount_due = 0
-        if self.amount_paid < self.total_amount:
+        if float(self.amount_paid) < float(self.total_amount):
             selling_price = float(self.cart_item.selling_price)
             total_cost = self.quantity * selling_price
             assert Decimal(total_cost) == self.total_amount
@@ -501,7 +519,7 @@ class InstallmentsOrderItem(AbstractOrderItem):
         self.get_quantity()
         self.initialize_deposit()
         self.calculate_speculated_end_date()
-        self.initialize_quantity_without_deposit()
+        self.get_quantity_without_deposit()
         self.get_total_amount()
         self.get_amount_due()
         self.get_share_value()
@@ -583,6 +601,7 @@ class OrderTransaction(AbstractBase):
                             'is_cleared': True,
                             'payment_status': 'PAID',
                             'amount_paid': instant_order_item.total_amount,
+                            'payment_is_processed': True,
                         }
                         instant_order_items.filter(id=instant_order_item.id).update(**updates)
 
@@ -614,6 +633,7 @@ class OrderTransaction(AbstractBase):
                         record_type='REMOVE', removal_type='SALES', **audit_fields)
 
             if installment_order_items.exists():
+                allocated_inventory = enterprise_setup_rules.allocated_inventory
                 installment_order_items_totals = installment_order_items.values_list(
                     'total_amount', flat=True)
                 installment_order_items_total_amount = sum(installment_order_items_totals)
@@ -634,13 +654,30 @@ class OrderTransaction(AbstractBase):
                 else:
                     installment_order_items = installment_order_items.order_by('-order__order_date')    # noqa
                     for installment_order_item in installment_order_items:
+                        encounter = Encounter.objects.filter(order_guid=installment_order_item.order.id).first()
+                        catalog_item_id = installment_order_item.cart_item.catalog_item.id
+                        encounter_deposit = None
+
+                        for bill in encounter.billing:
+                            if bill['catalog_item'] == str(catalog_item_id):
+                                encounter_deposit = bill.get('deposit')
+                                break
+
+                        import pdb
+                        pdb.set_trace()
+
                         if not installment_order_item.deposit_amount:
-                            installment_order_item.deposit_amount = self.balance if self.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
+                            if encounter_deposit:
+                                installment_order_item.deposit_amount = encounter_deposit
+                            else:
+                                installment_order_item.deposit_amount = self.balance if self.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
+
                             installment_order_item.amount_paid = installment_order_item.deposit_amount
                             installment_order_item.save()
                             new_balance = Decimal(self.balance) - installment_order_item.amount_paid
                             self.balance = new_balance
                             self.__class__.objects.filter(id=self.id).update(balance=new_balance)
+
                         else:
                             if self.balance <= Decimal(installment_order_item.amount_due):
                                 installment_amount = self.balance
@@ -672,10 +709,10 @@ class OrderTransaction(AbstractBase):
                     installment_order_item.refresh_from_db()
                     inventory_item = installment_order_item.cart_item.catalog_item.inventory_item
                     InventoryRecord.objects.create(
-                        inventory=default_inventory, inventory_item=inventory_item,
+                        inventory=allocated_inventory, inventory_item=inventory_item,
                         quantity_recorded=installment_order_item.quantity_cleared,
                         unit_price=installment_order_item.unit_price,
-                        record_type='REMOVE', removal_type='SALES', **audit_fields)
+                        record_type='ADD', **audit_fields)
 
             else:
                 # Order is present but there are no order items
@@ -705,14 +742,15 @@ class OrderTransaction(AbstractBase):
                     installment_order_items_cleared = False
 
         if instant_order_items_cleared and installment_order_items_cleared:
-            self.order.is_cleared = True
-            self.order.save()
+            order = self.order
+            order.is_cleared = True
+            order.save()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
         super().save(*args, **kwargs)
-        self.process_order_transaction()
-        self.process_order_clearance()
+        # self.process_order_transaction()
+        # self.process_order_clearance()
 
     class Meta:
         """Meta class for order transactions."""
@@ -740,8 +778,10 @@ class Installment(AbstractBase):
     """Installment model."""
 
     installment_code = models.CharField(null=True, blank=True, max_length=300)
+    order_transaction = models.ForeignKey(
+        OrderTransaction, null=False, blank=False, on_delete=models.CASCADE)
     installment_item = models.ForeignKey(
-        InstallmentsOrderItem, null=False, blank=False, on_delete=CASCADE)
+        InstallmentsOrderItem, null=True, blank=True, on_delete=CASCADE)
     amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=False, blank=False)
@@ -808,20 +848,27 @@ class Installment(AbstractBase):
         installment_order_items.update(**installment_order_item_updates)
         return
 
+    def validate_direct_installment_has_installment_item(self):
+        if self.is_direct_installment and not self.installment_item:
+            msg = 'A direct installment requires an installment item to be specified'
+            raise ValidationError({'direct_installment': msg})
+
     def validate_installment_item_is_not_cleared(self):
         """Validate that the installment item is not cleared before processing an installment."""
-        self.installment_item.refresh_from_db()
-        if self.installment_item.is_cleared:
-            customer_name = self.installment_item.order.customer.full_name
-            customer_gender = self.installment_item.order.customer.gender
-            item_name = self.installment_item.cart_item.catalog_item.inventory_item.item.item_name
-            customer_pronoun = 'His' if customer_gender == 'MALE' else 'Her'
-            raise ValidationError(
-                {'installment item':
-                    f"Please select a different item to process installments for {customer_name}. { customer_pronoun} {item_name} is already cleared"}) # noqa
+        if self.installment_item:
+            self.installment_item.refresh_from_db()
+            if self.installment_item.is_cleared or not self.installment_item.quantity_awaiting_clearance:
+                customer_name = self.installment_item.order.customer.full_name
+                customer_gender = self.installment_item.order.customer.gender
+                item_name = self.installment_item.cart_item.catalog_item.inventory_item.item.item_name
+                customer_pronoun = 'His' if customer_gender == 'MALE' else 'Her'
+                raise ValidationError(
+                    {'installment item':
+                        f"Please select a different item to process installments for {customer_name}. { customer_pronoun} {item_name} is already cleared"}) # noqa
 
     def clean(self) -> None:
         """Clean the installment model."""
+        self.validate_direct_installment_has_installment_item()
         self.validate_installment_item_is_not_cleared()
         return super().clean()
 
@@ -833,6 +880,18 @@ class Installment(AbstractBase):
         super().save(*args, **kwargs)
         self.update_installment_order_item()
         process_installment(self)
+
+        order=self.order_transaction.order
+        order.is_cleared = True
+        installment_order_items = InstallmentsOrderItem.objects.filter(order=self.order_transaction.order)
+        if installment_order_items.exists():
+            for installment_order_item in installment_order_items:
+                if not installment_order_item.is_cleared:
+                    order.is_cleared = False
+                    break
+
+        order.save()
+
 
     class Meta:
         """Meta class for installment model."""
