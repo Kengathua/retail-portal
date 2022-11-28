@@ -1,6 +1,6 @@
 """Transactions serializers file."""
 
-from rest_framework.fields import CharField, SerializerMethodField
+from rest_framework.fields import CharField
 
 from elites_franchise_portal.transactions import models
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
