@@ -12,19 +12,6 @@ from elites_franchise_portal.encounters.models import Encounter
 LOGGER = logging.getLogger(__name__)
 
 
-def process_installment(installment):
-    """Process installement."""
-    installment_item = installment.installment_item
-    if installment_item:
-        installment_item.amount_paid += installment.amount
-        no_of_cleared_items = int(
-            float(installment_item.amount_paid) / float(installment_item.unit_price)) if installment_item.unit_price else 0    # noqa
-        installment_item.quantity_cleared = no_of_cleared_items
-        installment_item.save()
-
-        return installment_item
-
-
 def process_order_transaction(order_transaction):
     """Process a transaction for an order."""
 
@@ -48,16 +35,14 @@ def process_order_transaction(order_transaction):
         instant_order_items_total_amount = sum(instant_order_items_totals)
         if order_transaction.balance >= instant_order_items_total_amount:
             for instant_order_item in instant_order_items:
-                updates = {
-                    'quantity_awaiting_clearance': 0,
-                    'quantity_cleared': instant_order_item.quantity,
-                    'confirmation_status': 'CONFIRMED',
-                    'is_cleared': True,
-                    'payment_status': 'PAID',
-                    'amount_paid': instant_order_item.total_amount,
-                    'payment_is_processed': True,
-                }
-                instant_order_items.filter(id=instant_order_item.id).update(**updates)
+                instant_order_item.quantity_awaiting_clearance = 0
+                instant_order_item.quantity_cleared = instant_order_item.quantity
+                instant_order_item.confirmation_status = "CONFIRMED"
+                instant_order_item.is_cleared = True
+                instant_order_item.payment_status = "FULLY PAID"
+                instant_order_item.amount_paid = instant_order_item.total_amount
+                instant_order_item.payment_is_processed = True
+                instant_order_item.save()
 
             new_balance = Decimal(order_transaction.balance) - Decimal(instant_order_items_total_amount)
             order_transaction.balance = new_balance
@@ -105,12 +90,14 @@ def process_order_transaction(order_transaction):
                         installment_order_item.quantity_on_partial_deposit = installment_order_item.quantity
                         installment_order_item.deposit_amount = deposit_amount
                         installment_order_item.amount_paid = deposit_amount
+                        installment_order_item.payment_status = 'DEPOSIT PAID'
                         installment_order_item.save()
                     else:
                         deposit_amount = order_transaction.balance if order_transaction.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
                         installment_order_item.quantity_on_partial_deposit = installment_order_item.quantity
                         installment_order_item.deposit_amount = deposit_amount
                         installment_order_item.amount_paid = deposit_amount
+                        installment_order_item.payment_status = 'DEPOSIT PAID'
                         installment_order_item.save()
 
                     new_balance = Decimal(float(order_transaction.balance) - float(deposit_amount))

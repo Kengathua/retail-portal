@@ -53,10 +53,11 @@ class Sale(AbstractBase):
         pass
 
     def check_customer(self):
+        """Check customer."""
         if not self.customer:
             user = get_user_model().objects.filter(
-                Q(id=self.created_by)| Q(id=self.updated_by) | Q(
-                    guid=self.created_by)| Q(guid=self.updated_by))
+                Q(id=self.created_by) | Q(id=self.updated_by) | Q(
+                    guid=self.created_by) | Q(guid=self.updated_by))
             if user.exists():
                 user = user.first()
                 customer = Customer.objects.filter(enterprise_user=user)
@@ -86,7 +87,7 @@ class Sale(AbstractBase):
                 'updated_by': self.updated_by,
                 'franchise': self.enterprise,
                 'sale': self,
-                'is_empty':True,
+                'is_empty': True,
             }
             Cart.objects.create(**cart_payload)
 
@@ -117,14 +118,6 @@ class SaleItem(AbstractBase):
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
     quantity_sold = models.FloatField()
-    opening_stock_quantity = models.FloatField(null=True, blank=True, default=0)
-    closing_stock_quantity = models.FloatField(null=True, blank=True, default=0)
-    opening_stock_amount = models.DecimalField(
-        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=True, blank=True, default=0)
-    closing_stock_amount = models.DecimalField(
-        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=True, blank=True, default=0)
     processing_status = models.CharField(
         max_length=300, choices=SALE_RECORD_PROCESSING_STATUS_CHOICES,
         default=PENDING)
@@ -135,24 +128,11 @@ class SaleItem(AbstractBase):
         """Get unit price."""
         pass
 
-    def get_opening_stock(self):
-        """Get opening stock."""
-        self.opening_stock_quantity = self.catalog_item.inventory_item.summary['available_quantity'] or 0   # noqa
-        self.opening_stock_amount = self.catalog_item.inventory_item.summary['total'] or 0
-
-    def get_closing_stock(self):
-        """Get opening stock."""
-        item_sold_total = Decimal(self.quantity_sold * float(self.selling_price))
-        self.closing_stock_quantity = self.opening_stock_quantity + self.quantity_sold
-        self.closing_stock_amount = self.opening_stock_amount + item_sold_total
-
     def clean(self) -> None:
         """Clean sale model."""
         super().clean()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        self.get_opening_stock()
-        self.get_closing_stock()
-        self.total_amount = Decimal(float(self.selling_price) * self.closing_stock_quantity)
+        self.total_amount = Decimal(float(self.selling_price) * self.quantity_sold)
         super().save(*args, **kwargs)

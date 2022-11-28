@@ -183,7 +183,7 @@ class TesTEndToEnd(TestCase):
 
         assert Encounter.objects.count() == 1
         assert Cart.objects.count() == 1
-        assert Order.objects.count() ==  1
+        assert Order.objects.count() == 1
         assert Payment.objects.count() == 2
         assert Transaction.objects.count() == 1
         assert OrderTransaction.objects.count() == 1
@@ -200,7 +200,7 @@ class TesTEndToEnd(TestCase):
 
         assert instant_order_item.is_cleared
         assert instant_order_item.payment_is_processed
-        assert instant_order_item.payment_status == 'PAID'
+        assert instant_order_item.payment_status == 'FULLY PAID'
         assert instant_order_item.quantity == 2
         assert instant_order_item.quantity_awaiting_clearance == 0
         assert instant_order_item.quantity_cleared == 2
@@ -220,7 +220,7 @@ class TesTEndToEnd(TestCase):
         assert installments_order_item.quantity_on_full_deposit == 0
 
         assert installments_order_item.quantity_on_partial_deposit == 3
-        assert installments_order_item.quantity_without_deposit ==0
+        assert installments_order_item.quantity_without_deposit == 0
         assert installments_order_item.unit_price == 2200
         assert installments_order_item.total_amount == 6600
 
@@ -232,13 +232,12 @@ class TesTEndToEnd(TestCase):
 
         supplier = baker.make(Enterprise, name='LG Suppplier', enterprise_type='SUPPLIER')
         purchase = baker.make(
-            Purchase, supplier = supplier, enterprise=enterprise_code)
-        purchase_item1 = baker.make(
+            Purchase, supplier=supplier, enterprise=enterprise_code)
+        baker.make(
             PurchaseItem, purchase=purchase, item=item1, quantity_purchased=5,
             total_cost=7500, recommended_retail_price=2000, quantity_to_inventory=5,
             quantity_to_inventory_on_display=5, enterprise=enterprise_code)
-
-        purchase_item2 = baker.make(
+        baker.make(
             PurchaseItem, purchase=purchase, item=item2, quantity_purchased=6,
             total_cost=12000, recommended_retail_price=2500, quantity_to_inventory=6,
             quantity_to_inventory_on_display=6, enterprise=enterprise_code)
@@ -249,15 +248,18 @@ class TesTEndToEnd(TestCase):
         assert catalog_item1.quantity == 2 + 5 == 7
         assert catalog_item2.quantity == 5 + 6 == 11
 
-        payment2 = baker.make(Payment, paid_amount=400, is_installment=True, enterprise=enterprise_code)
-        transaction2 = baker.make(Transaction, amount=payment2.final_amount, enterprise=enterprise_code)
+        payment2 = baker.make(
+            Payment, paid_amount=400, is_installment=True, enterprise=enterprise_code)
+        transaction2 = baker.make(
+            Transaction, amount=payment2.final_amount, enterprise=enterprise_code)
         payment2.transaction_guid = transaction2.id
         order_transaction2 = baker.make(
             OrderTransaction, transaction=transaction2, order=installments_order_item.order,
             amount=transaction2.amount, enterprise=enterprise_code)
         installment1 = baker.make(
-            Installment, order_transaction=order_transaction2, is_direct_installment=True, amount=order_transaction2.amount,
-            installment_item=installments_order_item, enterprise=enterprise_code)
+            Installment, order_transaction=order_transaction2, is_direct_installment=True,
+            amount=order_transaction2.amount, installment_item=installments_order_item,
+            enterprise=enterprise_code)
 
         assert installment1
         installments_order_item.refresh_from_db()
@@ -269,15 +271,18 @@ class TesTEndToEnd(TestCase):
         order1.refresh_from_db()
         assert not order1.is_cleared
 
-        payment3 = baker.make(Payment, paid_amount=999, is_installment=True, enterprise=enterprise_code)
-        transaction3 = baker.make(Transaction, amount=payment3.final_amount, enterprise=enterprise_code)
+        payment3 = baker.make(
+            Payment, paid_amount=999, is_installment=True, enterprise=enterprise_code)
+        transaction3 = baker.make(
+            Transaction, amount=payment3.final_amount, enterprise=enterprise_code)
         payment3.transaction_guid = transaction3.id
         order_transaction3 = baker.make(
             OrderTransaction, transaction=transaction3, order=installments_order_item.order,
             amount=transaction3.amount, enterprise=enterprise_code)
         installment2 = baker.make(
-            Installment, order_transaction=order_transaction3, is_direct_installment=True, amount=order_transaction3.amount,
-            installment_item=installments_order_item, enterprise=enterprise_code)
+            Installment, order_transaction=order_transaction3, is_direct_installment=True,
+            amount=order_transaction3.amount, installment_item=installments_order_item,
+            enterprise=enterprise_code)
 
         assert installment2
         installments_order_item.refresh_from_db()
@@ -289,35 +294,42 @@ class TesTEndToEnd(TestCase):
         order1.refresh_from_db()
         assert not order1.is_cleared
 
-        payment4 = baker.make(Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
-        transaction4 = baker.make(Transaction, amount=payment4.final_amount, enterprise=enterprise_code)
+        payment4 = baker.make(
+            Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
+        transaction4 = baker.make(
+            Transaction, amount=payment4.final_amount, enterprise=enterprise_code)
         payment4.transaction_guid = transaction4.id
         order_transaction4 = baker.make(
             OrderTransaction, transaction=transaction4, order=installments_order_item.order,
             amount=transaction4.amount, enterprise=enterprise_code)
         installment3 = baker.make(
-            Installment, order_transaction=order_transaction4, is_direct_installment=True, amount=order_transaction4.amount,
-            installment_item=installments_order_item, enterprise=enterprise_code)
+            Installment, order_transaction=order_transaction4, is_direct_installment=True,
+            amount=order_transaction4.amount, installment_item=installments_order_item,
+            enterprise=enterprise_code)
 
         assert installment3
         installments_order_item.refresh_from_db()
         assert installments_order_item.amount_paid == 4399 + 1 == 4400
         assert installments_order_item.quantity == 3
+
         assert installments_order_item.quantity_cleared == 2
         assert installments_order_item.quantity_awaiting_clearance == 1
 
         order1.refresh_from_db()
         assert not order1.is_cleared
 
-        payment5 = baker.make(Payment, paid_amount=2200, is_installment=True, enterprise=enterprise_code)
-        transaction5 = baker.make(Transaction, amount=payment5.final_amount, enterprise=enterprise_code)
+        payment5 = baker.make(
+            Payment, paid_amount=2200, is_installment=True, enterprise=enterprise_code)
+        transaction5 = baker.make(
+            Transaction, amount=payment5.final_amount, enterprise=enterprise_code)
         payment5.transaction_guid = transaction5.id
         order_transaction5 = baker.make(
             OrderTransaction, transaction=transaction5, order=installments_order_item.order,
             amount=transaction5.amount, enterprise=enterprise_code)
         installment4 = baker.make(
-            Installment, order_transaction=order_transaction5, is_direct_installment=True, amount=order_transaction5.amount,
-            installment_item=installments_order_item, enterprise=enterprise_code)
+            Installment, order_transaction=order_transaction5, is_direct_installment=True,
+            amount=order_transaction5.amount, installment_item=installments_order_item,
+            enterprise=enterprise_code)
 
         assert installment4
         installments_order_item.refresh_from_db()
@@ -329,20 +341,24 @@ class TesTEndToEnd(TestCase):
         order1.refresh_from_db()
         assert order1.is_cleared
 
-        payment6 = baker.make(Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
-        transaction6 = baker.make(Transaction, amount=payment6.final_amount, enterprise=enterprise_code)
+        payment6 = baker.make(
+            Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
+        transaction6 = baker.make(
+            Transaction, amount=payment6.final_amount, enterprise=enterprise_code)
         payment6.transaction_guid = transaction6.id
         order_transaction6 = baker.make(
             OrderTransaction, transaction=transaction6, order=installments_order_item.order,
             amount=transaction6.amount, enterprise=enterprise_code)
         installment5_recipe = Recipe(
-            Installment, order_transaction=order_transaction6, is_direct_installment=True, amount=order_transaction6.amount,
-            installment_item=installments_order_item, enterprise=enterprise_code)
+            Installment, order_transaction=order_transaction6, is_direct_installment=True,
+            amount=order_transaction6.amount, installment_item=installments_order_item,
+            enterprise=enterprise_code)
 
         with pytest.raises(ValidationError) as ve:
             installment5_recipe.make()
 
-        msg = 'Please select a different item to process installments for John Baba Yaga Wick. His SAMSUNG WRTHY46-G DAT COOKER is already cleared'
+        msg = 'Please select a different item to process installments for John Baba Yaga Wick. '\
+            'His SAMSUNG WRTHY46-G DAT COOKER is already cleared'
         assert msg in ve.value.messages
 
         installments_order_item.refresh_from_db()
