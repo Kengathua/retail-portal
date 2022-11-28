@@ -103,6 +103,30 @@ class Order(AbstractBase):
     is_cleared = models.BooleanField(default=False)
     on_site = models.BooleanField(default=False)
 
+    def compose_order_name(self):
+        """Compose order name."""
+        order_name = f'{self.order_number}'
+        instant_order_items = InstantOrderItem.objects.filter(order__id=self.id)
+        installment_order_items = InstallmentsOrderItem.objects.filter(order__id=self.id)
+        names = []
+        if instant_order_items:
+            for instant_order_item in instant_order_items:
+                names.append(
+                    instant_order_item.cart_item.catalog_item.inventory_item.item.item_name)
+
+        if installment_order_items:
+            for installment_order_item in installment_order_items:
+                names.append(
+                    installment_order_item.cart_item.catalog_item.inventory_item.item.item_name)    # noqa
+
+        item_names = ', '.join(names)
+
+        return "{} {}".format(order_name, item_names)
+
+    @property
+    def heading(self):
+        return self.compose_order_name()
+
     @property
     def summary(self):
         """Generate Order Summary."""
@@ -172,28 +196,6 @@ class Order(AbstractBase):
 
         # send email and sms notification to user
 
-    def compose_order_name(self):
-        """Compose a name for the order."""
-        order = self.__class__.objects.filter(id=self.id, order_number=self.order_number)
-        order_name = ''
-        if order.exists():
-            instant_order_items = InstantOrderItem.objects.filter(order__in=order)
-            installment_order_items = InstallmentsOrderItem.objects.filter(order__in=order)
-            names = []
-            if instant_order_items:
-                for instant_order_item in instant_order_items:
-                    names.append(
-                        instant_order_item.cart_item.catalog_item.inventory_item.item.item_name)
-
-            if installment_order_items:
-                for installment_order_item in installment_order_items:
-                    names.append(
-                        installment_order_item.cart_item.catalog_item.inventory_item.item.item_name)    # noqa
-
-            order_name = ', '.join(names)
-
-        self.order_name = order_name
-
     def get_order_total(self):
         """Get order total."""
         instant_order_items_total = 0
@@ -232,8 +234,6 @@ class Order(AbstractBase):
 
     def clean(self) -> None:
         """Clean order."""
-        self.compose_order_name()
-        self.get_order_total()
         super().clean()
 
     def __str__(self) -> str:
@@ -243,8 +243,10 @@ class Order(AbstractBase):
 
     def save(self, *args, **kwargs):
         """."""
-        super().save(*args, **kwargs)
         from elites_franchise_portal.debit.models import Sale
+        self.order_name = self.compose_order_name()
+        self.get_order_total()
+        super().save(*args, **kwargs)
         order = self.__class__.objects.filter(id=self.id).first()
         sales = Sale.objects.filter(order=order)
         if order:

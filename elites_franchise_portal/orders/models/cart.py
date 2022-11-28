@@ -36,6 +36,16 @@ class Cart(AbstractBase):
     # TODO set the is_empty flag as a property field
 
     @property
+    def heading(self):
+        cart_items = CartItem.objects.filter(cart=self)
+        items_name = ''
+        if cart_items:
+            item_names = cart_items.values_list('catalog_item__inventory_item__item__item_name', flat=True)
+            items_name = ', '.join(item_names)
+
+        return "{} {}".format(self.cart_code, items_name)
+
+    @property
     def summary(self):
         """Summary of cart."""
         summarized_cart_items = []
@@ -290,9 +300,6 @@ class CartItem(AbstractBase):
         """Complete order for a select item."""
         from elites_franchise_portal.orders.models import (
             Order, InstantOrderItem, InstallmentsOrderItem)
-        # create order
-        # create order item
-        # prices = []
         audit_fields = {
             'enterprise': self.enterprise,
             'created_by': self.created_by,
