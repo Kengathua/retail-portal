@@ -1,6 +1,6 @@
 """Order Serializers file."""
 
-from rest_framework.fields import CharField, SerializerMethodField
+from rest_framework.fields import CharField, SerializerMethodField, ReadOnlyField
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.orders import models
 
@@ -27,24 +27,11 @@ class RecordOwnerSerializer(BaseSerializerMixin):
 class CartSerializer(BaseSerializerMixin):
     """Cart Serializer class."""
 
-    order_number = SerializerMethodField()
-    order_name = SerializerMethodField()
+    heading = ReadOnlyField()
+    order_number = ReadOnlyField(source='order.order_number')
+    order_name = ReadOnlyField(source='order.heading')
     customer_name = CharField(source='customer.full_name', read_only=True)
     encounter_number = CharField(source='encounter.encounter_number', read_only=True)
-
-    def get_order_number(self, cart):
-        order_number = ''
-        if cart.order:
-            order_number = cart.order.order_number
-
-        return order_number
-
-    def get_order_name(self, cart):
-        order_name = ''
-        if cart.order:
-            order_name = cart.order.order_name
-
-        return order_name
 
     # owner_details = SerializerMethodField()
 
@@ -79,6 +66,7 @@ class CartItemSerializer(BaseSerializerMixin):
 class OrderSerializer(BaseSerializerMixin):
     """Order Serializer class."""
 
+    heading = ReadOnlyField()
     customer_name = CharField(source='customer.full_name', read_only=True)
 
     class Meta:
@@ -94,7 +82,7 @@ class InstantOrderItemSerializer(BaseSerializerMixin):
     unit_price = CharField(read_only=True)
     item_name = CharField(source='cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
     customer_name = CharField(source='order.customer.full_name', read_only=True)
-    order_name = CharField(source='order.order_name', read_only=True)
+    order_name = CharField(source='order.heading', read_only=True)
     order_number = CharField(source='order.order_number', read_only=True)
 
     class Meta:
@@ -110,7 +98,7 @@ class InstallmentsOrderItemSerializer(BaseSerializerMixin):
     unit_price = CharField(read_only=True)
     item_name = CharField(source='cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
     customer_name = CharField(source='order.customer.full_name', read_only=True)
-    order_name = CharField(source='order.order_name', read_only=True)
+    order_name = CharField(source='order.heading', read_only=True)
     order_number = CharField(source='order.order_number', read_only=True)
 
     class Meta:
@@ -140,7 +128,7 @@ class OrderTransactionSerializer(BaseSerializerMixin):
 
     order_coverage_percentage = SerializerMethodField()
     order_number = CharField(source='order.order_number', read_only=True)
-    order_name = CharField(source='order.order_name', read_only=True)
+    order_name = CharField(source='order.heading', read_only=True)
     transaction_time = CharField(source='transaction.transaction_time', read_only=True)
 
     def get_order_coverage_percentage(self, order_transaction):
