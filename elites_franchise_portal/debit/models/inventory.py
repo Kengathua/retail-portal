@@ -369,16 +369,14 @@ class InventoryRecord(AbstractBase):
 
     def validate_cannot_remove_more_than_existing_items(self):
         """Validate removal quantity not more than available quantity."""
-        from elites_franchise_portal.debit.helpers.inventory import (
-            get_available_quantity_of_inventory_item_in_inventory)
-        available_quantity = get_available_quantity_of_inventory_item_in_inventory(
-            self.inventory_item, self.inventory)
-        if self.record_type == REMOVE and self.quantity_recorded > available_quantity:
+        from elites_franchise_portal.catalog.models import CatalogItem
+        catalog_item = CatalogItem.objects.filter(inventory_item=self.inventory_item).first()
+        if self.record_type == REMOVE and self.quantity_recorded > catalog_item.quantity:
             raise ValidationError(
                 {'quantity': 'You are trying to remove {} items of '
                     '{} and the {} has {} items'.format(
                         self.quantity_recorded, self.inventory_item.item.item_name,
-                        self.inventory.inventory_name, available_quantity)})
+                        self.inventory.inventory_name, catalog_item.quantity)})
 
     def validate_removal_item_has_removal_type(self):
         """Validate removal item has a removal type."""

@@ -341,6 +341,12 @@ class TesTEndToEnd(TestCase):
         order1.refresh_from_db()
         assert order1.is_cleared
 
+        catalog_item1.refresh_from_db()
+        catalog_item2.refresh_from_db()
+
+        assert catalog_item1.quantity == 2 + 5 == 7
+        assert catalog_item2.quantity == 11 - 3 == 8
+
         payment6 = baker.make(
             Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)
         transaction6 = baker.make(

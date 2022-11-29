@@ -22,7 +22,6 @@ def process_order_transaction(order_transaction):
         order=order_transaction.order, is_cleared=False)
     enterprise_setup_rules = EnterpriseSetupRule.objects.get(
         enterprise=order_transaction.enterprise, is_active=True)
-    default_inventory = enterprise_setup_rules.default_inventory
     audit_fields = {
         'created_by': order_transaction.created_by,
         'updated_by': order_transaction.updated_by,
@@ -49,12 +48,6 @@ def process_order_transaction(order_transaction):
             order_transaction.__class__.objects.filter(id=order_transaction.id).update(balance=new_balance)
             instant_order_item.refresh_from_db()
             inventory_item = instant_order_item.cart_item.catalog_item.inventory_item
-            InventoryRecord.objects.create(
-                inventory=default_inventory, inventory_item=inventory_item,
-                quantity_recorded=instant_order_item.quantity_cleared,
-                unit_price=instant_order_item.unit_price,
-                quantity_sold=instant_order_item.quantity_cleared,
-                record_type='REMOVE', removal_type='SALES', **audit_fields)
             order.instant_order_total = instant_order_items_totals
             order.save()
 
