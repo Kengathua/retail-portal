@@ -10,8 +10,10 @@ from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.customers.models import Customer
 from django.contrib.auth import get_user_model
-
+from elites_franchise_portal.debit.models import InventoryRecord
 from elites_franchise_portal.orders.models.orders import Order
+from elites_franchise_portal.encounters.models import Encounter
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
 SALE_TYPE_CHOICES = (
     ('INSTANT', 'INSTANT'),
@@ -51,6 +53,12 @@ class Sale(AbstractBase):
     def sale_summary(self):
         """Generate a summary for the sale."""
         pass
+
+    def get_receipt_number(self):
+        """Get the receipt number."""
+        encounter = Encounter.objects.filter(order_guid=self.order.id).first()
+        if encounter:
+            self.receipt_number = encounter.receipt_number
 
     def check_customer(self):
         """Check customer."""
@@ -94,6 +102,7 @@ class Sale(AbstractBase):
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
         self.check_customer()
+        self.get_receipt_number()
         super().save(*args, **kwargs)
         # self.check_cart()
 
@@ -136,3 +145,25 @@ class SaleItem(AbstractBase):
         """Perform pre save and post save actions."""
         self.total_amount = Decimal(float(self.selling_price) * self.quantity_sold)
         super().save(*args, **kwargs)
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        default_inventory = enterprise_setup_rules.default_inventory
+        inventory_item = self.catalog_item.inventory_item
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'enterprise': self.enterprise,
+        }
+
+        record = InventoryRecord.objects.filter(removal_guid=self.id).first()
+        if record:
+            record.inventory_item = inventory_item
+            record.quantity_recorded = self.quantity_sold
+            record.unit_price = self.selling_price
+            record.quantity_sold = self.quantity_sold
+            record.save()
+        else:
+            InventoryRecord.objects.create(
+                inventory=default_inventory, inventory_item=inventory_item,
+                quantity_recorded=self.quantity_sold, unit_price=self.selling_price,
+                quantity_sold=self.quantity_sold, record_type='REMOVE',
+                removal_type='SALES', removal_guid=self.id, **audit_fields)

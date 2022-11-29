@@ -14,7 +14,7 @@ from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.orders.models import CartItem, Cart
 
 from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.transactions.models import Transaction
+from elites_franchise_portal.transactions.models import Transaction, Payment
 from elites_franchise_portal.users.models import retrieve_user_email
 
 LOGGER = logging.getLogger(__name__)
@@ -174,6 +174,11 @@ class Order(AbstractBase):
             }
 
         return summary
+
+    @property
+    def payments(self):
+        """Get all payments attached to the order."""
+        return Payment.objects.filter(encounter__order_guid=self.id)
 
     def process_order(self):
         """Process order."""
