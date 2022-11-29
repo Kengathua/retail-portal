@@ -10,8 +10,10 @@ from elites_franchise_portal.common.models import AbstractBase
 from elites_franchise_portal.catalog.models import CatalogItem
 from elites_franchise_portal.customers.models import Customer
 from django.contrib.auth import get_user_model
-
+from elites_franchise_portal.debit.models import InventoryRecord
 from elites_franchise_portal.orders.models.orders import Order
+from elites_franchise_portal.encounters.models import Encounter
+from elites_franchise_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
 
 SALE_TYPE_CHOICES = (
     ('INSTANT', 'INSTANT'),
@@ -52,11 +54,18 @@ class Sale(AbstractBase):
         """Generate a summary for the sale."""
         pass
 
+    def get_receipt_number(self):
+        """Get the receipt number."""
+        encounter = Encounter.objects.filter(order_guid=self.order.id).first()
+        if encounter:
+            self.receipt_number = encounter.receipt_number
+
     def check_customer(self):
+        """Check customer."""
         if not self.customer:
             user = get_user_model().objects.filter(
-                Q(id=self.created_by)| Q(id=self.updated_by) | Q(
-                    guid=self.created_by)| Q(guid=self.updated_by))
+                Q(id=self.created_by) | Q(id=self.updated_by) | Q(
+                    guid=self.created_by) | Q(guid=self.updated_by))
             if user.exists():
                 user = user.first()
                 customer = Customer.objects.filter(enterprise_user=user)
@@ -86,13 +95,14 @@ class Sale(AbstractBase):
                 'updated_by': self.updated_by,
                 'franchise': self.enterprise,
                 'sale': self,
-                'is_empty':True,
+                'is_empty': True,
             }
             Cart.objects.create(**cart_payload)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
         self.check_customer()
+        self.get_receipt_number()
         super().save(*args, **kwargs)
         # self.check_cart()
 
@@ -117,14 +127,6 @@ class SaleItem(AbstractBase):
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0)
     quantity_sold = models.FloatField()
-    opening_stock_quantity = models.FloatField(null=True, blank=True, default=0)
-    closing_stock_quantity = models.FloatField(null=True, blank=True, default=0)
-    opening_stock_amount = models.DecimalField(
-        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=True, blank=True, default=0)
-    closing_stock_amount = models.DecimalField(
-        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
-        null=True, blank=True, default=0)
     processing_status = models.CharField(
         max_length=300, choices=SALE_RECORD_PROCESSING_STATUS_CHOICES,
         default=PENDING)
@@ -135,24 +137,33 @@ class SaleItem(AbstractBase):
         """Get unit price."""
         pass
 
-    def get_opening_stock(self):
-        """Get opening stock."""
-        self.opening_stock_quantity = self.catalog_item.inventory_item.summary['available_quantity'] or 0   # noqa
-        self.opening_stock_amount = self.catalog_item.inventory_item.summary['total'] or 0
-
-    def get_closing_stock(self):
-        """Get opening stock."""
-        item_sold_total = Decimal(self.quantity_sold * float(self.selling_price))
-        self.closing_stock_quantity = self.opening_stock_quantity + self.quantity_sold
-        self.closing_stock_amount = self.opening_stock_amount + item_sold_total
-
     def clean(self) -> None:
         """Clean sale model."""
         super().clean()
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        self.get_opening_stock()
-        self.get_closing_stock()
-        self.total_amount = Decimal(float(self.selling_price) * self.closing_stock_quantity)
+        self.total_amount = Decimal(float(self.selling_price) * self.quantity_sold)
         super().save(*args, **kwargs)
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        default_inventory = enterprise_setup_rules.default_inventory
+        inventory_item = self.catalog_item.inventory_item
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'enterprise': self.enterprise,
+        }
+
+        record = InventoryRecord.objects.filter(removal_guid=self.id).first()
+        if record:
+            record.inventory_item = inventory_item
+            record.quantity_recorded = self.quantity_sold
+            record.unit_price = self.selling_price
+            record.quantity_sold = self.quantity_sold
+            record.save()
+        else:
+            InventoryRecord.objects.create(
+                inventory=default_inventory, inventory_item=inventory_item,
+                quantity_recorded=self.quantity_sold, unit_price=self.selling_price,
+                quantity_sold=self.quantity_sold, record_type='REMOVE',
+                removal_type='SALES', removal_guid=self.id, **audit_fields)

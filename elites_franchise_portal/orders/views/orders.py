@@ -18,6 +18,7 @@ from elites_franchise_portal.debit.tasks import process_sale
 from elites_franchise_portal.orders.helpers.orders import refresh_order
 from elites_franchise_portal.transactions.models import Payment, Transaction
 from elites_franchise_portal.customers.models import Customer
+from elites_franchise_portal.encounters.models import Encounter
 
 class OrderViewSet(BaseViewMixin):
     """Order viewset class."""
@@ -129,14 +130,22 @@ class InstallmentViewSet(BaseViewMixin):
             }
 
         installment_item = InstallmentsOrderItem.objects.get(id=request.data['installment_item'])
+
+        if installment_item.is_cleared and installment_item.total_amount == installment_item.amount_paid:
+            error = {'item': 'The order item {} if already cleared'.format(installment_item.cart_item.catalog_item.inventory_item.item.item_name)}
+            return Response(data=error, status=status.HTTP_400_BAD_REQUEST)
+
         customer = Customer.objects.get(id=request.data['customer'])
 
+        encounter = Encounter.objects.filter(order_guid=installment_item.order.id).first()
         payment_payload = {
             'payment_code': request.data['payment_code'],
             'account_number': customer.account_number,
             'customer': customer,
             'paid_amount': request.data['amount'],
             'payment_method': request.data['payment_method'],
+            'encounter': encounter,
+            'is_installment': True,
         }
         payment = Payment.objects.create(**payment_payload, **audit_fields)
         payment.refresh_from_db()
@@ -147,9 +156,12 @@ class InstallmentViewSet(BaseViewMixin):
             'transaction_means': request.data['payment_method'],
             'customer': customer,
         }
+
         transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
         transaction.refresh_from_db()
         payment.transaction_guid = transaction.id
+        payment.is_confirmed = True
+        payment.is_processed = True
         payment.save()
 
         order_transaction_payload = {
@@ -159,6 +171,8 @@ class InstallmentViewSet(BaseViewMixin):
             'is_installment': True,
         }
         order_transaction = OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
+        transaction.balance = 0
+        transaction.save()
 
         installment_payload = {
             'order_transaction': order_transaction,
@@ -169,6 +183,9 @@ class InstallmentViewSet(BaseViewMixin):
         }
 
         installment = Installment.objects.create(**installment_payload, **audit_fields)
+        order_transaction.balance = 0
+        order_transaction.save()
+
         serializer = serializers.InstallmentSerializer(installment, many=False)
 
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)

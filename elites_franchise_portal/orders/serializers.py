@@ -3,7 +3,7 @@
 from rest_framework.fields import CharField, SerializerMethodField, ReadOnlyField
 from elites_franchise_portal.common.serializers import BaseSerializerMixin
 from elites_franchise_portal.orders import models
-
+from elites_franchise_portal.transactions.serializers import PaymentSerializer
 
 class RecordOwnerSerializer(BaseSerializerMixin):
     """
@@ -67,7 +67,13 @@ class OrderSerializer(BaseSerializerMixin):
     """Order Serializer class."""
 
     heading = ReadOnlyField()
+    payments = SerializerMethodField()
     customer_name = CharField(source='customer.full_name', read_only=True)
+
+    def get_payments(self, order):
+        """Get payments."""
+        serializer = PaymentSerializer(order.payments, many=True)
+        return serializer.data
 
     class Meta:
         """Serializer Meta class."""
@@ -80,7 +86,8 @@ class InstantOrderItemSerializer(BaseSerializerMixin):
     """Instant order item Serializer class."""
 
     unit_price = CharField(read_only=True)
-    item_name = CharField(source='cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
+    item_name = CharField(
+        source='cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
     customer_name = CharField(source='order.customer.full_name', read_only=True)
     order_name = CharField(source='order.heading', read_only=True)
     order_number = CharField(source='order.order_number', read_only=True)
@@ -130,6 +137,8 @@ class OrderTransactionSerializer(BaseSerializerMixin):
     order_number = CharField(source='order.order_number', read_only=True)
     order_name = CharField(source='order.heading', read_only=True)
     transaction_time = CharField(source='transaction.transaction_time', read_only=True)
+    payment_code = ReadOnlyField(source='transaction.payment_code')
+    transaction_means = ReadOnlyField(source='transaction.transaction_means')
 
     def get_order_coverage_percentage(self, order_transaction):
         order_total = order_transaction.order.summary['order_total']

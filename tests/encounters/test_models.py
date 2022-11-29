@@ -168,12 +168,13 @@ class TestEncounter(TestCase):
         ]
 
         encounter = baker.make(
-            Encounter, customer=customer, billing=billing, payments=payments,
-            submitted_amount=7000, enterprise=enterprise_code)
+            Encounter, customer=customer, billing=billing,
+            payments=payments, submitted_amount=7000, enterprise=enterprise_code)
 
+        assert encounter
         assert Encounter.objects.count() == 1
         assert Cart.objects.count() == 1
-        assert Order.objects.count() ==  1
+        assert Order.objects.count() == 1
         assert Payment.objects.count() == 2
         assert Transaction.objects.count() == 2
         assert OrderTransaction.objects.count() == 2
