@@ -45,7 +45,7 @@ NGROK_BASE_URL = 'http://2028-197-237-137-119.ngrok.io'
 CORS_ORIGIN_ALLOW_ALL = True
 
 ALLOWED_HOSTS = ['*']
-
+ALLOWED_HOSTS = ['68.183.33.98', '.uat-elites-retail-portal.com', '.staging.uat-elites-retail-portal.com', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
