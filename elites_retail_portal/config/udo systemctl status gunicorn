@@ -6,5 +6,5 @@ TriggeredBy: [0;1;32m●[0m gunicorn.socket
       Tasks: 2 (limit: 1131)
      Memory: 18.0M
      CGroup: /system.slice/gunicorn.service
-             ├─36849 /home/kengathua/franchise-portal/venv/bin/python /home/kengathua/franchise-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_retail_portal.config.wsgi:application
-             └─36905 /home/kengathua/franchise-portal/venv/bin/python /home/kengathua/franchise-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_retail_portal.config.wsgi:application
+             ├─36849 /home/kengathua/retail-portal/venv/bin/python /home/kengathua/retail-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_retail_portal.config.wsgi:application
+             └─36905 /home/kengathua/retail-portal/venv/bin/python /home/kengathua/retail-portal/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/run/gunicorn.sock elites_retail_portal.config.wsgi:application

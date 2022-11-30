@@ -2,7 +2,7 @@ Setup a virtualenv
 
 [Virtualenv with Virtualenvwrapper](https://www.freecodecamp.org/newsvirtualenv-with-virtualenvwrapper-on-ubuntu-18-04/)
 
-    mkvirtualenv -p python3.9 FRANCHISE-PORTAL
+    mkvirtualenv -p python3.9 retail-portal
 
 If you have a virtual environment set up.
 
