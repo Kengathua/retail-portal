@@ -32,6 +32,7 @@ setup(
         'django-phonenumber-field==6.1.0',
         'djangorestframework==3.13.1',
         'dj-database-url==1.0.0',
+        'gunicorn==20.1.0',
         'Pillow==9.2.0',
         'django-sendfile==0.3.11',
         'djangorestframework-simplejwt==5.1.0',
