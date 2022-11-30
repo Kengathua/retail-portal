@@ -1,7 +1,7 @@
 import uuid
 
 from django.test import TestCase
-from elites_franchise_portal.users.models import User
+from elites_retail_portal.users.models import User
 from django.contrib.auth.models import Group
 
 from model_bakery import baker

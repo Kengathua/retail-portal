@@ -4,7 +4,7 @@ import pytest
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.enterprises.models import Enterprise
 
 from model_bakery import baker
 from model_bakery import recipe

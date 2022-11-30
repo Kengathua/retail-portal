@@ -4,24 +4,24 @@ from unittest import mock
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     InventoryItem, Inventory, InventoryInventoryItem, InventoryRecord)
-from elites_franchise_portal.catalog.models import (
+from elites_retail_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
-from elites_franchise_portal.orders.models import (
+from elites_retail_portal.orders.models import (
     Cart, CartItem, Order, OrderTransaction, InstantOrderItem, InstallmentsOrderItem, Installment)
-from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.warehouses.models import (
+from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord)
-from elites_franchise_portal.credit.models import Purchase, PurchaseItem
-from elites_franchise_portal.encounters.models import Encounter
-from elites_franchise_portal.transactions.models import (
+from elites_retail_portal.credit.models import Purchase, PurchaseItem
+from elites_retail_portal.encounters.models import Encounter
+from elites_retail_portal.transactions.models import (
     Payment, Transaction)
-from elites_franchise_portal.enterprise_mgt.models import (
+from elites_retail_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleInventory,
     EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
 

@@ -4,19 +4,19 @@ import pytest
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     InventoryItem, Inventory, InventoryInventoryItem)
-from elites_franchise_portal.catalog.models import (
+from elites_retail_portal.catalog.models import (
     Section, Catalog, CatalogItem)
-from elites_franchise_portal.orders.models import (
+from elites_retail_portal.orders.models import (
     Cart, CartItem)
-from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.warehouses.models import (Warehouse)
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.warehouses.models import (Warehouse)
+from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe

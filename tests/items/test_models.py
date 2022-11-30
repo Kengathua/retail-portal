@@ -3,18 +3,18 @@
 import uuid
 import pytest
 from django.test import TestCase
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
-from elites_franchise_portal.warehouses.models import (
+from elites_retail_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseWarehouseItem)
-from elites_franchise_portal.catalog.models import Catalog
-from elites_franchise_portal.users.models import User
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.catalog.models import Catalog
+from elites_retail_portal.users.models import User
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
     ItemModel, ItemType, ItemUnits, UnitsItemType, Units)
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.enterprise_mgt.models import (
+from elites_retail_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleInventory,
     EnterpriseSetupRuleWarehouse, EnterpriseSetupRuleCatalog)
 

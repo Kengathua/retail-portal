@@ -3,19 +3,19 @@ import uuid
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
-from elites_franchise_portal.catalog.models import Catalog
-from elites_franchise_portal.warehouses.models import Warehouse
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.debit.models.inventory import InventoryInventoryItem
+from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_retail_portal.catalog.models import Catalog
+from elites_retail_portal.warehouses.models import Warehouse
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord, Sale, SaleItem)
-from elites_franchise_portal.catalog.models import CatalogItem
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.customers.models import Customer
+from elites_retail_portal.catalog.models import CatalogItem
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.customers.models import Customer
 
 from model_bakery import baker
 

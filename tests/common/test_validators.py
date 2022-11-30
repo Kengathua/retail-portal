@@ -1,6 +1,6 @@
 import pytest
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.common.validators import franchise_enterprise_code_validator
+from elites_retail_portal.common.validators import franchise_enterprise_code_validator
 
 def test_franchise_enterprise_code_validator():
     code = "EAL-F/FNO-MB/2201-01"

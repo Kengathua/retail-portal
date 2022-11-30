@@ -49,9 +49,9 @@ You should be set now
 <!-- Start Celery -->
 ### Celery
 
-    python -m celery -A elites_franchise_portal.config worker
+    python -m celery -A elites_retail_portal.config worker
 
-    python -m celery -A elites_franchise_portal.config worker -l info
+    python -m celery -A elites_retail_portal.config worker -l info
 
 #### On Windows
 

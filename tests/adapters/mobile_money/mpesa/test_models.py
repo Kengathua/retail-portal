@@ -3,7 +3,7 @@
 from django.test import TestCase
 
 from model_bakery import baker
-from elites_franchise_portal.adapters.mobile_money.mpesa.models import MpesaAuthorization
+from elites_retail_portal.adapters.mobile_money.mpesa.models import MpesaAuthorization
 
 
 class TestMpesaAuthorization(TestCase):

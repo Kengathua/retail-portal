@@ -1,0 +1,1 @@
+from elites_retail_portal.enterprises.models import Enterprise

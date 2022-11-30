@@ -4,17 +4,17 @@ from tests.utils.api import APITests
 from rest_framework.test import APITestCase
 from django.urls import reverse
 
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.catalog.models import (
+from elites_retail_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import authenticate_test_user
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
-from elites_franchise_portal.warehouses.models import Warehouse
+from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_retail_portal.warehouses.models import Warehouse
 from model_bakery import baker
 from model_bakery.recipe import Recipe
 

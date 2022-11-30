@@ -8,9 +8,9 @@ from django.contrib.auth import get_user_model
 
 from rest_framework.test import APITestCase
 
-from elites_franchise_portal.debit.models import Sale
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.customers.models import Customer
+from elites_retail_portal.debit.models import Sale
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.customers.models import Customer
 
 from tests.utils.api import APITests
 
