@@ -35,12 +35,12 @@ NGROK_BASE_URL = 'http://2028-197-237-137-119.ngrok.io'
 # ALLOWED_HOSTS = [
 #     'kengathua.pythonanywhere.com', '127.0.0.1', 'localhost', '.ngrok.io',
 #     NGROK_BASE_URL, 'chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop',
-#     'http://franchise-portal.eba-uk5xvhjm.eu-west-2.elasticbeanstalk.com',
+#     'http://retail-portal.eba-uk5xvhjm.eu-west-2.elasticbeanstalk.com',
 #     'http://localhost:3000/']
 
 # CSRF_TRUSTED_ORIGINS = ['chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop',
 #                         'chrome-extension://gighmmpiobklfepjocnamgkkbiglidom/browser-polyfill.js.map',
-#                         'http://franchise-portal.eba-uk5xvhjm.eu-west-2.elasticbeanstalk.com']
+#                         'http://retail-portal.eba-uk5xvhjm.eu-west-2.elasticbeanstalk.com']
 
 CORS_ORIGIN_ALLOW_ALL = True
 
