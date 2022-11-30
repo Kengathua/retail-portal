@@ -1,6 +1,6 @@
 """."""
 
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.enterprises.models import Enterprise
 from tests.utils import APITests
 
 from rest_framework.test import APITestCase

@@ -5,21 +5,21 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.debit.models.inventory import InventoryInventoryItem
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.debit.models.inventory import InventoryInventoryItem
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import (
     Category, ItemType, Brand, BrandItemType, ItemModel,
     Item, Units, UnitsItemType, ItemUnits)
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord)
-from elites_franchise_portal.warehouses.models import (
+from elites_retail_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
-from elites_franchise_portal.catalog.models import (
+from elites_retail_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
-from elites_franchise_portal.debit.models import Sale
+from elites_retail_portal.debit.models import Sale
 from django.conf import settings
-from elites_franchise_portal.enterprise_mgt.models import (
+from elites_retail_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleCatalog, EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
 
 # settings.configure()

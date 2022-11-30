@@ -4,10 +4,10 @@ import pytest
 from rest_framework.test import APITestCase
 
 from tests.utils.api import APITests
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType)
-from elites_franchise_portal.warehouses.models import (
+from elites_retail_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
 
 from tests.utils.login_mixins import LoggedInMixin, authenticate_test_user

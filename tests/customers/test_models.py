@@ -6,8 +6,8 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
-from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.enterprises.models import Enterprise
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe

@@ -4,8 +4,8 @@ import uuid
 from django.contrib.auth import get_user_model
 
 from tests.utils import APITests
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.customers.models import Customer
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.customers.models import Customer
 
 from rest_framework.test import APITestCase
 

@@ -1,1 +1,0 @@
-from elites_franchise_portal.enterprises.models import Enterprise

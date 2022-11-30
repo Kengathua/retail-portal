@@ -2,7 +2,7 @@
 from setuptools import find_packages, setup
 # from version import get_version
 
-name = 'franchise_portal'
+name = 'retail_portal'
 version = '0.0.1'
 # version = get_version()
 
@@ -42,7 +42,7 @@ setup(
         'gunicorn==20.1.0',
     ],
     scripts=[
-        'bin/franchise_portal_manage'
+        'bin/retail_portal_manage'
     ],
     include_package_data=True
 )

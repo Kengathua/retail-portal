@@ -1,19 +1,19 @@
 from django.test import TestCase
 
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     InventoryRecord, Inventory, InventoryInventoryItem, InventoryItem)
-from elites_franchise_portal.warehouses.models import (
+from elites_retail_portal.warehouses.models import (
     WarehouseRecord, Warehouse, WarehouseItem)
-from elites_franchise_portal.enterprise_mgt.models import (
+from elites_retail_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleInventory,
     EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
-from elites_franchise_portal.catalog.models import (
+from elites_retail_portal.catalog.models import (
     Catalog, CatalogItem, CatalogCatalogItem)
-from elites_franchise_portal.credit.models import Purchase, PurchaseItem
+from elites_retail_portal.credit.models import Purchase, PurchaseItem
 
 from model_bakery import baker
 

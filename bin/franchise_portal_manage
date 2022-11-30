@@ -9,7 +9,7 @@ if __name__ == "__main__":
             "DJANGO_SETTINGS_MODULE", "tests.test_settings")
     else:
         os.environ.setdefault(
-            "DJANGO_SETTINGS_MODULE", "elites_franchise_portal.config.settings")
+            "DJANGO_SETTINGS_MODULE", "elites_retail_portal.config.settings")
 
     from django.core.management import execute_from_command_line
 
