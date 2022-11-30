@@ -4,8 +4,8 @@ from tests.utils import LoggedInMixin
 from tests.utils.login_mixins import authenticate_test_user
 
 
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.catalog.models import Section
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.catalog.models import Section
 
 from django.urls import reverse
 

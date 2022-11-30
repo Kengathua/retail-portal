@@ -6,8 +6,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework.test import APIClient
 
-from elites_franchise_portal.users.models import User
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.users.models import User
+from elites_retail_portal.enterprises.models import Enterprise
 from django.core.exceptions import ValidationError
 
 from model_bakery import baker

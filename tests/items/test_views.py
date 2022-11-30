@@ -11,10 +11,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 
 from tests.utils.api import APITests
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
     ItemModel, ItemType, ItemUnits, Units)
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import LoggedInMixin, authenticate_test_user
 
 from model_bakery import baker

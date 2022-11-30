@@ -2,8 +2,8 @@ from django.urls import reverse
 from model_bakery import recipe
 from rest_framework.test import APITestCase
 
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.items.models import Category
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.items.models import Category
 
 from tests.utils.login_mixins import LoggedInMixin
 from tests.utils.login_mixins import authenticate_test_user

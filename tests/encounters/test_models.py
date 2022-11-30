@@ -4,28 +4,28 @@ import time
 from unittest import mock
 from django.test import TestCase
 
-from elites_franchise_portal.debit.models import (
+from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem,
     InventoryRecord)
-from elites_franchise_portal.items.models import (
+from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
-from elites_franchise_portal.warehouses.models import (
+from elites_retail_portal.warehouses.models import (
     Warehouse)
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.customers.models import Customer
-from elites_franchise_portal.catalog.models import (
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.catalog.models import (
     Catalog, CatalogCatalogItem, CatalogItem)
-from elites_franchise_portal.encounters.models import Encounter
-from elites_franchise_portal.enterprise_mgt.models import (
+from elites_retail_portal.encounters.models import Encounter
+from elites_retail_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleCatalog,
     EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
-from elites_franchise_portal.orders.models import Order, Cart, OrderTransaction
-from elites_franchise_portal.transactions.models import Payment, Transaction
+from elites_retail_portal.orders.models import Order, Cart, OrderTransaction
+from elites_retail_portal.transactions.models import Payment, Transaction
 
 from model_bakery import baker
 
-MK_ROOT = 'elites_franchise_portal.encounters'
+MK_ROOT = 'elites_retail_portal.encounters'
 
 
 class TestEncounter(TestCase):

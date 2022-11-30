@@ -1,10 +1,10 @@
-from elites_franchise_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
 from django.test import TestCase
 
-from elites_franchise_portal.enterprises.models import Enterprise
-from elites_franchise_portal.debit.models import Inventory
-from elites_franchise_portal.catalog.models import Catalog
-from elites_franchise_portal.warehouses.models import Warehouse
+from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.debit.models import Inventory
+from elites_retail_portal.catalog.models import Catalog
+from elites_retail_portal.warehouses.models import Warehouse
 
 
 from model_bakery import baker

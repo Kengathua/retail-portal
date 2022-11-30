@@ -1,1 +1,1 @@
-from elites_franchise_portal.config.settings import *
+from elites_retail_portal.config.settings import *

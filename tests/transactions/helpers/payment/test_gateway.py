@@ -2,10 +2,10 @@
 # get_transaction_object sample data to mock
 # callback_handler
 from django.test import TestCase
-from elites_franchise_portal.transactions.helpers.payments.gateways import MpesaGateWay
-from elites_franchise_portal.transactions.models import (
+from elites_retail_portal.transactions.helpers.payments.gateways import MpesaGateWay
+from elites_retail_portal.transactions.models import (
     Transaction, Payment, PaymentRequest)
-from elites_franchise_portal.enterprises.models import Enterprise
+from elites_retail_portal.enterprises.models import Enterprise
 
 from unittest.mock import patch
 
