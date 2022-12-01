@@ -1,4 +1,7 @@
 """Orders filters file."""
+
+import django_filters
+
 from elites_retail_portal.common.filters import SearchComboboxBaseFilter
 from elites_retail_portal.orders import models
 
@@ -36,6 +39,8 @@ class OrderFilter(SearchComboboxBaseFilter):
 class InstantOrderItemFilter(SearchComboboxBaseFilter):
     """Filter InstantOrder items."""
 
+    customer = django_filters.CharFilter(field_name='order__customer')
+
     class Meta:
         """Restrict filter fields."""
 
@@ -45,6 +50,8 @@ class InstantOrderItemFilter(SearchComboboxBaseFilter):
 
 class InstallmentsOrderItemFilter(SearchComboboxBaseFilter):
     """Filter InstallmentsOrder items."""
+
+    customer = django_filters.CharFilter(field_name='order__customer')
 
     class Meta:
         """Restrict filter fields."""
@@ -60,4 +67,14 @@ class OrderTransactionFilter(SearchComboboxBaseFilter):
         """Restrict filter fields."""
 
         model = models.OrderTransaction
+        fields = '__all__'
+
+
+class InstallmentFilter(SearchComboboxBaseFilter):
+    """Filter Installments."""
+
+    class Meta:
+        """Restrict filter fields."""
+
+        model = models.Installment
         fields = '__all__'

@@ -83,7 +83,7 @@ class CatalogCatalogItemViewSet(BaseViewMixin):
 class CatalogItemAuditLogViewSet(BaseViewMixin):
     """Viewset for CatalogItemAuditLog model."""
 
-    queryset = CatalogItemAuditLog.objects.all().order_by('created_on')
+    queryset = CatalogItemAuditLog.objects.all().order_by('-audit_date')
     serializer_class = serializers.CatalogItemAuditLogSerializer
     filterset_class = filters.CatalogItemAuditLogFilter
     search_fields = (

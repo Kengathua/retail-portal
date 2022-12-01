@@ -65,9 +65,14 @@ def process_customer_encounter(encounter_id):
             means = payment['means']
             amount = payment['amount']
             if amount:
-                account_number = encounter.customer.account_number or encounter.customer.customer_number or encounter.customer.phone_no
+                account_number=None
+
+                if encounter.customer:
+                    account_number = encounter.customer.account_number or encounter.customer.customer_number or encounter.customer.phone_no
+
                 payment_payload = {
                     'paid_amount': amount,
+                    'balance_amount': encounter.balance_amount,
                     'customer': encounter.customer,
                     'payment_method': means,
                     'is_confirmed': True,
@@ -103,6 +108,7 @@ def process_customer_encounter(encounter_id):
                     'transaction_code': payment.transaction_code,
                 }
                 transaction = Transaction.objects.create(**transaction_payload, **audit_fields)
+                payment.is_processed = True
                 payment.transaction_guid = transaction.id
                 payment.save()
 

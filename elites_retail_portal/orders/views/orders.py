@@ -14,7 +14,6 @@ from elites_retail_portal.orders.models import (
 from elites_retail_portal.orders.models import Cart, CartItem
 from elites_retail_portal.debit.models import Sale
 from elites_retail_portal.orders import serializers, filters
-from elites_retail_portal.debit.tasks import process_sale
 from elites_retail_portal.orders.helpers.orders import refresh_order
 from elites_retail_portal.transactions.models import Payment, Transaction
 from elites_retail_portal.customers.models import Customer
@@ -27,7 +26,8 @@ class OrderViewSet(BaseViewMixin):
     serializer_class = serializers.OrderSerializer
     filterset_class = filters.OrderFilter
     search_fields = (
-        'order_name', 'order_number')
+        'order_name', 'order_number',
+        'customer__first_name', 'customer__customer_number', 'customer__last_name', 'customer__other_names',)
 
     @action(detail=True, methods=['post'])
     def update_order_items(self, request, *args, **kwargs):
@@ -113,13 +113,27 @@ class InstallmentsOrderItemViewSet(BaseViewMixin):
     queryset = InstallmentsOrderItem.objects.all()
     serializer_class = serializers.InstallmentsOrderItemSerializer
     filterset_class = filters.InstallmentsOrderItemFilter
-
+    search_fields = (
+        'cart_item__catalog_item__inventory_item__item__item_name',
+        'cart_item__catalog_item__inventory_item__item__barcode',
+        'cart_item__catalog_item__inventory_item__item__item_code',
+    )
 
 class InstallmentViewSet(BaseViewMixin):
     """Installment Viewset class."""
 
     queryset = Installment.objects.all().order_by('-installment_date')
     serializer_class = serializers.InstallmentSerializer
+    filterset_class = filters.InstallmentFilter
+    search_fields = (
+        'installment_code', 'amount', 'balance', 'note',
+        'installment_item__cart_item__catalog_item__inventory_item__item__item_name',
+        'installment_item__cart_item__catalog_item__inventory_item__item__barcode',
+        'order_transaction__order__customer__first_name',
+        'order_transaction__order__customer__last_name',
+        'order_transaction__order__customer__other_names',
+        'order_transaction__order__customer__customer_number',
+        'order_transaction__order__order_name', 'order_transaction__order__order_number')
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
@@ -132,7 +146,8 @@ class InstallmentViewSet(BaseViewMixin):
         installment_item = InstallmentsOrderItem.objects.get(id=request.data['installment_item'])
 
         if installment_item.is_cleared and installment_item.total_amount == installment_item.amount_paid:
-            error = {'item': 'The order item {} if already cleared'.format(installment_item.cart_item.catalog_item.inventory_item.item.item_name)}
+            error = {'item': 'The order item {} if already cleared'.format(
+                installment_item.cart_item.catalog_item.inventory_item.item.item_name)}
             return Response(data=error, status=status.HTTP_400_BAD_REQUEST)
 
         customer = Customer.objects.get(id=request.data['customer'])
@@ -178,12 +193,21 @@ class InstallmentViewSet(BaseViewMixin):
             'order_transaction': order_transaction,
             'installment_item': installment_item,
             'amount': request.data['amount'],
+            'balance': 0,
             'note': request.data['note'],
             'is_direct_installment': True
         }
 
-        installment = Installment.objects.create(**installment_payload, **audit_fields)
         order_transaction.balance = 0
+        if float(installment_item.amount_due) < float(request.data['amount']):
+            balance = float(request.data['amount']) - float(installment_item.amount_due)
+            installment_payload['amount'] = installment_item.amount_due
+            installment_payload['balance'] = balance
+            transaction.balance = balance
+            order_transaction.balance = balance
+            transaction.save()
+
+        installment = Installment.objects.create(**installment_payload, **audit_fields)
         order_transaction.save()
 
         serializer = serializers.InstallmentSerializer(installment, many=False)

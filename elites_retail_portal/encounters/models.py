@@ -115,7 +115,6 @@ class Encounter(AbstractBase):
 
     def get_balance_amount(self):
         self.balance_amount = Decimal(float(self.submitted_amount) - float(self.payable_amount))
-
         if self.submitted_amount < self.payable_amount:
             msg = "The submitted amount KSh. {:,.2f} is less to the total payable amount KSh. {:,.2f} by KSh. {:,.2f}".format(
                 self.submitted_amount, self.payable_amount, self.balance_amount)
@@ -170,7 +169,6 @@ class Encounter(AbstractBase):
         super().save(*args, **kwargs)
         encounter = self.__class__.objects.filter(id=self.id).first()
         if encounter and self.processing_status == 'PENDING':
-            # process_customer_encounter.delay(encounter.id)
             process_customer_encounter(encounter.id)
 
     # TODO Create a stall button to stall an encounter.
