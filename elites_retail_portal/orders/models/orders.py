@@ -81,7 +81,7 @@ class Order(AbstractBase):
     """Order Model."""
 
     customer = models.ForeignKey(
-        Customer, null=False, blank=False, on_delete=models.PROTECT)
+        Customer, null=True, blank=True, on_delete=models.PROTECT)
     cart_code = models.CharField(null=True, blank=True, max_length=300)
     order_number = models.CharField(null=True, blank=True, max_length=250)
     order_name = models.CharField(null=True, blank=True, max_length=300)
@@ -308,6 +308,11 @@ class AbstractOrderItem(AbstractBase):
     quantity_awaiting_clearance = models.IntegerField(default=0)
     quantity_returned = models.IntegerField(default=0)
     is_cleared = models.BooleanField(default=False)
+
+
+    @property
+    def customer(self):
+        return self.order.customer
 
     def get_unit_price(self):
         """Get the price per item."""
@@ -663,6 +668,9 @@ class Installment(AbstractBase):
     amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=False, blank=False)
+    balance = models.DecimalField(
+        max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
+        null=True, blank=True)
     installment_date = models.DateTimeField(db_index=True, default=timezone.now)
     next_installment_date = models.DateField(null=True, blank=True)
     note = models.TextField(null=True, blank=True)

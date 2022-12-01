@@ -230,7 +230,8 @@ class Cart(AbstractBase):
 
     def __str__(self):
         """Str representation for the item-models model."""
-        return '{} -> {}'.format(self.customer.full_name, self.cart_code)
+        customer_name = self.customer.full_name if self.customer else 'ON SITE'
+        return '{} -> {}'.format(customer_name, self.cart_code)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""

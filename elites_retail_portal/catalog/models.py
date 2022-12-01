@@ -380,6 +380,19 @@ class CatalogItemAuditLog(AbstractBase):
         if not self.quantity_after:
             self.quantity_after = self.quantity_before + self.quantity_recorded
 
+    def get_amounts(self):
+        if not self.marked_price_recorded:
+            self.marked_price_recorded = self.catalog_item.marked_price
+
+        if not self.selling_price_recorded:
+            self.selling_price_recorded = self.catalog_item.selling_price
+
+        if not self.threshold_price_recorded:
+            self.threshold_price_recorded = self.catalog_item.threshold_price
+
+        if not self.discount_amount_recorded:
+            self.discount_amount_recorded = self.catalog_item.discount_amount
+
     def validate_inventory_record_source_has_inventory_record_attached(self):
         if self.audit_source == INVENTORY_RECORD and not self.inventory_record:
             msg = 'An audit coming from inventory records should have the inventory record atached to it'
@@ -402,4 +415,5 @@ class CatalogItemAuditLog(AbstractBase):
     def save(self, *args, **kwargs):
         self.get_quantity_before()
         self.get_quantity_after()
+        self.get_amounts()
         return super().save(*args, **kwargs)

@@ -48,7 +48,10 @@ def validate_billing(encounter):
                         item_name, billed_quantity, available_quantity)})
 
         if bill['sale_type'] == 'INSTALLMENT':
-            pass
+            if not encounter.customer:
+                msg = 'An installment sale requires a customer to be attached. '\
+                    'Kindly register and select the customer to proceed'
+                raise ValidationError({'customer': msg})
 
         if float(bill['unit_price']) < float(catalog_item.threshold_price):
             raise ValidationError(
