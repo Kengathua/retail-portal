@@ -754,17 +754,24 @@ class Installment(AbstractBase):
         if self.installment_item:
             installment = self.__class__.objects.filter(id=self.id).first()
             self.installment_item.refresh_from_db()
+            self.installment_item.end_date = None
+            self.installment_item.is_cleared = False
             if installment:
                 diff = self.amount - installment.amount
                 self.installment_item.amount_paid -= diff
             else:
                 self.installment_item.amount_paid += self.amount
 
-            no_of_cleared_items = int(
-                float(self.installment_item.amount_paid) / float(self.installment_item.unit_price)) if self.installment_item.unit_price else 0    # noqa
-            self.installment_item.quantity_cleared = no_of_cleared_items
+            no_of_cleared_items = float(
+                self.installment_item.amount_paid) / float(
+                    self.installment_item.unit_price) if self.installment_item.unit_price else 0    # noqa
+
+            quantity_on_partial_deposit = no_of_cleared_items % int(no_of_cleared_items)
+            self.installment_item.quantity_cleared = int(no_of_cleared_items)
+            self.installment_item.quantity_on_partial_deposit = 1 if quantity_on_partial_deposit else 0
 
             if self.installment_item.amount_paid >= self.installment_item.total_amount:
+                self.installment_item.end_date = timezone.now()
                 self.installment_item.is_cleared = True
                 self.installment_item.payment_status = "FULLY PAID"
 

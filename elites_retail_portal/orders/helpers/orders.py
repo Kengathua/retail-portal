@@ -4,7 +4,7 @@ import logging
 from decimal import Decimal
 
 from django.db.models import Q
-from elites_retail_portal.debit.models import InventoryRecord
+from elites_retail_portal.debit.models import InventoryRecord, InventoryInventoryItem
 from elites_retail_portal.orders.models import InstallmentsOrderItem, InstantOrderItem
 from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_retail_portal.encounters.models import Encounter
@@ -99,6 +99,13 @@ def process_order_transaction(order_transaction):
 
                     installment_order_item.refresh_from_db()
                     inventory_item = installment_order_item.cart_item.catalog_item.inventory_item
+
+                    if not InventoryInventoryItem.objects.filter(
+                        inventory=allocated_inventory, inventory_item=inventory_item):
+                        InventoryInventoryItem.objects.create(
+                            inventory=allocated_inventory, inventory_item=inventory_item,
+                            **audit_fields)
+
                     InventoryRecord.objects.create(
                         inventory=allocated_inventory, inventory_item=inventory_item,
                         quantity_recorded=installment_order_item.quantity_cleared,
