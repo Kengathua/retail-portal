@@ -1,9 +1,10 @@
+"""."""
 
 import pytest
-from unittest import mock
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
+from elites_retail_portal.encounters.models import Encounter
 from elites_retail_portal.enterprises.models import Enterprise
 from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
@@ -13,12 +14,10 @@ from elites_retail_portal.debit.models import (
 from elites_retail_portal.catalog.models import (
     Section, Catalog, CatalogItem, CatalogCatalogItem)
 from elites_retail_portal.orders.models import (
-    Cart, CartItem, Order, OrderTransaction, InstantOrderItem, InstallmentsOrderItem, Installment)
+    Cart, Order, OrderTransaction, InstantOrderItem, InstallmentsOrderItem, Installment)
 from elites_retail_portal.customers.models import Customer
-from elites_retail_portal.warehouses.models import (
-    Warehouse, WarehouseItem, WarehouseRecord)
+from elites_retail_portal.warehouses.models import Warehouse
 from elites_retail_portal.credit.models import Purchase, PurchaseItem
-from elites_retail_portal.encounters.models import Encounter
 from elites_retail_portal.transactions.models import (
     Payment, Transaction)
 from elites_retail_portal.enterprise_mgt.models import (
@@ -127,10 +126,11 @@ class TesTEndToEnd(TestCase):
         baker.make(
             InventoryRecord, inventory=inventory, inventory_item=inventory_item2,
             record_type='ADD', quantity_recorded=5, unit_price=2000, enterprise=enterprise_code)
+        section = baker.make(Section, section_name='KITCHEN', enterprise=enterprise_code)
         catalog_item1 = baker.make(
-            CatalogItem, inventory_item=inventory_item1, enterprise=enterprise_code)
+            CatalogItem, section=section, inventory_item=inventory_item1, enterprise=enterprise_code)
         catalog_item2 = baker.make(
-            CatalogItem, inventory_item=inventory_item2, enterprise=enterprise_code)
+            CatalogItem, section=section, inventory_item=inventory_item2, enterprise=enterprise_code)
 
         catalog_item1.refresh_from_db()
         catalog_item2.refresh_from_db()
