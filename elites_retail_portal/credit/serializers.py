@@ -35,7 +35,8 @@ class PurchaseItemSerializer(BaseSerializerMixin):
 class SalesReturnSerializer(BaseSerializerMixin):
     """Sales Return serializer class."""
 
-    item_name = CharField(source='sale_item.catalog_item.inventory_item.item.item_name', read_only=True)
+    item_name = CharField(
+        source='sale_item.catalog_item.inventory_item.item.item_name', read_only=True)
 
     class Meta:
         """Serializer Meta class."""

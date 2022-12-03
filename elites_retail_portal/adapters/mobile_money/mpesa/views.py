@@ -4,8 +4,7 @@ import json
 import logging
 import requests
 
-from django.http import HttpResponse, JsonResponse
-# from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -35,7 +34,7 @@ class MpesaCheckout(APIView):
         """."""
         data = request.data
         mpesa_authorization = MpesaAuthorization.objects.filter(
-            enterprise=data['franchise'])
+            enterprise=data['enterprise'])
         mpesa_authorization
         serializer = self.serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -134,4 +133,3 @@ class MpesaConfirmation(APIView):
             "ResultDesc": "Accepted"
         }
         return Response(context, status=200)
-

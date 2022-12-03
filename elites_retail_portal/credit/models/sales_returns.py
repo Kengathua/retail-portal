@@ -6,7 +6,6 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 
-from elites_retail_portal.items.models import Item
 from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.debit.models import (
     InventoryRecord, InventoryItem, Sale, SaleItem)
@@ -47,7 +46,8 @@ class SalesReturn(AbstractBase):
 
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory
-        inventory_item = InventoryItem.objects.get(id=self.sale_item.catalog_item.inventory_item.id, is_active=True)
+        inventory_item = InventoryItem.objects.get(
+            id=self.sale_item.catalog_item.inventory_item.id, is_active=True)
         audit_fields = {
             'created_by': self.created_by,
             'updated_by': self.updated_by,

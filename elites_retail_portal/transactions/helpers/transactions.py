@@ -2,6 +2,7 @@
 
 from elites_retail_portal.orders.models import OrderTransaction
 
+
 def create_order_transaction(transaction, customer_orders):
     """Add and order transaction."""
     for customer_order in customer_orders:

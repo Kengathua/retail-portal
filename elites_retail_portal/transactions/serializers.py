@@ -17,6 +17,7 @@ class TransactionSerializer(BaseSerializerMixin):
         model = models.Transaction
         fields = '__all__'
 
+
 class PaymentSerializer(BaseSerializerMixin):
     """Payment Serializer class."""
 

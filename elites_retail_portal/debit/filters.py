@@ -4,7 +4,7 @@ import django_filters
 
 from elites_retail_portal.common.filters import SearchComboboxBaseFilter
 from elites_retail_portal.debit import models
-from elites_retail_portal.encounters.filters import EncounterFilter
+
 
 class InventoryFilter(SearchComboboxBaseFilter):
     """Filter inventory."""
@@ -67,6 +67,7 @@ class SaleFilter(SearchComboboxBaseFilter):
 
     @classmethod
     def filter_for_lookup(cls, f, lookup_type):
+        """Filter for json fields."""
         # override date range lookups
         from django.db import models
         if isinstance(f, models.JSONField) and lookup_type == 'exact':
@@ -74,6 +75,7 @@ class SaleFilter(SearchComboboxBaseFilter):
 
         # use default behavior otherwise
         return super().filter_for_lookup(f, lookup_type)
+
 
 class SaleItemFilter(SearchComboboxBaseFilter):
     """Filter sale item."""

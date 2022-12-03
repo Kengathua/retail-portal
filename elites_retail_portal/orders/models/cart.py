@@ -3,8 +3,6 @@
 import random
 import logging
 from decimal import Decimal
-from warnings import filters
-from celery import shared_task
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -37,10 +35,12 @@ class Cart(AbstractBase):
 
     @property
     def heading(self):
+        """Get cart heading."""
         cart_items = CartItem.objects.filter(cart=self)
         items_name = ''
         if cart_items:
-            item_names = cart_items.values_list('catalog_item__inventory_item__item__item_name', flat=True)
+            item_names = cart_items.values_list(
+                'catalog_item__inventory_item__item__item_name', flat=True)
             items_name = ', '.join(item_names)
 
         return "{} {}".format(self.cart_code, items_name)
@@ -88,11 +88,12 @@ class Cart(AbstractBase):
 
     @property
     def order(self):
+        """Get order."""
         from elites_retail_portal.orders.models import Order
         order = None
         if self.order_guid:
             order = Order.objects.get(id=self.order_guid)
-        
+
         return order
 
     def checkout_cart(self):
@@ -237,7 +238,7 @@ class Cart(AbstractBase):
         """Perform pre save and post save actions."""
         # self.on_site = False if not self.customer else False
         if not self.cart_code:
-            self.cart_code ='#{}'.format(random.randint(1001, 9999))
+            self.cart_code = '#{}'.format(random.randint(1001, 9999))
         # self.check_if_on_site_cart()
         super().save(*args, **kwargs)
 

@@ -5,7 +5,6 @@ from rest_framework.fields import SerializerMethodField, ReadOnlyField
 
 from elites_retail_portal.common.serializers import BaseSerializerMixin
 from elites_retail_portal.debit import models
-from elites_retail_portal.items.models import Item
 
 
 class InventorySerializer(BaseSerializerMixin):
@@ -63,6 +62,7 @@ class SaleSerializer(BaseSerializerMixin):
 
     customer_name = CharField(source='customer.full_name')
     order_number = CharField(source='order.order_number', read_only=True)
+
     class Meta:
         """Sale Meta class."""
 

@@ -1,7 +1,6 @@
 """Wallet serializers file."""
 
-from rest_framework.fields import ReadOnlyField, CharField
-from rest_framework import serializers
+from rest_framework.fields import ReadOnlyField
 from elites_retail_portal.customers import models
 from elites_retail_portal.common.serializers import BaseSerializerMixin
 

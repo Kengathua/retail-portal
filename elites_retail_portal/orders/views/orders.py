@@ -12,12 +12,12 @@ from elites_retail_portal.orders.models import (
     Order, InstallmentsOrderItem, Installment,
     InstantOrderItem, OrderTransaction)
 from elites_retail_portal.orders.models import Cart, CartItem
-from elites_retail_portal.debit.models import Sale
 from elites_retail_portal.orders import serializers, filters
 from elites_retail_portal.orders.helpers.orders import refresh_order
 from elites_retail_portal.transactions.models import Payment, Transaction
 from elites_retail_portal.customers.models import Customer
 from elites_retail_portal.encounters.models import Encounter
+
 
 class OrderViewSet(BaseViewMixin):
     """Order viewset class."""
@@ -27,10 +27,12 @@ class OrderViewSet(BaseViewMixin):
     filterset_class = filters.OrderFilter
     search_fields = (
         'order_name', 'order_number',
-        'customer__first_name', 'customer__customer_number', 'customer__last_name', 'customer__other_names',)
+        'customer__first_name', 'customer__customer_number', 'customer__last_name',
+        'customer__other_names',)
 
     @action(detail=True, methods=['post'])
     def update_order_items(self, request, *args, **kwargs):
+        """Update order items."""
         order = self.get_object()
         updated_order_items_data = request.data['updated_order_items_data']
         new_catalog_items_data = request.data['new_catalog_items_data']
@@ -45,20 +47,20 @@ class OrderViewSet(BaseViewMixin):
                 quantity = order_item_data['quantity']
                 order_type = order_item_data['order_type']
                 order_item_id = order_item_data['order_item']
-                confirmation_status = order_item_data['status'] if order_item_data['status'] else 'PENDING'
+                confirmation_status = order_item_data['status'] if order_item_data['status'] else 'PENDING' # noqa
                 if order_type == 'INSTANT':
                     instant_item = InstantOrderItem.objects.filter(id=order_item_id)
                     instant_item.update(quantity=quantity, confirmation_status=confirmation_status)
 
                 if order_type == 'INSTALLMENT':
                     installment_item = InstallmentsOrderItem.objects.filter(id=order_item_id)
-                    installment_item.update(quantity=quantity, confirmation_status=confirmation_status)
+                    installment_item.update(
+                        quantity=quantity, confirmation_status=confirmation_status)
 
         if new_catalog_items_data:
-            cart = Cart.objects.get(cart_code = order.cart_code)
+            cart = Cart.objects.get(cart_code=order.cart_code)
             Cart.objects.filter(
                 id=cart.id).update(customer=order.customer, is_active=True, is_checked_out=False)
-            sale = Sale.objects.get(order=order)
             for catalog_item_data in new_catalog_items_data:
                 catalog_item = CatalogItem.objects.get(
                     id=catalog_item_data['catalog_item'])
@@ -119,6 +121,7 @@ class InstallmentsOrderItemViewSet(BaseViewMixin):
         'cart_item__catalog_item__inventory_item__item__item_code',
     )
 
+
 class InstallmentViewSet(BaseViewMixin):
     """Installment Viewset class."""
 
@@ -137,6 +140,7 @@ class InstallmentViewSet(BaseViewMixin):
 
     @transaction.atomic()
     def create(self, request, *args, **kwargs):
+        """Installment post."""
         audit_fields = {
             "created_by": self.request.user.id,
             "updated_by": self.request.user.id,
@@ -145,7 +149,7 @@ class InstallmentViewSet(BaseViewMixin):
 
         installment_item = InstallmentsOrderItem.objects.get(id=request.data['installment_item'])
 
-        if installment_item.is_cleared and installment_item.total_amount == installment_item.amount_paid:
+        if installment_item.is_cleared and installment_item.total_amount == installment_item.amount_paid:   # noqa
             error = {'item': 'The order item {} if already cleared'.format(
                 installment_item.cart_item.catalog_item.inventory_item.item.item_name)}
             return Response(data=error, status=status.HTTP_400_BAD_REQUEST)
@@ -185,7 +189,8 @@ class InstallmentViewSet(BaseViewMixin):
             'transaction': transaction,
             'is_installment': True,
         }
-        order_transaction = OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
+        order_transaction = OrderTransaction.objects.create(
+            **order_transaction_payload, **audit_fields)
         transaction.balance = 0
         transaction.save()
 

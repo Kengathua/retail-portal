@@ -1,11 +1,11 @@
-"""Models file for franchise app."""
+"""Models file for enterprise app."""
 
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from elites_retail_portal.common.models import AbstractBase, BaseModel, BioData
+from elites_retail_portal.common.models import BaseModel, BioData
 from elites_retail_portal.common.validators import (
-    phoneNumberRegex, franchise_enterprise_code_validator)
+    phoneNumberRegex, enterprise_enterprise_code_validator)
 from elites_retail_portal.common.code_generators import generate_enterprise_code
 
 ENTERPRISE_TYPES = (
@@ -59,7 +59,7 @@ class Enterprise(BaseModel):
     reg_no = models.CharField(max_length=300, null=True, blank=True)
     name = models.CharField(max_length=300, null=False, blank=False)
     enterprise_code = models.CharField(
-        max_length=300, validators=[franchise_enterprise_code_validator],
+        max_length=300, validators=[enterprise_enterprise_code_validator],
         null=True, blank=True, unique=True)
     enterprise_type = models.CharField(
         max_length=300, null=False, blank=False, choices=ENTERPRISE_TYPES, default=FRANCHISE)
@@ -98,7 +98,7 @@ class Enterprise(BaseModel):
         if self.is_main_branch and self.main_branch_code:
             raise ValidationError(
                 {'main branch':
-                'The franchise is marked as a main branch. Please remove the main branch code attached to it'}  # noqa
+                'The enterprise is marked as a main branch. Please remove the main branch code attached to it'}  # noqa
             )
 
     def clean(self) -> None:
@@ -107,6 +107,7 @@ class Enterprise(BaseModel):
         return super().clean()
 
     def save(self, *args, **kwargs):
+        """Pre save and post save actions."""
         self.create_enterprise_code()
         return super().save(*args, **kwargs)
 
@@ -134,7 +135,7 @@ class EnterpriseContact(BaseModel):
 
 
 class Platform(BaseModel):
-    """Franchisees social platforms model."""
+    """Enterprise social platforms model."""
 
     enterprise = models.ForeignKey(
         Enterprise, max_length=250, null=False, blank=False,
