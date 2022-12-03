@@ -42,10 +42,17 @@ class Category(AbstractBase):
         if not self.category_code:
             self.category_code = generate_enterprise_code(self)
 
+    def validate_unique_category_name(self):
+        """Validate the category is unique for the business."""
+        if self.__class__.objects.filter(
+                category_name=self.category_name,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = 'A category with this category name already exists'
+            raise ValidationError({'category': msg})
+
     def clean(self) -> None:
         """Clean the category."""
-        self.category_name = self.category_name.upper()
-        self.create_category_code()
+        self.validate_unique_category_name()
         return super().clean()
 
     def __str__(self):
@@ -53,6 +60,11 @@ class Category(AbstractBase):
         return '{}'.format(
             self.category_name,
             )
+
+    def save(self, *args, **kwargs):
+        self.create_category_code()
+        self.category_name = self.category_name.upper()
+        return super().save(*args, **kwargs)
 
     class Meta:
         """Meta class for category."""
@@ -76,11 +88,24 @@ class ItemType(AbstractBase):
         if not self.type_code:
             self.type_code = generate_enterprise_code(self)
 
+    def validate_unique_type_name(self):
+        """Validate unique type name."""
+        if self.__class__.objects.filter(
+                type_name=self.type_name, category=self.category,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = 'An item type with this type name already exists'
+            raise ValidationError({'category': msg})
+
     def clean(self) -> None:
         """Clean the item type model."""
+        self.validate_unique_type_name()
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        """Perform presave and post save actions."""
         self.type_name = self.type_name.upper()
         self.create_type_code()
-        return super().clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         """Str representation for the item-models model."""
@@ -111,11 +136,24 @@ class Brand(AbstractBase):
         if not self.brand_code:
             self.brand_code = generate_enterprise_code(self)
 
+    def validate_unique_brand_name(self):
+        """Validate the brand name is unique for the business."""
+        if self.__class__.objects.filter(
+                brand_name=self.brand_name,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = 'A brand with this brand name already exists.'
+            raise ValidationError({'brand_name': msg})
+
     def clean(self) -> None:
         """Clean the brand model."""
+        self.validate_unique_brand_name()
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        """Pre save and post save actions."""
         self.brand_name = self.brand_name.upper()
         self.create_brand_code()
-        return super().clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         """Str representation for the item-models model."""
@@ -143,6 +181,20 @@ class BrandItemType(AbstractBase):
     pushed_to_edi = models.BooleanField(default=False)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
+
+    def validate_unique_brand_and_item_type(self):
+        """Validate unique brand and item type."""
+        if self.__class__.objects.filter(
+                brand=self.brand,
+                item_type=self.item_type).exclude(id=self.id).exists():
+            msg = 'The item type {} is already hooked up to the brand {}'.format(
+                self.item_type.type_name, self.brand.brand_name)
+            raise ValidationError({'brand_item_type': msg})
+
+    def clean(self) -> None:
+        """Clean brand item type."""
+        self.validate_unique_brand_and_item_type()
+        return super().clean()
 
     def __str__(self):
         """Str representation for the category section model."""
@@ -177,6 +229,14 @@ class ItemModel(AbstractBase):
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
+    def validate_item_type_is_hooked_up_to_the_brand(self):
+        """Validate the item type is hooked to the brand."""
+        if not BrandItemType.objects.filter(
+                brand=self.brand, item_type=self.item_type, enterprise=self.enterprise).exists():
+            msg = 'The item type {} is not hooked up to the brand {}. '\
+                'Kindly set that up first'.format(self.item_type.type_name, self.brand.brand_name)
+            raise ValidationError({'item_type': msg})
+
     def validate_unique_model_name(self):
         """Validate that the model name is uniques for the enterprise."""
         if self.__class__.objects.filter(
@@ -192,6 +252,7 @@ class ItemModel(AbstractBase):
 
     def clean(self) -> None:
         """Clean the ItemModel model."""
+        self.validate_item_type_is_hooked_up_to_the_brand()
         self.validate_unique_model_name()
         return super().clean()
 
