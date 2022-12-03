@@ -70,7 +70,7 @@ class EnterpriseSetupRuleSerializer(BaseSerializerMixin):
 
 
 class EnterpriseSetupRuleInventorySerializer(BaseSerializerMixin):
-    """EnterpriseSetupRule Inventory Serializer"""
+    """EnterpriseSetupRule Inventory Serializer."""
 
     inventory_name = ReadOnlyField(source='inventory.inventory_name')
     is_master_inventory = ReadOnlyField(source='inventory.is_master')
@@ -84,7 +84,7 @@ class EnterpriseSetupRuleInventorySerializer(BaseSerializerMixin):
 
 
 class EnterpriseSetupRuleWarehouseSerializer(BaseSerializerMixin):
-    """EnterpriseSetupRule Warehouse Serializer"""
+    """EnterpriseSetupRule Warehouse Serializer."""
 
     warehouse_name = ReadOnlyField(source='warehouse.warehouse_name')
     is_default_warehouse = ReadOnlyField(source='warehouse.is_default')
@@ -99,7 +99,7 @@ class EnterpriseSetupRuleWarehouseSerializer(BaseSerializerMixin):
 
 
 class EnterpriseSetupRuleCatalogSerializer(BaseSerializerMixin):
-    """EnterpriseSetupRule Catalog Serializer"""
+    """EnterpriseSetupRule Catalog Serializer."""
 
     catalog_name = ReadOnlyField(source='catalog.catalog_name')
     catalog_type = ReadOnlyField(source='catalog.catalog_type')

@@ -93,7 +93,7 @@ class Sale(AbstractBase):
                 'is_checked_out': False,
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
-                'franchise': self.enterprise,
+                'enterprise': self.enterprise,
                 'sale': self,
                 'is_empty': True,
             }

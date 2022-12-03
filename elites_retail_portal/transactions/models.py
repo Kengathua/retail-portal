@@ -91,7 +91,8 @@ class Transaction(AbstractBase):
     def get_customer(self):
         """Get customer."""
         if self.account_number and not self.customer:
-            customers = Customer.objects.filter(account_number=self.account_number, enterprise=self.enterprise)
+            customers = Customer.objects.filter(
+                account_number=self.account_number, enterprise=self.enterprise)
             self.customer = customers.first()
 
     def process_transaction(self):
@@ -100,7 +101,7 @@ class Transaction(AbstractBase):
         from elites_retail_portal.orders.models import Order, OrderTransaction
         from elites_retail_portal.transactions.helpers.transactions import (
             create_order_transaction)
-        
+
         if OrderTransaction.objects.filter(transaction=self).exists():
             return
 
@@ -124,7 +125,8 @@ class Transaction(AbstractBase):
                         customers = Customer.objects.filter(
                             Q(account_number=self.account_number) | Q(
                                 phone_no=self.account_number) | Q(
-                                    customer_number=self.account_number), enterprise=self.enterprise)
+                                    customer_number=self.account_number),
+                            enterprise=self.enterprise)
 
                     elif self.wallet_code:
                         pass
@@ -316,7 +318,8 @@ class PaymentRequest(AbstractBase):
                     payment.is_confirmed = True
                     payment.save()
 
-                # Payment.objects.filter(id=payment.id).update(paid_amount=amount, is_confirmed=True)
+                # Payment.objects.filter(
+                    # id=payment.id).update(paid_amount=amount, is_confirmed=True)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""

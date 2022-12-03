@@ -4,7 +4,8 @@ from elites_retail_portal.common.views import BaseViewMixin
 
 from elites_retail_portal.enterprise_mgt import serializers
 from elites_retail_portal.enterprise_mgt.models import (
-    EnterpriseSetup, EnterpriseSetupRule, EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse, EnterpriseSetupRuleCatalog)
+    EnterpriseSetup, EnterpriseSetupRule, EnterpriseSetupRuleInventory,
+    EnterpriseSetupRuleWarehouse, EnterpriseSetupRuleCatalog)
 
 
 class EnterpriseSetupViewSet(BaseViewMixin):

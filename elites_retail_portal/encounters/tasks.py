@@ -65,10 +65,10 @@ def process_customer_encounter(encounter_id):
             means = payment['means']
             amount = payment['amount']
             if amount:
-                account_number=None
+                account_number = None
 
                 if encounter.customer:
-                    account_number = encounter.customer.account_number or encounter.customer.customer_number or encounter.customer.phone_no
+                    account_number = encounter.customer.account_number or encounter.customer.customer_number or encounter.customer.phone_no # noqa
 
                 payment_payload = {
                     'paid_amount': amount,
@@ -78,7 +78,7 @@ def process_customer_encounter(encounter_id):
                     'is_confirmed': True,
                     'required_amount': amount,
                     'encounter': encounter,
-                    'account_number':account_number,
+                    'account_number': account_number,
                     'transaction_code': transaction_code
                 }
                 payment = Payment.objects.create(**payment_payload, **audit_fields)
@@ -124,7 +124,8 @@ def process_customer_encounter(encounter_id):
             'order': order,
             'transaction': transaction,
         }
-        order_transaction = OrderTransaction.objects.create(**order_transaction_payload, **audit_fields)
+        order_transaction = OrderTransaction.objects.create(
+            **order_transaction_payload, **audit_fields)
         order_transaction.refresh_from_db()
         process_order_transaction(order_transaction)
         encounter.processing_status = 'SUCCESS'

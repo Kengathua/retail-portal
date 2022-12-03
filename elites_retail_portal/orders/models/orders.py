@@ -309,9 +309,9 @@ class AbstractOrderItem(AbstractBase):
     quantity_returned = models.IntegerField(default=0)
     is_cleared = models.BooleanField(default=False)
 
-
     @property
     def customer(self):
+        """Get the customer."""
         return self.order.customer
 
     def get_unit_price(self):
@@ -335,10 +335,12 @@ class AbstractOrderItem(AbstractBase):
                         'or warehouse to fulfil this order'})
 
     def validate_quantity_cleared_less_than_or_equal_to_quantity(self):
+        """Validate quantity cleared is less than or equak to quantity."""
         if not self.quantity_cleared <= self.quantity:
             raise ValidationError(
-                {'quantity': 'The number of items cleared {} cannot be more than the ordered quantity {}'.format(
-                    self.quantity_cleared, int(self.quantity))})
+                {'quantity': 'The number of items cleared {} '
+                    'cannot be more than the ordered quantity {}'.format(
+                        self.quantity_cleared, int(self.quantity))})
 
     def get_total_amount(self):
         """Get total for the order item."""
@@ -768,7 +770,7 @@ class Installment(AbstractBase):
 
             quantity_on_partial_deposit = no_of_cleared_items % int(no_of_cleared_items)
             self.installment_item.quantity_cleared = int(no_of_cleared_items)
-            self.installment_item.quantity_on_partial_deposit = 1 if quantity_on_partial_deposit else 0
+            self.installment_item.quantity_on_partial_deposit = 1 if quantity_on_partial_deposit else 0 # noqa
 
             if self.installment_item.amount_paid >= self.installment_item.total_amount:
                 self.installment_item.end_date = timezone.now()

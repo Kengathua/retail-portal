@@ -1,3 +1,5 @@
+"""Custom DRF exception handler."""
+
 from __future__ import unicode_literals
 
 import logging
@@ -17,22 +19,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def custom_exception_handler(exc, context):
-    """
-    Django Restframework fails silently to the errors it doesn't handle.
-    This handler will bubble up errors that are not handled by DRF.
-    Users of this handler will have to catch the error themselves..
-    ..NOTE : ValidationErrors esp django model errors are context specific
-    hence handling them here will provide a generic message that won't
-    be helpful for that context..therefore they are better handled by the
-    users themselves.
-    """
-
-    # log the exception so that sentry picks it up
-    # to receive/process these logs in django requires that
-    # `sil_custom_exception_handler` be added to django logging i.e
-    # `settings.LOGGING['loggers']`
+    """Catch errors outside of the caught validation errors."""
     LOGGER.error(
-        "Internal API Error: {}".format(exc),
+        "API Error: {}".format(exc),
         extra={'exception': exc, 'context': context},
         exc_info=True)
 

@@ -1,4 +1,4 @@
-"""Franchise urls file."""
+"""Enterprise urls file."""
 
 from rest_framework import routers
 from elites_retail_portal.enterprises import views

@@ -47,6 +47,7 @@ CATALOG_ITEM_AUDIT_SOURCES = (
 
 INVENTORY_RECORD = 'INVENTORY RECORD'
 
+
 class Section(AbstractBase):
     """Sections for items in the premise."""
 
@@ -66,7 +67,7 @@ class Section(AbstractBase):
 
     def clean(self) -> None:
         """Clean section model."""
-        # validate_franchise_exists(self)
+        # validate_enterprise_exists(self)
         self.create_section_code()
         return super().clean()
 
@@ -112,10 +113,13 @@ class CatalogItem(AbstractBase):
 
     @property
     def catalogs_names(self):
+        """Get catalog names."""
         names = ''
-        catalog_catalog_items = CatalogCatalogItem.objects.filter(catalog_item=self, is_active=True)
+        catalog_catalog_items = CatalogCatalogItem.objects.filter(
+                catalog_item=self, is_active=True)
         if catalog_catalog_items.exists():
-            names = list(set(catalog_catalog_items.values_list('catalog__catalog_name', flat=True)))
+            names = list(
+                set(catalog_catalog_items.values_list('catalog__catalog_name', flat=True)))
             names = ", ".join(names)
         return names
 
@@ -254,17 +258,20 @@ class CatalogItem(AbstractBase):
                     {'item_units': msg})
 
     def add_to_catalogs(self, user, catalogs):
-        """Add catalog item to the specified Catalogs"""
+        """Add catalog item to the specified catalogs."""
         if not catalogs:
-            raise ValidationError({'catalogs': 'Please select the catalogs you want to add the item to'})
+            msg = 'Please select the catalogs you want to add the item to'
+            raise ValidationError({'catalogs': msg})
         audit_fields = {
             'created_by': user.id,
             'updated_by': user.id,
             'enterprise': user.enterprise,
         }
         for catalog in catalogs:
-            if not CatalogCatalogItem.objects.filter(catalog=catalog, catalog_item=self).exists():
-                CatalogCatalogItem.objects.create(catalog=catalog, catalog_item=self, **audit_fields)
+            if not CatalogCatalogItem.objects.filter(
+                    catalog=catalog, catalog_item=self).exists():
+                CatalogCatalogItem.objects.create(
+                    catalog=catalog, catalog_item=self, **audit_fields)
 
     def clean(self) -> None:
         """Clean Catalog Item."""
@@ -288,10 +295,13 @@ class CatalogItem(AbstractBase):
         if not CatalogItemAuditLog.objects.filter(catalog_item=self).exists():
             CatalogItemAuditLog.objects.create(
                 catalog_item=self, quantity_recorded=self.quantity,
-                marked_price_recorded=self.marked_price, discount_amount_recorded=self.discount_amount,
-                selling_price_recorded=self.selling_price, threshold_price_recorded=self.threshold_price,
-                record_type='ADD', operation_type='CREATE', audit_source='CATALOG ITEM',
-                created_by=self.created_by, updated_by=self.updated_by, enterprise=self.enterprise)
+                marked_price_recorded=self.marked_price,
+                discount_amount_recorded=self.discount_amount,
+                selling_price_recorded=self.selling_price,
+                threshold_price_recorded=self.threshold_price,
+                record_type='ADD', operation_type='CREATE',
+                audit_source='CATALOG ITEM', created_by=self.created_by,
+                updated_by=self.updated_by, enterprise=self.enterprise)
 
         cache.delete('catalog_items_objects')
 
@@ -370,17 +380,18 @@ class CatalogItemAuditLog(AbstractBase):
     discount_amount_after = models.FloatField(default=0)
     record_type = models.CharField(max_length=300, choices=AUDIT_RECORD_TYPE_CHOICES)
     operation_type = models.CharField(max_length=300, choices=AUDIT_OPERATIONS_TYPE_CHOICES)
-    audit_source = models.CharField(max_length=300, choices=CATALOG_ITEM_AUDIT_SOURCES, default=INVENTORY_RECORD)
-    inventory_record = models.ForeignKey(InventoryRecord, null=True, blank=True, on_delete=models.PROTECT)
-
-    def get_quantity_before(self):
-        pass
+    audit_source = models.CharField(
+        max_length=300, choices=CATALOG_ITEM_AUDIT_SOURCES, default=INVENTORY_RECORD)
+    inventory_record = models.ForeignKey(
+        InventoryRecord, null=True, blank=True, on_delete=models.PROTECT)
 
     def get_quantity_after(self):
+        """Get quantity after addition."""
         if not self.quantity_after:
             self.quantity_after = self.quantity_before + self.quantity_recorded
 
     def get_amounts(self):
+        """Get amounts."""
         if not self.marked_price_recorded:
             self.marked_price_recorded = self.catalog_item.marked_price
 
@@ -394,11 +405,14 @@ class CatalogItemAuditLog(AbstractBase):
             self.discount_amount_recorded = self.catalog_item.discount_amount
 
     def validate_inventory_record_source_has_inventory_record_attached(self):
+        """Validate inventory record source has an inventory record attached."""
         if self.audit_source == INVENTORY_RECORD and not self.inventory_record:
-            msg = 'An audit coming from inventory records should have the inventory record atached to it'
+            msg = 'An audit coming from inventory records should have '\
+                'the inventory record attached to it'
             raise ValidationError({'inventory_record': msg})
 
-    def validate_quantity_after(self):
+    def validate_closing_quantity(self):
+        """Validate closing quantity."""
         expected_closing_quantity = self.quantity_before + self.quantity_recorded
         if not self.quantity_after == expected_closing_quantity:
             msg = 'The closing quantity is {} is not equal to '\
@@ -408,12 +422,13 @@ class CatalogItemAuditLog(AbstractBase):
                 {'closing_quantity': msg})
 
     def clean(self) -> None:
+        """Clean catalog item."""
         self.validate_inventory_record_source_has_inventory_record_attached()
-        self.validate_quantity_after()
+        self.validate_closing_quantity()
         return super().clean()
 
     def save(self, *args, **kwargs):
-        self.get_quantity_before()
+        """Catalog item model save."""
         self.get_quantity_after()
         self.get_amounts()
         return super().save(*args, **kwargs)

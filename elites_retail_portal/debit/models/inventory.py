@@ -138,7 +138,8 @@ class InventoryItem(AbstractBase):
                 'enterprise': self.enterprise
                 }
 
-            InventoryInventoryItem.objects.filter(inventory=inventory, inventory_item=self, **audit_fields)
+            InventoryInventoryItem.objects.filter(
+                inventory=inventory, inventory_item=self, **audit_fields)
 
     class Meta:
         """Meta class for inventory model."""
@@ -188,6 +189,7 @@ class Inventory(AbstractBase):
         return summary
 
     def get_inventory_item_summary(self, inventory_item):
+        """Get inventory item summary."""
         latest_record = InventoryRecord.objects.filter(
             inventory=self, inventory_item=inventory_item).latest('record_date')
         summary = {
@@ -201,6 +203,7 @@ class Inventory(AbstractBase):
         return summary
 
     def validate_unique_active_master_inventory_for_enterprise(self):
+        """Validate unique active master inventory for the enterprise."""
         if self.is_master:
             master_inventory = self.__class__.objects.filter(
                 is_active=True, is_master=True, enterprise=self.enterprise).exclude(id=self.id)
@@ -209,19 +212,24 @@ class Inventory(AbstractBase):
                 raise ValidationError({'inventory': msg})
 
     def validate_unique_active_inventory_per_type_for_enterprise(self):
+        """Validate unique active inventory per enterprise."""
         inventory = self.__class__.objects.filter(
-            inventory_type=self.inventory_type, is_active=True, enterprise=self.enterprise).exclude(id=self.id)
+            inventory_type=self.inventory_type, is_active=True,
+            enterprise=self.enterprise).exclude(id=self.id)
         if inventory.exists():
             msg = 'You can only have one active {} inventory'.format(self.inventory_type.title())
             raise ValidationError({'inventory': msg})
 
     def validate_unique_default_inventory_per_enterprise(self):
+        """Validate unique default inventory per enterprise."""
         if self.is_default and self.__class__.objects.filter(
-            is_active=True, is_default=True, enterprise=self.enterprise).exclude(id=self.id).exists():
+                is_active=True, is_default=True,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
             msg = "You can only have one active default inventory"
             raise ValidationError({'default_inventory': msg})
 
     def clean(self) -> None:
+        """Clean inventory."""
         self.validate_unique_default_inventory_per_enterprise()
         self.validate_unique_active_master_inventory_for_enterprise()
         self.validate_unique_active_inventory_per_type_for_enterprise()
@@ -267,6 +275,7 @@ class InventoryRecord(AbstractBase):
     # TODO Refactor to use recommended retail price for updating the selling prices of items
 
     def get_latest_record(self, record_type=None):
+        """Get the latest record."""
         record = None
         record_type = record_type if record_type else self.record_type
         records = self.__class__.objects.filter(
@@ -278,9 +287,10 @@ class InventoryRecord(AbstractBase):
         return record
 
     def validate_inventory_item_exists_in_inventory(self):
+        """Validate inventory item exists in inventory."""
         if not InventoryInventoryItem.objects.filter(
-            inventory=self.inventory, inventory_item=self.inventory_item,
-            is_active=True).exists():
+                inventory=self.inventory, inventory_item=self.inventory_item,
+                is_active=True).exists():
             inventory_item = self.inventory_item.item.item_name
             inventory_type = self.inventory.inventory_type.title()
             raise ValidationError(
@@ -391,7 +401,7 @@ class InventoryRecord(AbstractBase):
             inventory=self.inventory, record_code=self.record_code)
         if record.exclude(id=self.id).exists():
             raise ValidationError(
-                {'record_code': 'A record with this record code already exists. '\
+                {'record_code': 'A record with this record code already exists. '
                     'Please supply a unique record code'})
 
     def clean(self) -> None:
@@ -431,7 +441,8 @@ class InventoryRecord(AbstractBase):
 
         if not catalog_item:
             catalog_item = CatalogItem.objects.filter(
-                inventory_item=self.inventory_item, is_active=True, enterprise=self.enterprise).first()
+                inventory_item=self.inventory_item, is_active=True,
+                enterprise=self.enterprise).first()
             if not catalog_item:
                 self.__class__.objects.filter(id=self.id).update(updated_catalog=False)
                 # The inventory item is not hooked as a catalog item
@@ -543,4 +554,6 @@ class InventoryRecord(AbstractBase):
 
 
 def get_latest_inventory_record(inventory, inventory_item):
-    InventoryRecord.objects.filter(inventory=inventory, inventory_item=inventory_item).latest('record_date')
+    """Get the latest inventory record."""
+    InventoryRecord.objects.filter(
+        inventory=inventory, inventory_item=inventory_item).latest('record_date')

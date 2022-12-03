@@ -9,7 +9,7 @@ from django.core.validators import MinValueValidator
 
 from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.warehouses.models import (
-    Warehouse, WarehouseItem, WarehouseRecord)
+    WarehouseItem, WarehouseRecord)
 from elites_retail_portal.items.models import Item, ItemUnits
 from elites_retail_portal.enterprises.models import Enterprise
 from elites_retail_portal.debit import models as debit_models
@@ -187,11 +187,12 @@ class PurchaseItem(AbstractBase):
                         record_type='REMOVE', quantity_recorded=self.quantity_to_inventory,
                         removal_type='INVENTORY',
                         removal_quantity_leaving_warehouse=self.quantity_to_inventory_on_display,
-                        removal_quantity_remaining_in_warehouse=self.quantity_to_inventory_in_warehouse,
+                        removal_quantity_remaining_in_warehouse=self.quantity_to_inventory_in_warehouse,    # noqa
                         unit_price=self.recommended_retail_price, **audit_fields)
 
                     self.added_to_warehouse = True
                     self.save()
                 else:
-                    # TODO Add record to the default warehouse then move them to the default inventory form the default warehouse
+                    # TODO Add record to the default warehouse then move them to the default
+                    # inventory from the default warehouse
                     pass

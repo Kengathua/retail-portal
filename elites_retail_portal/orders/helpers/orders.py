@@ -14,7 +14,6 @@ LOGGER = logging.getLogger(__name__)
 
 def process_order_transaction(order_transaction):
     """Process a transaction for an order."""
-
     order = order_transaction.order
     instant_order_items = InstantOrderItem.objects.filter(
         order=order_transaction.order, is_cleared=False)
@@ -43,9 +42,11 @@ def process_order_transaction(order_transaction):
                 instant_order_item.payment_is_processed = True
                 instant_order_item.save()
 
-            new_balance = Decimal(order_transaction.balance) - Decimal(instant_order_items_total_amount)
+            new_balance = Decimal(
+                order_transaction.balance) - Decimal(instant_order_items_total_amount)
             order_transaction.balance = new_balance
-            order_transaction.__class__.objects.filter(id=order_transaction.id).update(balance=new_balance)
+            order_transaction.__class__.objects.filter(
+                id=order_transaction.id).update(balance=new_balance)
             instant_order_item.refresh_from_db()
             inventory_item = instant_order_item.cart_item.catalog_item.inventory_item
             order.instant_order_total = instant_order_items_totals
@@ -68,7 +69,8 @@ def process_order_transaction(order_transaction):
         if order_transaction.balance < installment_order_items_total_amount:
             installment_order_items = installment_order_items
             for installment_order_item in installment_order_items:
-                encounter = Encounter.objects.filter(order_guid=installment_order_item.order.id).first()
+                encounter = Encounter.objects.filter(
+                    order_guid=installment_order_item.order.id).first()
                 catalog_item_id = installment_order_item.cart_item.catalog_item.id
                 encounter_deposit = None
 
@@ -80,14 +82,14 @@ def process_order_transaction(order_transaction):
                 if not installment_order_item.deposit_amount:
                     if encounter_deposit:
                         deposit_amount = encounter_deposit
-                        installment_order_item.quantity_on_partial_deposit = installment_order_item.quantity
+                        installment_order_item.quantity_on_partial_deposit = installment_order_item.quantity    # noqa
                         installment_order_item.deposit_amount = deposit_amount
                         installment_order_item.amount_paid = deposit_amount
                         installment_order_item.payment_status = 'DEPOSIT PAID'
                         installment_order_item.save()
                     else:
                         deposit_amount = order_transaction.balance if order_transaction.balance <= installment_order_item.total_amount else installment_order_item.total_amount    # noqa
-                        installment_order_item.quantity_on_partial_deposit = installment_order_item.quantity
+                        installment_order_item.quantity_on_partial_deposit = installment_order_item.quantity    # noqa
                         installment_order_item.deposit_amount = deposit_amount
                         installment_order_item.amount_paid = deposit_amount
                         installment_order_item.payment_status = 'DEPOSIT PAID'
@@ -95,13 +97,14 @@ def process_order_transaction(order_transaction):
 
                     new_balance = Decimal(float(order_transaction.balance) - float(deposit_amount))
                     order_transaction.balance = new_balance
-                    order_transaction.__class__.objects.filter(id=order_transaction.id).update(balance=new_balance)
+                    order_transaction.__class__.objects.filter(
+                        id=order_transaction.id).update(balance=new_balance)
 
                     installment_order_item.refresh_from_db()
                     inventory_item = installment_order_item.cart_item.catalog_item.inventory_item
 
                     if not InventoryInventoryItem.objects.filter(
-                        inventory=allocated_inventory, inventory_item=inventory_item):
+                            inventory=allocated_inventory, inventory_item=inventory_item):
                         InventoryInventoryItem.objects.create(
                             inventory=allocated_inventory, inventory_item=inventory_item,
                             **audit_fields)
@@ -125,9 +128,11 @@ def process_order_transaction(order_transaction):
         LOGGER.info("Push the balance to Customer's wallet")
         pass
 
+
 def refresh_order(order):
+    """Refresh order."""
     from elites_retail_portal.orders.models import (
-        Cart, CartItem, InstallmentsOrderItem, InstantOrderItem)
+        Cart, InstallmentsOrderItem, InstantOrderItem)
     customer = order.customer
     InstantOrderItem.objects.filter(order=order)
     InstallmentsOrderItem.objects.filter(order=order)

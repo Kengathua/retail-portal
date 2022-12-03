@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
                 ('updated_by', models.UUIDField()),
                 ('reg_no', models.CharField(blank=True, max_length=300, null=True)),
                 ('name', models.CharField(max_length=300)),
-                ('enterprise_code', models.CharField(blank=True, max_length=300, null=True, unique=True, validators=[elites_retail_portal.common.validators.franchise_enterprise_code_validator])),
+                ('enterprise_code', models.CharField(blank=True, max_length=300, null=True, unique=True, validators=[elites_retail_portal.common.validators.enterprise_enterprise_code_validator])),
                 ('enterprise_type', models.CharField(choices=[('FRANCHISE', 'FRANCHISE'), ('SUPPLIER', 'SUPPLIER'), ('INDEPENDENT', 'INDEPENDENT')], default='FRANCHISE', max_length=300)),
                 ('main_branch_code', models.CharField(blank=True, db_index=True, max_length=300, null=True)),
                 ('is_main_branch', models.BooleanField(default=True)),

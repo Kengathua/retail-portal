@@ -20,7 +20,7 @@ class SectionViewSet(BaseViewMixin):
     search_fields = ('section_name', 'section_code')
 
     partition_spec = {
-        'FRANCHISE': 'enterprise'
+        'ENTERPRISE': 'enterprise'
     }
 
 
@@ -57,15 +57,16 @@ class CatalogItemViewSet(BaseViewMixin):
     #         cache.set('catalog_items_objects', self.queryset)
     #     return super(CatalogItemViewSet, self).dispatch(*args, **kwargs)
 
-
     @action(methods=['post'], detail=True)
     def add_to_catalogs(self, request, *args, **kwargs):
+        """Add catalog item to catalogs endpoint."""
         user = request.user
         catalog_item = self.get_object()
         catalogs = Catalog.objects.filter(id__in=request.data['catalogs'])
         catalog_item.add_to_catalogs(user, catalogs)
 
         return Response(data={"status": "OK"}, status=status.HTTP_200_OK)
+
 
 class CatalogCatalogItemViewSet(BaseViewMixin):
     """CatalogCatalogItem Viewset class."""

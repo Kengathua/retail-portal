@@ -86,7 +86,7 @@ def generate_enterprise_code_id(object):
     if not enterprise_exists:
         return return_year_and_id(id)
 
-    count = object.__class__.objects.all().count()
+    # count = object.__class__.objects.all().count()
     last_enterprise_code = object.__class__.objects.all().latest(
         'created_on').enterprise_code
     last_enterprise_code = int(last_enterprise_code.split('/')[2].split('-')[0])

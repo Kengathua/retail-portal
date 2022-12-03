@@ -114,17 +114,20 @@ class Encounter(AbstractBase):
         self.payable_amount = sum(instant_sale_amounts) + self.total_deposit
 
     def get_balance_amount(self):
+        """Get balance amount."""
         self.balance_amount = Decimal(float(self.submitted_amount) - float(self.payable_amount))
         if self.submitted_amount < self.payable_amount:
-            msg = "The submitted amount KSh. {:,.2f} is less to the total payable amount KSh. {:,.2f} by KSh. {:,.2f}".format(
-                self.submitted_amount, self.payable_amount, self.balance_amount)
+            msg = "The submitted amount KSh. {:,.2f} is less than '\
+                'the total payable amount KSh. {:,.2f} by KSh. {:,.2f}".format(
+                    self.submitted_amount, self.payable_amount, self.balance_amount)
             raise ValidationError({'submitted_amount': msg})
 
     def check_customer(self):
+        """Check customer."""
         if not self.customer:
             user = get_user_model().objects.filter(
-                Q(id=self.created_by)| Q(id=self.updated_by) | Q(
-                    guid=self.created_by)| Q(guid=self.updated_by), is_active=True)
+                Q(id=self.created_by) | Q(id=self.updated_by) | Q(
+                    guid=self.created_by) | Q(guid=self.updated_by), is_active=True)
             if user.exists():
                 user = user.first()
                 customer = Customer.objects.filter(
@@ -134,16 +137,19 @@ class Encounter(AbstractBase):
                     self.customer = customer
 
     def create_receipt_number(self):
+        """Create the receipt number."""
         if not self.receipt_number:
             import random
             receipt_number = random.randint(1000, 100000)
             self.receipt_number = f'EAS/{receipt_number}'
 
-        # TODO Create a function to generate receipts taking into account creating the receipt number.
+        # TODO Create a function to generate receipts taking into account creating
+        # the receipt number.
         # Consider using the encounter number in the receipt number too
         # Abbreviate the Retailer in the receipt number
 
     def create_encounter_number(self):
+        """Create encounter number."""
         if not self.encounter_number:
             import random
             encounter_number = random.randint(1000, 100000)
@@ -176,4 +182,5 @@ class Encounter(AbstractBase):
 
     class Meta:
         """Meta class for encounter model."""
+
         ordering = ['-encounter_date']

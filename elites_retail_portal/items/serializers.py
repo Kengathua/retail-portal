@@ -1,7 +1,6 @@
 """Item serializers file."""
 
 from rest_framework.fields import SerializerMethodField, CharField
-from rest_framework import serializers
 
 from elites_retail_portal.common.serializers import BaseSerializerMixin
 from elites_retail_portal.items import models

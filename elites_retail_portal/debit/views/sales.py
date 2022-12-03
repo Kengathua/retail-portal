@@ -5,6 +5,7 @@ from elites_retail_portal.debit.models import (
 from elites_retail_portal.debit import serializers, filters
 from elites_retail_portal.common.views import BaseViewMixin
 
+
 class SaleViewSet(BaseViewMixin):
     """Sale View class."""
 
@@ -16,6 +17,7 @@ class SaleViewSet(BaseViewMixin):
         'customer__other_names', 'customer__customer_number',
         'order__order_number', 'sale_code',
     )
+
 
 class SaleItemViewSet(BaseViewMixin):
     """Sale Record view class."""

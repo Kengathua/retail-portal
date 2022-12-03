@@ -6,7 +6,9 @@ from elites_retail_portal.catalog.helpers import (
 from elites_retail_portal.catalog.models import CatalogItem, CatalogCatalogItem
 from elites_retail_portal.debit.models import InventoryInventoryItem
 
+
 def validate_catalog_item(item_name, enterprise_code, catalog_item=None):
+    """Validate catalog item."""
     if not catalog_item:
         msg = "{} does not exist in the catalog or has been deactivated".format(item_name)
         raise ValidationError(
@@ -14,19 +16,22 @@ def validate_catalog_item(item_name, enterprise_code, catalog_item=None):
 
     enterprise_setup_rules = get_valid_enterprise_setup_rules(enterprise_code)
     default_catalog = enterprise_setup_rules.default_catalog
-    catalog_item_in_catalog = default_catalog.catalog_items.filter(id=catalog_item.id, is_active=True).first()
+    catalog_item_in_catalog = default_catalog.catalog_items.filter(
+        id=catalog_item.id, is_active=True).first()
     if not catalog_item_in_catalog:
         audit_fields = {
             'created_by': catalog_item.created_by,
             'updated_by': catalog_item.updated_by,
             'enterprise': catalog_item.enterprise,
             }
-        CatalogCatalogItem.objects.create(catalog_item=catalog_item, catalog=default_catalog, **audit_fields)
+        CatalogCatalogItem.objects.create(
+            catalog_item=catalog_item, catalog=default_catalog, **audit_fields)
 
     if not InventoryInventoryItem.objects.filter(
-        inventory_item=catalog_item.inventory_item, enterprise=enterprise_code).exists():
+            inventory_item=catalog_item.inventory_item, enterprise=enterprise_code).exists():
         item = catalog_item.inventory_item.item
         item.activate()
+
 
 def validate_billing(encounter):
     """Valdiate new sale encounter data."""
@@ -45,7 +50,7 @@ def validate_billing(encounter):
                 raise ValidationError(
                     {'quantity': '{} - Billed quantity {} is more '
                         'than the available quantity of {}'.format(
-                        item_name, billed_quantity, available_quantity)})
+                            item_name, billed_quantity, available_quantity)})
 
         if bill['sale_type'] == 'INSTALLMENT':
             if not encounter.customer:

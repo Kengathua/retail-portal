@@ -4,6 +4,7 @@ from elites_retail_portal.common.views import BaseViewMixin
 from elites_retail_portal.transactions.models import (Transaction, Payment, PaymentRequest)
 from elites_retail_portal.transactions import serializers
 
+
 class TransactionViewSet(BaseViewMixin):
     """Transaction ViewSet class."""
 
@@ -16,10 +17,10 @@ class PaymentViewSet(BaseViewMixin):
 
     queryset = Payment.objects.all()
     serializer_class = serializers.PaymentSerializer
-    
+
     # TODO Create an endpoint for making a payment requests
     # get response from the gateway
-    
+
 
 class PaymentRequestViewSet(BaseViewMixin):
     """Transaction ViewSet class."""

@@ -8,8 +8,7 @@ from django.core.exceptions import ValidationError
 from elites_retail_portal.items.models import Item
 from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.debit.models import (
-    Inventory ,InventoryItem, InventoryInventoryItem, InventoryRecord)
-from elites_retail_portal.enterprises.models import Enterprise
+    InventoryItem, InventoryInventoryItem, InventoryRecord)
 
 REMOVE_FROM_STOCK_CHOICES = (
     ('SALES', 'SALES'),
@@ -58,6 +57,7 @@ INVENTORY = 'INVENTORY'
 PRIVATE = 'PRIVATE'
 STORAGE = 'STORAGE'
 
+
 class WarehouseItem(AbstractBase):
     """Warehouse Item model."""
 
@@ -69,7 +69,8 @@ class WarehouseItem(AbstractBase):
     @property
     def summary(self):
         """Get summary."""
-        store_records = WarehouseRecord.objects.filter(warehouse_item=self, enterprise=self.enterprise)
+        store_records = WarehouseRecord.objects.filter(
+            warehouse_item=self, enterprise=self.enterprise)
         total_quantity = 0
         total_amount = 0
         for store_record in store_records:
@@ -122,6 +123,7 @@ class WarehouseItem(AbstractBase):
 
 class Warehouse(AbstractBase):
     """Warehouse model."""
+
     warehouse_code = models.CharField(max_length=250, null=True, blank=True)
     warehouse_name = models.CharField(max_length=300)
     warehouse_type = models.CharField(
@@ -137,6 +139,7 @@ class Warehouse(AbstractBase):
 
 class WarehouseWarehouseItem(AbstractBase):
     """Warehouse Warehouse Items model."""
+
     warehouse = models.ForeignKey(
         Warehouse, on_delete=models.PROTECT)
     warehouse_item = models.ForeignKey(
@@ -274,7 +277,8 @@ class WarehouseRecord(AbstractBase):
             record = InventoryRecord.objects.create(
                 inventory=default_inventory, inventory_item=inventory_item,
                 quantity_recorded=self.quantity_recorded, unit_price=self.unit_price,
-                record_type=ADD, quantity_of_stock_on_display=self.removal_quantity_leaving_warehouse,
+                record_type=ADD,
+                quantity_of_stock_on_display=self.removal_quantity_leaving_warehouse,
                 quantity_of_stock_in_warehouse=self.removal_quantity_remaining_in_warehouse,
                 **audit_fields)
             return record

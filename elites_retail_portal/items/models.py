@@ -6,8 +6,6 @@ from django.core.exceptions import ValidationError
 
 from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.common.code_generators import generate_enterprise_code
-from elites_retail_portal.common.validators import (
-    items_enterprise_code_validator, units_enterprise_code_validator)
 from elites_retail_portal.users.models import retrieve_user_email
 
 ITEM_ATTRIBUTE_TYPES = (
@@ -19,21 +17,12 @@ ITEM_ATTRIBUTE_TYPES = (
 )
 
 
-def captalize_field(field_names):
-    """Capitalize field values."""
-    for field_name in field_names:
-        val = getattr(field_name, False)
-        if val:
-            setattr(field_name, val.upper())
-
-
 class Category(AbstractBase):
     """Item categories eg. ELECTRONICS, UTENSILS, COOKER."""
 
     category_name = models.CharField(max_length=300)
     category_code = models.CharField(
-        max_length=250, null=True, blank=True,
-        validators=[items_enterprise_code_validator])
+        max_length=250, null=True, blank=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
@@ -57,11 +46,10 @@ class Category(AbstractBase):
 
     def __str__(self):
         """Str representation for the section model."""
-        return '{}'.format(
-            self.category_name,
-            )
+        return '{}'.format(self.category_name)
 
     def save(self, *args, **kwargs):
+        """Pre save and post save action."""
         self.create_category_code()
         self.category_name = self.category_name.upper()
         return super().save(*args, **kwargs)
@@ -79,7 +67,7 @@ class ItemType(AbstractBase):
         Category, null=False, blank=False, on_delete=CASCADE)
     type_name = models.CharField(max_length=250)
     type_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
+        max_length=250, null=True, blank=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
@@ -109,10 +97,7 @@ class ItemType(AbstractBase):
 
     def __str__(self):
         """Str representation for the item-models model."""
-        return '{} -> {}'.format(
-            self.type_name,
-            self.category.category_name,
-            )
+        return '{} -> {}'.format(self.type_name, self.category.category_name)
 
     class Meta:
         """Meta class for section model."""
@@ -127,7 +112,7 @@ class Brand(AbstractBase):
         ItemType, through='BrandItemType', related_name='branditemtypes')
     brand_name = models.CharField(max_length=250)
     brand_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
+        max_length=250, null=True, blank=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
@@ -141,7 +126,7 @@ class Brand(AbstractBase):
         if self.__class__.objects.filter(
                 brand_name=self.brand_name,
                 enterprise=self.enterprise).exclude(id=self.id).exists():
-            msg = 'A brand with this brand name already exists.'
+            msg = 'A brand with this brand name already exists'
             raise ValidationError({'brand_name': msg})
 
     def clean(self) -> None:
@@ -224,26 +209,29 @@ class ItemModel(AbstractBase):
         ItemType, null=False, blank=False, on_delete=models.PROTECT)
     model_name = models.CharField(max_length=250)
     model_code = models.CharField(
-        max_length=250, null=True, blank=True, validators=[items_enterprise_code_validator])
+        max_length=250, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
 
-    def validate_item_type_is_hooked_up_to_the_brand(self):
+    def check_item_type_is_hooked_up_to_the_brand(self):
         """Validate the item type is hooked to the brand."""
         if not BrandItemType.objects.filter(
                 brand=self.brand, item_type=self.item_type, enterprise=self.enterprise).exists():
-            msg = 'The item type {} is not hooked up to the brand {}. '\
-                'Kindly set that up first'.format(self.item_type.type_name, self.brand.brand_name)
-            raise ValidationError({'item_type': msg})
+            BrandItemType.objects.create(
+                brand=self.brand, item_type=self.item_type, created_by=self.created_by,
+                updated_by=self.updated_by, enterprise=self.enterprise)
 
     def validate_unique_model_name(self):
         """Validate that the model name is uniques for the enterprise."""
         if self.__class__.objects.filter(
-            model_name=self.model_name, brand=self.brand, item_type=self.item_type,
-            enterprise=self.enterprise).exclude(id=self.id).exists():
-            msg = 'The {} {} {} model number already exists. Please enter a new model number'.format(self.model_name, self.brand.brand_name, self.item_type.type_name)
-            raise ValidationError({"model_name":msg})
+                model_name=self.model_name,
+                brand=self.brand, item_type=self.item_type,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = 'The {} {} {} model number already exists. '\
+                'Please enter a new model number'.format(
+                    self.model_name, self.brand.brand_name, self.item_type.type_name)
+            raise ValidationError({"model_name": msg})
 
     def create_model_code(self):
         """Create a code for the item model."""
@@ -252,12 +240,13 @@ class ItemModel(AbstractBase):
 
     def clean(self) -> None:
         """Clean the ItemModel model."""
-        self.validate_item_type_is_hooked_up_to_the_brand()
         self.validate_unique_model_name()
         return super().clean()
 
     def save(self, *args, **kwargs):
+        """Perform pre save and post save actions."""
         self.create_model_code()
+        self.check_item_type_is_hooked_up_to_the_brand()
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -282,8 +271,7 @@ class Item(AbstractBase):
     item_name = models.CharField(
         null=True, blank=True, max_length=250)
     item_code = models.CharField(
-        null=True, blank=True, max_length=250,
-        validators=[items_enterprise_code_validator])
+        null=True, blank=True, max_length=250)
     make_year = models.IntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=False)
     pushed_to_edi = models.BooleanField(default=False)
@@ -449,7 +437,7 @@ class Units(AbstractBase):
     units_name = models.CharField(
         null=False, blank=False, max_length=300)
     units_code = models.CharField(
-        null=True, blank=True, max_length=250, validators=[units_enterprise_code_validator])
+        null=True, blank=True, max_length=250)
     is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
@@ -496,7 +484,7 @@ class UnitsItemType(AbstractBase):
         """Str representation for the item type units model."""
         return '{} -> {}'.format(
             self.units.units_name,
-            self.type.type_name)
+            self.item_type.type_name)
 
     class Meta:
         """Meta class."""

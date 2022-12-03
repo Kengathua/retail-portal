@@ -1,4 +1,4 @@
-"""Franchise serializers."""
+"""Enterprise serializers."""
 
 from elites_retail_portal.common.serializers import BaseSerializerMixin
 from elites_retail_portal.enterprises import models

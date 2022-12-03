@@ -16,6 +16,7 @@ class WarehouseSerializer(BaseSerializerMixin):
         model = models.Warehouse
         fields = '__all__'
 
+
 class WarehouseItemSerializer(BaseSerializerMixin):
     """Warehouse Item serializer class."""
 
@@ -24,8 +25,10 @@ class WarehouseItemSerializer(BaseSerializerMixin):
 
     class Meta:
         """Warehouse Item Meta class."""
+
         model = models.WarehouseItem
         fields = '__all__'
+
 
 class WarehouseWarehouseItemSerializer(BaseSerializerMixin):
     """Warehouse Warehouse Item serializer class."""
@@ -36,8 +39,10 @@ class WarehouseWarehouseItemSerializer(BaseSerializerMixin):
 
     class Meta:
         """Meta class."""
+
         model = models.WarehouseWarehouseItem
         fields = '__all__'
+
 
 class WarehouseRecordSerializer(BaseSerializerMixin):
     """Store record serializer class."""
@@ -56,4 +61,3 @@ class WarehouseRecordSerializer(BaseSerializerMixin):
 
         model = models.WarehouseRecord
         fields = '__all__'
-

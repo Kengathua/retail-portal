@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 
-from elites_retail_portal.items.models import Item
 from elites_retail_portal.credit.models import PurchaseItem
 from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.debit.models import InventoryRecord, InventoryItem
@@ -32,13 +31,16 @@ class PurchasesReturn(AbstractBase):
 
     @property
     def purchase(self):
-        """Purchase property"""
+        """Purchase property."""
         return self.purchase_item.purchase or None
 
     def validate_unique_return_item_per_purchase(self):
-        if self.__class__.objects.filter(purchase_item=self.purchase_item).exclude(id=self.id).exists():
-            msg = "The item {} already exists as a returned item. Kindly select Edit to update it".format(
-                self.purchase_item.item.item_name)
+        """Validate unique return item per purchase."""
+        if self.__class__.objects.filter(
+                purchase_item=self.purchase_item).exclude(id=self.id).exists():
+            msg = "The item {} already exists as a returned item. '\
+                'Kindly select Edit to update it".format(
+                    self.purchase_item.item.item_name)
             raise ValidationError({'update_item': msg})
 
     def validate_quantity_returned_less_than_quantity_purchased(self):
@@ -50,13 +52,16 @@ class PurchasesReturn(AbstractBase):
                 {'quantity_returned': msg})
 
     def clean(self) -> None:
+        """Clean purchase return."""
         self.validate_unique_return_item_per_purchase()
         self.validate_quantity_returned_less_than_quantity_purchased()
         return super().clean()
 
     def save(self, *args, **kwargs):
+        """Pre save and post save actions."""
         self.unit_price = self.unit_price or self.purchase_item.unit_price
-        self.total_price = round(Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
+        self.total_price = round(
+            Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
         super().save(*args, **kwargs)
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory
@@ -82,7 +87,7 @@ class PurchasesReturn(AbstractBase):
             InventoryRecord.objects.create(**inventory_record_payload, **audit_fields)
 
         else:
-            inventory_record=inventory_records.first()
+            inventory_record = inventory_records.first()
             inventory_record.inventory = inventory
             inventory_record.inventory_item = inventory_item
             inventory_record.record_type = 'REMOVE'

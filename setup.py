@@ -10,7 +10,7 @@ setup(
     name=name,
     version=version,
     packages=find_packages(exclude=['tests', 'tests.*']),
-    description="Elites Franchise Portal System",
+    description="Elites Retail Portal System",
     long_description=open('README.md').read(),
     author="ELITES",
     author_email="developers@elitesage.com",

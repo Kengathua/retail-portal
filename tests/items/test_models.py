@@ -7,7 +7,8 @@ from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryInventoryItem)
 from elites_retail_portal.warehouses.models import (
     Warehouse, WarehouseItem, WarehouseWarehouseItem)
-from elites_retail_portal.catalog.models import Catalog
+from elites_retail_portal.catalog.models import (
+    Catalog, CatalogItem, CatalogCatalogItem, Section)
 from elites_retail_portal.users.models import User
 from elites_retail_portal.enterprises.models import Enterprise
 from elites_retail_portal.items.models import (
@@ -29,12 +30,37 @@ class TestCategory(TestCase):
         """."""
         enterprise = baker.make(Enterprise, name='Franchise Number One')
         cat = baker.make(
+            Category, category_name='Cat One', category_code = 'FNO-MB/C-CO/2201',
+            enterprise=enterprise.enterprise_code)
+        assert cat
+        self.assertEqual(str(cat), cat.category_name)
+        assert str(cat) == cat.category_name
+        assert Category.objects.count() == 1
+
+    def test_create_category_code(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Franchise Number One')
+        cat = baker.make(
             Category, category_name='Cat One',
             enterprise=enterprise.enterprise_code)
         assert cat
         assert cat.category_code == 'FNO-MB/C-CO/2201'
         assert Category.objects.count() == 1
 
+    def test_validate_unique_category_name(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Franchise Number One')
+        baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise.enterprise_code)
+        cat_recipe = Recipe(
+            Category, category_name='Cat One',
+            enterprise=enterprise.enterprise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            cat_recipe.make()
+        msg = 'A category with this category name already exists'
+        assert msg in ve.value.messages
 
 class TestItemType(TestCase):
     """."""
@@ -50,8 +76,27 @@ class TestItemType(TestCase):
             enterprise=enterprise.enterprise_code)
 
         assert item_type
+        assert str(item_type) == 'COOKER -> CAT ONE'
         assert item_type.type_code == 'EAS-MB/T-C/2201'
         assert ItemType.objects.count() == 1
+
+    def test_validate_unique_type_name(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        cat = baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise.enterprise_code)
+        baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise.enterprise_code)
+        type_recipe = Recipe(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise.enterprise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            type_recipe.make()
+        msg = 'An item type with this type name already exists'
+        assert msg in ve.value.messages
 
 
 class TestBrand(TestCase):
@@ -64,8 +109,22 @@ class TestBrand(TestCase):
             Brand, brand_name='Samsung', enterprise=enterprise.enterprise_code)
 
         assert brand
+        assert str(brand)
         assert brand.brand_code == 'EAS-MB/B-S/2201'
         assert Brand.objects.count() == 1
+
+    def test_validate_unique_brand_name(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        baker.make(
+            Brand, brand_name='Samsung', enterprise=enterprise.enterprise_code)
+        brand_recipe = Recipe(
+            Brand, brand_name='Samsung', enterprise=enterprise.enterprise_code)
+
+        with pytest.raises(ValidationError) as ve:
+            brand_recipe.make()
+        msg = 'A brand with this brand name already exists'
+        assert msg in ve.value.messages
 
 
 class TestBrandItemType(TestCase):
@@ -92,11 +151,35 @@ class TestBrandItemType(TestCase):
             BrandItemType, brand=brand, item_type=item_type2,
             enterprise=enterprise.enterprise_code)
         assert brand_item
+        assert str(brand_item) == 'SAMSUNG -> MICROWAVE'
         assert set(
             [item_type for item_type in brand.item_types.all()]).issuperset(set(
                 [item_type1, item_type2]))
         assert set(
             [item_type for item_type in brand.item_types.all()]) == set([item_type1, item_type2])
+
+
+    def test_validate_unique_brand_and_item_type(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        cat = baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise.enterprise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise.enterprise_code)
+        brand = baker.make(
+            Brand, brand_name='Samsung', enterprise=enterprise.enterprise_code)
+        baker.make(
+            BrandItemType, brand=brand, item_type=item_type,
+            enterprise=enterprise.enterprise_code)
+        brand_item_recipe = Recipe(
+            BrandItemType, brand=brand, item_type=item_type,
+            enterprise=enterprise.enterprise_code)
+        with pytest.raises(ValidationError) as ve:
+            brand_item_recipe.make()
+        msg = 'The item type COOKER is already hooked up to the brand SAMSUNG'
+        assert msg in ve.value.messages
 
 
 class TestItemModel(TestCase):
@@ -122,8 +205,36 @@ class TestItemModel(TestCase):
             enterprise=enterprise_code)
 
         assert model
+        assert str(model)
         assert model.model_code == 'EAS-MB/M-GS/2201'
         assert ItemModel.objects.count() == 1
+
+
+    def test_validate_unique_model_name(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = enterprise.enterprise_code
+        cat = baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise_code)
+        brand = baker.make(
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
+        baker.make(
+            BrandItemType, brand=brand, item_type=item_type,
+            enterprise=enterprise_code)
+        baker.make(
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
+            enterprise=enterprise_code)
+        model_recipe = Recipe(
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
+            enterprise=enterprise_code)
+        with pytest.raises(ValidationError) as ve:
+            model_recipe.make()
+        msg = 'The GE731K-B SUT SAMSUNG COOKER model number already exists. Please enter a new model number'
+        assert msg in ve.value.messages
 
 
 class TestItem(TestCase):
@@ -147,12 +258,12 @@ class TestItem(TestCase):
         item_model = baker.make(
             ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
             enterprise=enterprise_code)
-
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             enterprise=enterprise_code)
 
         assert item
+        assert str(item)
         assert item.item_name == 'SAMSUNG GE731K-B SUT COOKER'
         assert item.item_code == 'EAS-MB/I-SGSC/2201'
         assert Item.objects.count() == 1
@@ -184,6 +295,11 @@ class TestItem(TestCase):
         user = baker.make(
             User, email='testuser@email.com', first_name='Test', last_name='User',
             guid=uuid.uuid4(), enterprise=enterprise_code)
+        with pytest.raises(ValidationError) as ve:
+            item.activate(user)
+        msg = 'You do not have rules for your enterprise. Please set that up first'
+        assert msg in ve.value.messages
+
         enterprise_setup_rule = baker.make(
             EnterpriseSetupRule, name='Elites age supermarket default enterprise rule',
             is_default=True, is_active=True, enterprise=enterprise_code)
@@ -228,10 +344,18 @@ class TestItem(TestCase):
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
             enterprise=enterprise_code)
 
-        baker.make(EnterpriseSetupRuleInventory, rule=enterprise_setup_rule, inventory=master_inventory)
-        baker.make(EnterpriseSetupRuleInventory, rule=enterprise_setup_rule, inventory=available_inventory)
-        baker.make(EnterpriseSetupRuleWarehouse, rule=enterprise_setup_rule, warehouse=receiving_warehouse)
-        baker.make(EnterpriseSetupRuleCatalog, rule=enterprise_setup_rule, catalog=standard_catalog)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=enterprise_setup_rule, inventory=master_inventory,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=enterprise_setup_rule, inventory=available_inventory,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleWarehouse, rule=enterprise_setup_rule, warehouse=receiving_warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=enterprise_setup_rule, catalog=standard_catalog,
+            enterprise=enterprise_code)
 
         assert Inventory.objects.count() == 2
         assert Warehouse.objects.count() == 1
@@ -243,6 +367,12 @@ class TestItem(TestCase):
         assert InventoryInventoryItem.objects.count() == 2
         assert WarehouseWarehouseItem.objects.count() == 1
 
+        assert CatalogCatalogItem.objects.count() == 0
+        inventory_item = InventoryItem.objects.get(item=item)
+        baker.make(Section, section_name='Living Room', enterprise=enterprise_code)
+        baker.make(CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
+        item.activate(user)
+        assert CatalogCatalogItem.objects.count() == 1
 
 class TestItemAttribute(TestCase):
     """."""
@@ -307,9 +437,28 @@ class TestUnits(TestCase):
         units.save()
 
         assert units
+        assert str(units)
         assert units.units_code == 'EAS-MB/U-5G/2201'
         assert Units.objects.count() == 1
 
+class TestUnitsItemType(TestCase):
+    """."""
+
+    def test_create_units_item_type(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = enterprise.enterprise_code
+        cat = baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise_code)
+        units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        units_item_type = baker.make(UnitsItemType, item_type=item_type, units=units, enterprise=enterprise_code)
+
+        assert str(units_item_type)
+        assert UnitsItemType.objects.count() == 1
 
 class TestItemUnits(TestCase):
     """."""

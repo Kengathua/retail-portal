@@ -5,13 +5,11 @@ import math
 import base64
 import logging
 from datetime import datetime
-from urllib import request
 import requests
 
 from django.http import HttpResponse, JsonResponse
 from requests.auth import HTTPBasicAuth
 from rest_framework.response import Response
-from phonenumber_field.phonenumber import PhoneNumber
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -19,7 +17,7 @@ from django.core.exceptions import ValidationError
 from phonenumber_field.phonenumber import to_python
 from phonenumbers.phonenumberutil import is_possible_number
 
-from elites_retail_portal.transactions.models import Transaction, PaymentRequest
+from elites_retail_portal.transactions.models import PaymentRequest
 from elites_retail_portal.transactions import serializers
 from .utils import PaymentErrorCode
 
@@ -229,7 +227,8 @@ class MpesaGateWay:
             'is_confirmed': True,
         }
 
-        payment_request._meta.model.objects.filter(id=payment_request.id).update(**payment_request_updates)
+        payment_request._meta.model.objects.filter(
+            id=payment_request.id).update(**payment_request_updates)
         payment_request.refresh_from_db()
 
         return payment_request
@@ -294,8 +293,10 @@ class MpesaGateWay:
 
         response = requests.post(api_url, json=payload, headers=headers)
         # response = requests.post(api_url, json=request, headers=headers, verify=False)
+        return response
 
     def simulate_c2b_transaction(self):
+        """Simulate a customer to business transaction."""
         my_access_token = self.get_access_token()
 
         api_url = "https://sandbox.safaricom.co.ke/safaricom/c2b/v1/simulate"

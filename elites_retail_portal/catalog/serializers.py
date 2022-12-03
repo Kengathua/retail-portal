@@ -40,7 +40,6 @@ class CatalogItemSerializer(BaseSerializerMixin):
         """Override all data field to return None.(Optimizing response)."""
         return None
 
-
     class Meta:
         """Serializer Meta class."""
 

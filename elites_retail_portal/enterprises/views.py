@@ -1,8 +1,7 @@
-"""Franchise views."""
+"""Enterprise views."""
 
 from elites_retail_portal.common.views import BaseViewMixin
-from elites_retail_portal.enterprises.models import (
-    Enterprise, Staff, EnterpriseContact, Platform)
+from elites_retail_portal.enterprises.models import Enterprise, Staff
 from elites_retail_portal.enterprises import serializers
 from elites_retail_portal.enterprises import filters
 

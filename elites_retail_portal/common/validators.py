@@ -7,8 +7,8 @@ from django.core.exceptions import ValidationError
 phoneNumberRegex = RegexValidator(regex=r"^\+?1?\d{8,15}$")
 
 
-def franchise_enterprise_code_validator(code):
-    """Validate franchise code."""
+def enterprise_enterprise_code_validator(code):
+    """Validate enterprise code."""
     enterprise_code_pattern = "[A-Z]+-+[A-Z]+/+[A-Z]+-+[A-Z]+/+[0-9]+-+[0-9]"
 
     if not (re.search(enterprise_code_pattern, code)):

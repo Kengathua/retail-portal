@@ -1,9 +1,11 @@
 """Order Serializers file."""
 
 from rest_framework.fields import CharField, SerializerMethodField, ReadOnlyField
+
 from elites_retail_portal.common.serializers import BaseSerializerMixin
 from elites_retail_portal.orders import models
 from elites_retail_portal.transactions.serializers import PaymentSerializer
+
 
 class RecordOwnerSerializer(BaseSerializerMixin):
     """
@@ -103,7 +105,8 @@ class InstallmentsOrderItemSerializer(BaseSerializerMixin):
     """Installment Order Item Serializer class."""
 
     unit_price = CharField(read_only=True)
-    item_name = CharField(source='cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
+    item_name = CharField(
+        source='cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
     customer_name = CharField(source='order.customer.full_name', read_only=True)
     order_name = CharField(source='order.heading', read_only=True)
     order_number = CharField(source='order.order_number', read_only=True)
@@ -118,11 +121,15 @@ class InstallmentsOrderItemSerializer(BaseSerializerMixin):
 class InstallmentSerializer(BaseSerializerMixin):
     """Installment Serializer class."""
 
-    item_name = CharField(source='installment_item.cart_item.catalog_item.inventory_item.item.item_name', read_only=True)
-    customer_name = CharField(source='installment_item.order.customer.full_name', read_only=True)
+    item_name = CharField(
+        source='installment_item.cart_item.catalog_item.inventory_item.item.item_name',
+        read_only=True)
+    customer_name = CharField(
+        source='installment_item.order.customer.full_name', read_only=True)
     previous_installment_date = CharField(read_only=True)
     next_installment_amount = CharField(read_only=True)
     previous_installment_amount = CharField(read_only=True)
+
     class Meta:
         """Serializer Meta class."""
 
@@ -141,6 +148,7 @@ class OrderTransactionSerializer(BaseSerializerMixin):
     transaction_means = ReadOnlyField(source='transaction.transaction_means')
 
     def get_order_coverage_percentage(self, order_transaction):
+        """Get order transaction coverage for the order."""
         order_total = order_transaction.order.summary['order_total']
         coverage = int((order_transaction.amount / order_total) * 100)
 
