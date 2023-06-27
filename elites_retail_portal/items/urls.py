@@ -15,5 +15,6 @@ router.register(r'units_item_types', views.UnitsItemTypeViewSet)
 router.register(r'item_units', views.ItemUnitsViewSet)
 router.register(r'item_attributes', views.ItemAttributeViewSet)
 router.register(r'item_images', views.ItemImageViewSet)
+router.register(r'products', views.ProductViewSet)
 
 urlpatterns = router.urls

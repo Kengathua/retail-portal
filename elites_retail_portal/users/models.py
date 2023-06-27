@@ -41,6 +41,8 @@ class Group(models.Model):
     updated_by = models.UUIDField()
     enterprise = models.CharField(null=False, blank=False, max_length=250)
     name = models.CharField(max_length=300)
+    description = models.TextField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
     permissions = models.ManyToManyField(
         Permission, through='GroupPermission',
         related_name='group_permissions')
@@ -91,7 +93,7 @@ class User(AbstractBaseUser):
 
     id = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, primary_key=True)
-    guid = models.UUIDField(unique=True)
+    guid = models.UUIDField(null=True, blank=True, unique=True)
     date_joined = models.DateTimeField(db_index=True, verbose_name='date joined', auto_now_add=True)    # noqa
     last_login = models.DateTimeField(verbose_name='last login', auto_now=True)
     first_name = models.CharField(max_length=255, null=False, blank=False)

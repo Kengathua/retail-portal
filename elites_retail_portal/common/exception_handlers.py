@@ -48,16 +48,23 @@ def custom_exception_handler(exc, context):
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
     elif isinstance(exc, ValidationError):
-        msg = "Internal Server Error. Kindly Contact Admin"
+        error_message = "Internal Server Error. Kindly Contact Admin"
+        key = 'detail'
         error = exc.__dict__['detail']
         field = list(error.keys())[0]
         field_name = field.replace('_', ' ').title()
         error_message = str(error[field][0])
-        if error_message == "This field must be unique.":
-            msg = 'The {} field must be unique. Kindly select another {}'.format(
-                field_name, field_name.lower())
 
-        data = {"detail": msg}
+        if error_message == "This field must be unique.":
+            error_message = 'The {} field must be unique. Kindly select another {}'.format(
+                field_name, field_name.lower())
+            key = field
+
+        if error_message == "This field is required.":
+            error_message = "The {} field is required".format(field_name)
+            key = field
+
+        data = {key: error_message}
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
     response = exception_handler(exc, context)

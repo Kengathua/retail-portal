@@ -16,6 +16,35 @@ ITEM_ATTRIBUTE_TYPES = (
     ('DESCRIPTION', 'DESCRIPTION')
 )
 
+UNITS_TYPES_CHOICES = (
+    ("LITRES", "LITRES"),
+    ("MILILITRES", "MILILITRES"),
+    ("KILOGRAMS", "KILOGRAMS"),
+    ("POUNDS", "POUNDS"),
+    ("OUNCES", "OUNCES"),
+    ("GRAMS", "GRAMS"),
+    ("CARTONS", "CARTONS"),
+    ("PACKETS", "PACKETS"),
+    ("SACHETS", "SACHETS"),
+    ("PIECES", "PIECES"),
+    ("SACKS", "SACKS"),
+    ("BALES", "BALES"),
+    ("INCHES", "INCHES"),
+    ("METRES", "METRES"),
+    ("CENTIMETRES", "CENTIMETRES"),
+    ("DOZENS", "DOZENS")
+)
+
+PIECES = "PIECES"
+
+PRODUCT_STATUS_CHOICES = (
+    ("SOLD", "SOLD"),
+    ("ON SALE", "ON SALE"),
+    ("RETURNED TO SUPPLIER", "RETURNED TO SUPPLIER"),
+)
+
+ON_SALE = "ON SALE"
+
 
 class Category(AbstractBase):
     """Item categories eg. ELECTRONICS, UTENSILS, COOKER."""
@@ -213,6 +242,14 @@ class ItemModel(AbstractBase):
     is_active = models.BooleanField(default=True)
     creator = retrieve_user_email('created_by')
     updater = retrieve_user_email('updated_by')
+
+    @property
+    def heading(self):
+        """Get the model heading."""
+        model_name = self.model_name
+        brand_name = self.brand.brand_name
+        type_name = self.item_type.type_name
+        return f'{model_name} {brand_name} {type_name}'
 
     def check_item_type_is_hooked_up_to_the_brand(self):
         """Validate the item type is hooked to the brand."""
@@ -435,7 +472,10 @@ class Units(AbstractBase):
     item_types = models.ManyToManyField(
         ItemType, through='UnitsItemType', related_name='itemtype')  # eg. TV, Fridge
     units_name = models.CharField(
-        null=False, blank=False, max_length=300)
+        null=True, blank=True, max_length=300)
+    units_type = models.CharField(
+        null=False, blank=False, max_length=300, choices=UNITS_TYPES_CHOICES, default=PIECES)
+    units_quantity = models.FloatField(null=True, blank=True, default=1)
     units_code = models.CharField(
         null=True, blank=True, max_length=250)
     is_active = models.BooleanField(default=True)
@@ -447,9 +487,25 @@ class Units(AbstractBase):
         if not self.units_code:
             self.units_code = generate_enterprise_code(self)
 
+    def get_units_name(self):
+        """Get units name."""
+        if not self.units_name:
+            self.units_name = "{} {}".format(self.units_quantity, self.units_type)
+            if self.units_quantity == 1:
+                self.units_name = self.units_type
+
+    def validate_unique_units_name(self):
+        """Validate the created units is unique."""
+        if self.__class__.objects.filter(
+                units_name=self.units_name, is_active=True,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = "Units with this units name already exists. "\
+                "Please enter new units or edit the existing record"
+            raise ValidationError({"units": msg})
+
     def clean(self) -> None:
         """Clean the units model."""
-        self.create_units_code()
+        self.validate_unique_units_name()
         return super().clean()
 
     def __str__(self):
@@ -459,6 +515,13 @@ class Units(AbstractBase):
         return '{} -> {}'.format(
             self.units_name,
             ", ".join(type_names),)
+
+    def save(self, *args, **kwargs):
+        """Post save and pre save actions."""
+        self.units_quantity = self.units_quantity or 1
+        self.get_units_name()
+        self.create_units_code()
+        return super().save(*args, **kwargs)
 
     class Meta:
         """Meta class dor item measure units."""
@@ -582,4 +645,52 @@ class ItemImage(AbstractBase):
     def save(self, *args, **kwargs):
         """Perform post save and pre save actions."""
         super().save(*args, **kwargs)
+
         self.update_hero_product_image()
+
+
+class Product(AbstractBase):
+    """Products model."""
+
+    item = models.ForeignKey(
+        Item, null=False, blank=False, on_delete=CASCADE)
+    serial_number = models.CharField(max_length=300, null=True, blank=True)
+    product_name = models.CharField(max_length=300, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=300, null=True, blank=True, choices=PRODUCT_STATUS_CHOICES, default=ON_SALE)
+
+    @property
+    def catalog_item(self):
+        """Get catalog item."""
+        from elites_retail_portal.catalog.models import CatalogItem
+        return CatalogItem.objects.filter(inventory_item__item=self.item).first()
+
+    def validate_unique_serial_number(self):
+        """Validate unique serial number."""
+        if not self.serial_number:
+            return
+
+        if self.__class__.objects.filter(
+                serial_number=self.serial_number,
+                enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = "A product with this serial number already exists. Please query that to proceed"
+            raise ValidationError({'serial_number': msg})
+
+    def validate_serial_number(self):
+        """Validate serial numbers."""
+        if not self.serial_number:
+            msg = "Please provide a valid serial number"
+            raise ValidationError({'serial_number': msg})
+
+    def clean(self) -> None:
+        """Clean products model."""
+        self.validate_unique_serial_number()
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        """Save action."""
+        if not self.product_name:
+            self.product_name = self.item.item_name
+
+        return super().save(*args, **kwargs)

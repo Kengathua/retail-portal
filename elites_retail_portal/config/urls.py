@@ -44,6 +44,8 @@ v1_patterns = [
         ('elites_retail_portal.customers.urls', 'customers'), namespace='customers')),
     path(r'warehouses/', include(
         ('elites_retail_portal.warehouses.urls', 'warehouses'), namespace='warehouses')),
+    path(r'procurement/', include(
+        ('elites_retail_portal.procurement.urls', 'procurement'), namespace='procurement')),
     path(r'encounters/', include(
         ('elites_retail_portal.encounters.urls', 'encounters'), namespace='encounters')),
     path(r'enterprises/', include(

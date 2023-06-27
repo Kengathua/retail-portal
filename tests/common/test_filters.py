@@ -11,17 +11,22 @@ from django.urls import reverse
 
 from model_bakery import baker
 
+
 class TestComboboxFilter(LoggedInMixin, APITestCase):
+    """."""
+
     def setUp(self):
+        """."""
         self.enterprise = baker.make(
-            Enterprise, reg_no='BS-9049444', name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
-            business_type='SHOP')
+            Enterprise, reg_no='BS-9049444', name='Enterprise One',
+            enterprise_code='EAL-E/EO-MB/2301-01', business_type='SHOP')
         enterprise_code = self.enterprise.enterprise_code
         self.client = authenticate_test_user()
 
     url = reverse('v1:catalog:section-list')
 
     def test_multiselect(self):
+        """."""
         uuids = [str(uuid.uuid4()) for _ in range(3)]
         multiselect_url = self.url + '?combobox={}'.format(*uuids)
         enterprise_code = self.enterprise.enterprise_code
@@ -31,20 +36,20 @@ class TestComboboxFilter(LoggedInMixin, APITestCase):
 
         resp = self.client.get(multiselect_url)
         assert resp.status_code == 200
-        assert len(resp.data) == 3
-
+        assert len(resp.data['results']) == 3
 
     def test_combobox(self):
+        """."""
         combo_url = self.url + "?combobox=cdd113cc-5157-44a5-988e-69f8855a7f47"
         enterprise_code = self.enterprise.enterprise_code
         baker.make(
             Section, id='cdd113cc-5157-44a5-988e-69f8855a7f47', enterprise=enterprise_code)
         resp = self.client.get(combo_url)
         assert resp.status_code == 200
-        assert len(resp.data) == 1
-
+        assert len(resp.data['results']) == 1
 
     def test_search(self):
+        """."""
         search_url = self.url + "?search=Section A"
         enterprise_code = self.enterprise.enterprise_code
         baker.make(
@@ -55,4 +60,4 @@ class TestComboboxFilter(LoggedInMixin, APITestCase):
             Section, section_name='Section C', enterprise=enterprise_code)
         resp = self.client.get(search_url)
         assert resp.status_code == 200
-        assert len(resp.data) == 1
+        assert len(resp.data['results']) == 1

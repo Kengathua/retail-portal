@@ -46,6 +46,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = [
+    '143.198.58.111', '.portal.uat-elites-retail-portal.com',
     'localhost', '127.0.0.1', '68.183.33.98', 'kengathua.pythonanywhere.com',
     '.uat-elites-retail-portal.com', '.staging.uat-elites-retail-portal.com', ]
 # Application definition
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'corsheaders',
     'django_filters',
     'rest_framework',
@@ -71,11 +73,13 @@ LOCAL_APPS = [
     'elites_retail_portal.credit',
     'elites_retail_portal.wallet',
     'elites_retail_portal.catalog',
+    'elites_retail_portal.common',
     'elites_retail_portal.adapters',
     'elites_retail_portal.customers',
     'elites_retail_portal.warehouses',
     'elites_retail_portal.enterprises',
     'elites_retail_portal.encounters',
+    'elites_retail_portal.procurement',
     'elites_retail_portal.transactions',
     'elites_retail_portal.enterprise_mgt',
     'elites_retail_portal.adapters.mobile_money.mpesa',
@@ -100,7 +104,8 @@ ROOT_URLCONF = 'elites_retail_portal.config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -137,7 +142,7 @@ if not ENVIRONMENT == 'DEVELOPMENT':
         "default": dj_database_url.parse(
             os.environ.get(
                 "DATABASE_URL",
-                "postgres://elites_user:elites_pass@localhost:5432/elites_franchises"
+                "postgres://elites_user:elites_pass@localhost:5432/retail_db"
             )
         ),
     }
@@ -164,7 +169,7 @@ if not ENVIRONMENT == 'DEVELOPMENT':
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': os.getenv("POSTGRES_DB_NAME", 'elites_franchise'),
+#         'NAME': os.getenv("POSTGRES_DB_NAME", 'retail_db'),
 #         'USER': os.getenv("POSTGRES_DB_USER", 'elites_user'),
 #         'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD", 'elites_pass'),
 #         'HOST': os.getenv("POSTGRES_DB_HOST", 'localhost'),
@@ -208,7 +213,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# STATIC_URL = '/static/'
+# DEFAULT_STATIC_FILES = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_ROOT = os.getenv('STATIC_ROOT', DEFAULT_STATIC_FILES)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -249,8 +258,8 @@ REST_FRAMEWORK = {
     },
     'DEFAULT_PAGINATION_CLASS': 'elites_retail_portal.common.pagination.EnhancedPagination',
     'EXCEPTION_HANDLER': 'elites_retail_portal.common.exception_handlers.custom_exception_handler',
-    # 'PAGE_SIZE': 50,    # Default paginated page size
-    'PAGE_SIZE': 10,    # Default paginated page size
+    'PAGE_SIZE': 50,    # Default paginated page size
+    # 'PAGE_SIZE': 10,    # Default paginated page size
     'DATETIME_FORMAT': 'iso-8601',
     'DATE_FORMAT': 'iso-8601',
     'TIME_FORMAT': 'iso-8601',

@@ -13,7 +13,7 @@ from elites_retail_portal.users.models import User
 from elites_retail_portal.enterprises.models import Enterprise
 from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
-    ItemModel, ItemType, ItemUnits, UnitsItemType, Units)
+    ItemModel, ItemType, ItemUnits, UnitsItemType, Units, Product)
 from django.core.exceptions import ValidationError
 from elites_retail_portal.enterprise_mgt.models import (
     EnterpriseSetupRule, EnterpriseSetupRuleInventory,
@@ -30,7 +30,7 @@ class TestCategory(TestCase):
         """."""
         enterprise = baker.make(Enterprise, name='Franchise Number One')
         cat = baker.make(
-            Category, category_name='Cat One', category_code = 'FNO-MB/C-CO/2201',
+            Category, category_name='Cat One', category_code = 'FNO-MB/C-CO/2301',
             enterprise=enterprise.enterprise_code)
         assert cat
         self.assertEqual(str(cat), cat.category_name)
@@ -44,7 +44,7 @@ class TestCategory(TestCase):
             Category, category_name='Cat One',
             enterprise=enterprise.enterprise_code)
         assert cat
-        assert cat.category_code == 'FNO-MB/C-CO/2201'
+        assert cat.category_code == 'FNO-MB/C-CO/2301'
         assert Category.objects.count() == 1
 
     def test_validate_unique_category_name(self):
@@ -77,7 +77,7 @@ class TestItemType(TestCase):
 
         assert item_type
         assert str(item_type) == 'COOKER -> CAT ONE'
-        assert item_type.type_code == 'EAS-MB/T-C/2201'
+        assert item_type.type_code == 'EAS-MB/T-C/2301'
         assert ItemType.objects.count() == 1
 
     def test_validate_unique_type_name(self):
@@ -110,7 +110,7 @@ class TestBrand(TestCase):
 
         assert brand
         assert str(brand)
-        assert brand.brand_code == 'EAS-MB/B-S/2201'
+        assert brand.brand_code == 'EAS-MB/B-S/2301'
         assert Brand.objects.count() == 1
 
     def test_validate_unique_brand_name(self):
@@ -206,7 +206,7 @@ class TestItemModel(TestCase):
 
         assert model
         assert str(model)
-        assert model.model_code == 'EAS-MB/M-GS/2201'
+        assert model.model_code == 'EAS-MB/M-GS/2301'
         assert ItemModel.objects.count() == 1
 
 
@@ -265,7 +265,7 @@ class TestItem(TestCase):
         assert item
         assert str(item)
         assert item.item_name == 'SAMSUNG GE731K-B SUT COOKER'
-        assert item.item_code == 'EAS-MB/I-SGSC/2201'
+        assert item.item_code == 'EAS-MB/I-SGSC/2301'
         assert Item.objects.count() == 1
 
     def test_activate_item(self):
@@ -309,14 +309,12 @@ class TestItem(TestCase):
             'Please hook that up first'
         assert msg in ve.value.messages
 
-        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        s_units = baker.make(
+            Units, units_quantity=10, units_type="LITRES", enterprise=enterprise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
+        p_units = s_units
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
@@ -438,7 +436,7 @@ class TestUnits(TestCase):
 
         assert units
         assert str(units)
-        assert units.units_code == 'EAS-MB/U-5G/2201'
+        assert units.units_code == 'EAS-MB/U-5G/2301'
         assert Units.objects.count() == 1
 
 class TestUnitsItemType(TestCase):
@@ -484,11 +482,11 @@ class TestItemUnits(TestCase):
         item = baker.make(
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             enterprise=enterprise_code)
-        s_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        s_units = baker.make(Units, units_name='1 PACKETS', enterprise=enterprise_code)
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
+        p_units = baker.make(Units, units_name='1 CARTONS', enterprise=enterprise_code)
         baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
         p_units.item_types.set([item_type])
         p_units.save()
@@ -514,7 +512,7 @@ class TestItemUnits(TestCase):
         s_units.save()
         with pytest.raises(ValidationError) as ve:
             item_units2.make()
-        msg = 'Sales Units 5 Gas has been deactivated. '\
+        msg = 'Sales Units 1 PACKETS has been deactivated. '\
             'Kindly activate it or select the correct units to register'
         assert msg in ve.value.messages
         s_units.is_active = True
@@ -523,7 +521,7 @@ class TestItemUnits(TestCase):
         p_units.save()
         with pytest.raises(ValidationError) as ve:
             item_units2.make()
-        msg = 'Purchases Units 5 Gas has been deactivated. '\
+        msg = 'Purchases Units 1 CARTONS has been deactivated. '\
             'Kindly activate it or select the correct units to register'
         assert msg in ve.value.messages
 
@@ -557,3 +555,33 @@ class TestItemImage(TestCase):
             enterprise=enterprise_code)
         assert item_image
         assert ItemImage.objects.count() == 1
+
+
+class TestProduct(TestCase):
+    """."""
+
+    def test_create_product(self):
+        """."""
+        enterprise = baker.make(Enterprise, name='Elites Age Supermarket')
+        enterprise_code = enterprise.enterprise_code
+        cat = baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise_code)
+        brand = baker.make(
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
+        baker.make(
+            BrandItemType, brand=brand, item_type=item_type,
+            enterprise=enterprise_code)
+        item_model = baker.make(
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
+            enterprise=enterprise_code)
+        item = baker.make(
+            Item, item_model=item_model, barcode='83838388383', make_year=2020,
+            enterprise=enterprise_code)
+        product = baker.make(
+            Product, item=item, serial_number="4999494949949", enterprise=enterprise_code)
+        assert product
+        assert Product.objects.count() == 1

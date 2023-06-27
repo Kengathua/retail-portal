@@ -4,8 +4,22 @@ from rest_framework import viewsets
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 
-from elites_retail_portal.users.models import User
-from elites_retail_portal.users.serializers import UserSerializer, MeSerializer
+from elites_retail_portal.users.models import User, Group
+from elites_retail_portal.users.filters import (
+    GroupFilter, UserFilter)
+from elites_retail_portal.users.serializers import (
+    UserSerializer, MeSerializer, GroupSerializer)
+from elites_retail_portal.common.views import BaseViewMixin
+
+
+class GroupViewSet(BaseViewMixin):
+    """User Viewset class."""
+
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    filterset_class = GroupFilter
+    search_fields = (
+        'name',)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -13,6 +27,18 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filterset_class = UserFilter
+    search_fields = (
+        'id', 'first_name', 'last_name', 'other_names',
+        'group__name', 'phone_no', 'email', 'date_of_birth',
+        'date_joined', 'guid', 'enterprise',)
+
+    required_permissions = [
+        'users.add_user',
+        'users.change_user',
+        'users.delete_user',
+        'users.view_user',
+    ]
 
 
 class MeView(RetrieveAPIView):

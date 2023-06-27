@@ -9,23 +9,22 @@ from tests.utils.login_mixins import LoggedInMixin
 from tests.utils.login_mixins import authenticate_test_user
 
 
-
 class TestNonPartitionedMode(LoggedInMixin, APITestCase):
     """Use enterprises model since it has not enterprise field."""
 
     def setUp(self):
         """."""
         super().setUp()
-        self.recipe = recipe.Recipe(Enterprise, enterprises_type='FRANCHISE')
+        self.recipe = recipe.Recipe(Enterprise, enterprise_type='FRANCHISE')
         self.url = 'v1:enterprises:enterprise'
 
     def test_get(self, **kwargs):
         """."""
         # All should be returned
         self.client = authenticate_test_user()
-        self.recipe.make(enterprises_type='SUPPLIER')
-        self.recipe.make(enterprises_type='SUPPLIER')
-        self.recipe.make(enterprises_type='SUPPLIER')
+        self.recipe.make(enterprise_type='SUPPLIER')
+        self.recipe.make(enterprise_type='SUPPLIER')
+        self.recipe.make(enterprise_type='SUPPLIER')
         assert Enterprise.objects.count() == 4
 
         url = reverse(self.url + '-list')
@@ -40,7 +39,7 @@ class TestPartitionedModel(LoggedInMixin, APITestCase):
     def setUp(self):
         """."""
         super().setUp()
-        self.recipe = recipe.Recipe(Category, enterprise='EAL-E/EO-MB/2201-01')
+        self.recipe = recipe.Recipe(Category, enterprise='EAL-E/EO-MB/2301-01')
         self.url = reverse('v1:items:category' + '-list')
 
     def test_get(self):
@@ -56,25 +55,25 @@ class TestPartitionedModel(LoggedInMixin, APITestCase):
         for r in resp.data['results']:
             assert r['id'] in [str(c1.id), str(c2.id)]
 
-    def test_get_provider_bp(self):
+    def test_get_enterprise(self):
         """."""
         self.client = authenticate_test_user()
         self.recipe.make()
         assert Category.objects.count() == 1
-        bp = Enterprise.objects.get(enterprise_code='EAL-E/EO-MB/2201-01')
-        bp.enterprises_type = 'PROVIDER'
-        bp.save()
+        enterprise = Enterprise.objects.get(enterprise_code='EAL-E/EO-MB/2301-01')
+        enterprise.enterprise_type = 'FRANCHISE'
+        enterprise.save()
         self.user.refresh_from_db()
         resp = self.client.get(self.url)
         assert resp.status_code == 200
-        assert len(resp.data['results']) == 0
+        assert len(resp.data['results']) == 1
 
-    def test_unknown_user_bp(self):
+    def test_unknown_user_enterprise(self):
         """."""
         self.client = authenticate_test_user()
-        self.recipe.make(enterprise=2030)
+        self.recipe.make(enterprise='2301-02')
         assert Category.objects.count() == 1
-        self.user.enterprise = 2030
+        self.user.enterprise = '2301-02'
         self.user.save()
         resp = self.client.get(self.url)
         assert resp.status_code == 200

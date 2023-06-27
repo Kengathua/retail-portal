@@ -9,7 +9,8 @@ from django.core.exceptions import ValidationError
 from elites_retail_portal.common.choices import CURRENCY_CHOICES
 from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord)
-from elites_retail_portal.items.models import ItemUnits, ItemAttribute
+from elites_retail_portal.items.models import (
+    ItemUnits, ItemAttribute, Product)
 from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.common.validators import (
     items_enterprise_code_validator)
@@ -36,8 +37,15 @@ AUDIT_RECORD_TYPE_CHOICES = (
 )
 
 AUDIT_OPERATIONS_TYPE_CHOICES = (
+    ('CREATE CATALOG ITEM', 'CREATE CATALOG ITEM'),
+    ('UPDATE CATALOG ITEM', 'UPDATE CATALOG ITEM'),
+    ('CREATE INVENTORY RECORD', 'CREATE INVENTORY RECORD'),
+    ('UPDATE INVENTORY RECORD', 'UPDATE INVENTORY RECORD'),
+)
+
+AUDIT_TYPE_CHOICES = (
     ('CREATE', 'CREATE'),
-    ('UPDATE', 'CREATE'),
+    ('UPDATE', 'UPDATE')
 )
 
 CATALOG_ITEM_AUDIT_SOURCES = (
@@ -46,6 +54,7 @@ CATALOG_ITEM_AUDIT_SOURCES = (
 )
 
 INVENTORY_RECORD = 'INVENTORY RECORD'
+CREATE_CATALOG_ITEM = 'CREATE CATALOG ITEM'
 
 
 class Section(AbstractBase):
@@ -112,6 +121,15 @@ class CatalogItem(AbstractBase):
     updater = retrieve_user_email('updated_by')
 
     @property
+    def products(self):
+        """Get products."""
+        products = Product.objects.filter(
+            item=self.inventory_item.item, status="ON SALE", is_active=True)
+        if products.exists():
+            return products
+        return Product.objects.none()
+
+    @property
     def catalogs_names(self):
         """Get catalog names."""
         names = ''
@@ -123,7 +141,8 @@ class CatalogItem(AbstractBase):
             names = ", ".join(names)
         return names
 
-    def compose_item_heading(self):
+    @property
+    def item_heading(self):
         """Compose an item heading to display item."""
         type = self.inventory_item.item.item_model.item_type.type_name
         brand = self.inventory_item.item.item_model.brand.brand_name
@@ -145,7 +164,7 @@ class CatalogItem(AbstractBase):
         special_offer = ''
         if special_offers:
             str_special_offers = ", ".join(special_offers)
-            special_offer = ' + {}'.format(str_special_offers)
+            special_offer = ' {}'.format(str_special_offers)
 
         str_special_features = ''
         if special_features:
@@ -155,7 +174,7 @@ class CatalogItem(AbstractBase):
             str_special_features + ' ' + type + ', ' + \
             year + units + special_offer
 
-        self.item_heading = item_heading
+        return item_heading
 
     def get_marked_price(self):
         """Get marked price."""
@@ -164,13 +183,12 @@ class CatalogItem(AbstractBase):
 
     def get_selling_price(self):
         """Initialize the selling price."""
-        if not self.selling_price:
-            self.selling_price = Decimal(
-                float(self.marked_price) - float(self.discount_amount))
+        self.selling_price = Decimal(
+            float(self.marked_price) - float(self.discount_amount or 0))
 
     def get_threshold_price(self):
         """Get threshold price."""
-        if not self.threshold_price:
+        if not self.threshold_price or self.threshold_price > self.selling_price:
             self.threshold_price = self.selling_price
 
     def get_quantity(self):
@@ -184,19 +202,20 @@ class CatalogItem(AbstractBase):
                 {'inventory':
                     'Your enterprise does not have a master Inventory. Please set up one first'})
 
-        if not self.quantity:
-            quantity = 0
-            enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
-            available_inventory = enterprise_setup_rules.available_inventory
-            if not available_inventory.summary == []:
-                quantities = [
-                    data['quantity'] for data in available_inventory.summary
-                    if data['inventory_item'] == self.inventory_item]
+        quantity = 0
+        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+        available_inventory = enterprise_setup_rules.available_inventory
+        if not available_inventory.summary == []:
+            quantities = [
+                data['quantity'] for data in available_inventory.summary
+                if data['inventory_item'] == self.inventory_item]
 
-                quantity = quantities[0] if quantities else 0
+            quantity = quantities[0] if quantities else 0
 
-            self.quantity = quantity
+        self.quantity = quantity
+        return quantity
 
+    # TODO Add user to this functionality to use the user instead of the catalog item updater
     def add_to_cart(
             self, customer=None, price=None,
             quantity=None, is_installment=False, order_now=False):
@@ -204,7 +223,7 @@ class CatalogItem(AbstractBase):
         from elites_retail_portal.orders.models import Cart, CartItem
         if not customer:
             user = get_user_model().objects.get(id=self.updated_by)
-            customer = Customer.objects.filter(enterprise_user=user)
+            customer = Customer.objects.filter(enterprise_user=user).first()
         cart = Cart.objects.filter(customer=customer)
         if not cart.exists():
             cart_data = {
@@ -217,14 +236,19 @@ class CatalogItem(AbstractBase):
         cart = Cart.objects.get(customer=customer, is_active=True)
 
         cart_item = CartItem.objects.filter(
-            cart=cart, catalog_item=self, enterprise=self.enterprise)
+            cart=cart, catalog_item=self, enterprise=self.enterprise).first()
         if price:
             if price < self.threshold_price:
                 diff = float(self.threshold_price) - float(price)
                 raise ValidationError(
-                    {'price': f'The selling price is below the threshold price by {self.currency} {diff}'}) # noqa
+                    {'price': 'The selling price {} {} is below the threshold price {} {} '
+                     'by {} {}'.format(
+                         self.currency, price, self.currency,
+                         self.threshold_price, self.currency, diff)})
 
-        if not cart_item.exists():
+            cart_item.selling_price = price
+
+        if not cart_item:
             cart_item_data = {
                 'created_by': self.created_by,
                 'updated_by': self.updated_by,
@@ -239,7 +263,6 @@ class CatalogItem(AbstractBase):
             cart_item = CartItem.objects.create(**cart_item_data)
             return cart_item
 
-        cart_item = cart_item.first()
         cart_item.quantity_added = 1 if not quantity else quantity
         cart_item.is_installment = is_installment
         cart_item.order_now = order_now
@@ -248,14 +271,13 @@ class CatalogItem(AbstractBase):
 
     def validate_item_is_active(self):
         """Remove item from cart."""
-        if self.is_active:
-            item_units = ItemUnits.objects.filter(item=self.inventory_item.item)
-            if not item_units.exists():
-                msg = 'Please assign units to {}'.format(
-                    self.inventory_item.item.item_name)
+        item_units = ItemUnits.objects.filter(item=self.inventory_item.item, is_active=True)
+        if not item_units.exists():
+            msg = 'The {} does not have active units'.format(
+                self.inventory_item.item.item_name)
 
-                raise ValidationError(
-                    {'item_units': msg})
+            raise ValidationError(
+                {'item_units': msg})
 
     def add_to_catalogs(self, user, catalogs):
         """Add catalog item to the specified catalogs."""
@@ -286,12 +308,23 @@ class CatalogItem(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        self.compose_item_heading()
+        if not self.quantity:
+            self.get_quantity()
         self.get_marked_price()
         self.get_selling_price()
-        self.get_quantity()
         self.get_threshold_price()
         super().save(*args, **kwargs)
+        if not Product.objects.filter(
+                item=self.inventory_item.item, enterprise=self.enterprise).exists():
+            payload = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'enterprise': self.enterprise,
+                'item': self.inventory_item.item,
+                'serial_number': None,
+            }
+            Product.objects.create(**payload)
+
         if not CatalogItemAuditLog.objects.filter(catalog_item=self).exists():
             CatalogItemAuditLog.objects.create(
                 catalog_item=self, quantity_recorded=self.quantity,
@@ -299,7 +332,8 @@ class CatalogItem(AbstractBase):
                 discount_amount_recorded=self.discount_amount,
                 selling_price_recorded=self.selling_price,
                 threshold_price_recorded=self.threshold_price,
-                record_type='ADD', operation_type='CREATE',
+                record_type='ADD', operation_type=CREATE_CATALOG_ITEM,
+                audit_type='CREATE',
                 audit_source='CATALOG ITEM', created_by=self.created_by,
                 updated_by=self.updated_by, enterprise=self.enterprise)
 
@@ -363,23 +397,24 @@ class CatalogItemAuditLog(AbstractBase):
         CatalogItem, on_delete=models.PROTECT,
         related_name='catalog_item_audit_log')
     audit_date = models.DateTimeField(db_index=True, default=timezone.now)
-    quantity_before = models.FloatField(default=0)
-    quantity_recorded = models.FloatField(default=0)
-    quantity_after = models.FloatField(default=0)
-    selling_price_before = models.FloatField(default=0)
-    selling_price_recorded = models.FloatField(default=0)
-    selling_price_after = models.FloatField(default=0)
-    marked_price_before = models.FloatField(default=0)
-    marked_price_recorded = models.FloatField(default=0)
-    marked_price_after = models.FloatField(default=0)
-    threshold_price_before = models.FloatField(default=0)
-    threshold_price_recorded = models.FloatField(default=0)
-    threshold_price_after = models.FloatField(default=0)
-    discount_amount_before = models.FloatField(default=0)
-    discount_amount_recorded = models.FloatField(default=0)
-    discount_amount_after = models.FloatField(default=0)
+    quantity_before = models.FloatField(null=True, blank=True, default=0)
+    quantity_recorded = models.FloatField(null=True, blank=True, default=0)
+    quantity_after = models.FloatField(null=True, blank=True, default=0)
+    selling_price_before = models.FloatField(null=True, blank=True, default=0)
+    selling_price_recorded = models.FloatField(null=True, blank=True, default=0)
+    selling_price_after = models.FloatField(null=True, blank=True, default=0)
+    marked_price_before = models.FloatField(null=True, blank=True, default=0)
+    marked_price_recorded = models.FloatField(null=True, blank=True, default=0)
+    marked_price_after = models.FloatField(null=True, blank=True, default=0)
+    threshold_price_before = models.FloatField(null=True, blank=True, default=0)
+    threshold_price_recorded = models.FloatField(null=True, blank=True, default=0)
+    threshold_price_after = models.FloatField(null=True, blank=True, default=0)
+    discount_amount_before = models.FloatField(null=True, blank=True, default=0)
+    discount_amount_recorded = models.FloatField(null=True, blank=True, default=0)
+    discount_amount_after = models.FloatField(null=True, blank=True, default=0)
     record_type = models.CharField(max_length=300, choices=AUDIT_RECORD_TYPE_CHOICES)
     operation_type = models.CharField(max_length=300, choices=AUDIT_OPERATIONS_TYPE_CHOICES)
+    audit_type = models.CharField(max_length=300, choices=AUDIT_TYPE_CHOICES)
     audit_source = models.CharField(
         max_length=300, choices=CATALOG_ITEM_AUDIT_SOURCES, default=INVENTORY_RECORD)
     inventory_record = models.ForeignKey(
@@ -392,17 +427,43 @@ class CatalogItemAuditLog(AbstractBase):
 
     def get_amounts(self):
         """Get amounts."""
+        if self.record_type == 'REMOVE' or self.audit_type == "UPDATE" and\
+                not self.audit_source == 'CATALOG ITEM':
+            if not self.marked_price_before:
+                self.marked_price_before == self.catalog_item.marked_price
+
+            if not self.selling_price_before:
+                self.selling_price_before = self.catalog_item.selling_price
+
+            if not self.threshold_price_before:
+                self.threshold_price_before = self.catalog_item.threshold_price
+
+            if not self.discount_amount_before:
+                self.discount_amount_before = self.catalog_item.discount_amount
+
         if not self.marked_price_recorded:
             self.marked_price_recorded = self.catalog_item.marked_price
+
+        if not self.marked_price_after:
+            self.marked_price_after = self.marked_price_recorded or self.marked_price_before
 
         if not self.selling_price_recorded:
             self.selling_price_recorded = self.catalog_item.selling_price
 
+        if not self.selling_price_after:
+            self.selling_price_after = self.selling_price_recorded or self.selling_price_before
+
         if not self.threshold_price_recorded:
             self.threshold_price_recorded = self.catalog_item.threshold_price
 
+        if not self.threshold_price_after:
+            self.threshold_price_after = self.threshold_price_recorded or self.threshold_price_before   # noqa
+
         if not self.discount_amount_recorded:
-            self.discount_amount_recorded = self.catalog_item.discount_amount
+            self.discount_amount_recorded = self.catalog_item.discount_amount or 0
+
+        if not self.discount_amount_after:
+            self.discount_amount_after = self.discount_amount_recorded or self.discount_amount_before   # noqa
 
     def validate_inventory_record_source_has_inventory_record_attached(self):
         """Validate inventory record source has an inventory record attached."""
@@ -431,4 +492,6 @@ class CatalogItemAuditLog(AbstractBase):
         """Catalog item model save."""
         self.get_quantity_after()
         self.get_amounts()
+        if self.__class__.objects.filter(id=self.id).exists():
+            self.audit_date = self.__class__.objects.filter(id=self.id).first().audit_date
         return super().save(*args, **kwargs)

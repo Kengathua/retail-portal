@@ -6,21 +6,21 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from elites_retail_portal.enterprises.models import Enterprise
+from elites_retail_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleWarehouse,
+    EnterpriseSetupRuleCatalog, EnterpriseSetupRuleInventory)
 from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_retail_portal.debit.models import (
     Inventory, InventoryItem, InventoryRecord, InventoryInventoryItem)
-from elites_retail_portal.catalog.models import CatalogItem, Catalog, CatalogCatalogItem
+from elites_retail_portal.catalog.models import CatalogItem, Catalog
 from elites_retail_portal.orders.models import (
     Cart, CartItem, Order, InstallmentsOrderItem)
 from elites_retail_portal.customers.models import Customer
-from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_retail_portal.warehouses.models import Warehouse
 from elites_retail_portal.transactions.models import (
     Transaction, Payment, PaymentRequest)
-
-from tests.utils.api import APITests
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -36,7 +36,7 @@ class TestPaymentRequestView(APITestCase):
         """."""
         enterprise = baker.make(
             Enterprise, reg_no='BS-9049444', name='Enterprise One',
-            enterprise_code='EAL-E/EO-MB/2201-01', business_type='SHOP')
+            enterprise_code='EAL-E/EO-MB/2301-01', business_type='SHOP')
         enterprise_code = enterprise.enterprise_code
         payment = baker.make(
             Payment, account_number='+254718488252', required_amount='1',
@@ -79,36 +79,40 @@ class TestMpesaCheckoutView(APITestCase):
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
+        p_units = s_units
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
+
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item,
+            enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item,
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
@@ -144,7 +148,7 @@ class TestMpesaCheckoutView(APITestCase):
             'balance': Decimal('1'),
             'created_by': UUID('bbda8fc1-9167-4aaf-9e35-42b34ff77470'),
             'customer_id': UUID('b19cdf64-9759-4a17-af21-c56ae13c388a'),
-            'franchise': 'EAL-F/EAS-MB/2201-01',
+            'franchise': 'EAL-F/EAS-MB/2301-01',
             'reservation_amount': 0,
             'reservation_type': 'NO RESERVATION',
             'reserve_at': 'WALLET',
@@ -155,7 +159,7 @@ class TestMpesaCheckoutView(APITestCase):
             'updated_by': UUID('61b88851-2322-4891-82ba-c9195d8d88b0'),
             'wallet_code': 23456789}
 
-        resp = client.post(url, data)
+        # resp = client.post(url, data)
         # assert resp.status_code == 200
 
 

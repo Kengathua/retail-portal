@@ -20,10 +20,10 @@ class PurchasesReturn(AbstractBase):
         PurchaseItem, max_length=250, null=False, blank=False,
         on_delete=models.PROTECT)
     quantity_returned = models.FloatField(null=False, blank=False)
-    unit_price = models.DecimalField(
+    unit_cost = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True, default=0.0)
-    total_price = models.DecimalField(
+    total_cost = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
@@ -59,9 +59,9 @@ class PurchasesReturn(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Pre save and post save actions."""
-        self.unit_price = self.unit_price or self.purchase_item.unit_price
-        self.total_price = round(
-            Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
+        self.unit_cost = self.unit_cost or self.purchase_item.unit_cost
+        self.total_cost = round(
+            Decimal(float(self.unit_cost) * float(self.quantity_returned)), 2)
         super().save(*args, **kwargs)
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory
@@ -81,7 +81,7 @@ class PurchasesReturn(AbstractBase):
                 'record_type': 'REMOVE',
                 'removal_type': 'PURCHASES RETURNS',
                 'quantity_recorded': self.quantity_returned,
-                'unit_price': Decimal(self.unit_price),
+                'unit_price': Decimal(self.unit_cost),
                 'removal_guid': self.id,
             }
             InventoryRecord.objects.create(**inventory_record_payload, **audit_fields)
@@ -93,5 +93,5 @@ class PurchasesReturn(AbstractBase):
             inventory_record.record_type = 'REMOVE'
             inventory_record.removal_type = 'PURCHASES RETURNS'
             inventory_record.quantity_recorded = self.quantity_returned
-            inventory_record.unit_price = Decimal(self.unit_price)
+            inventory_record.unit_price = Decimal(self.unit_cost)
             inventory_record.save()

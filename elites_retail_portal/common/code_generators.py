@@ -220,6 +220,8 @@ def get_enterprise_code(object):
         enterprise_code = object.enterprise.split('/')[1]
     except IndexError:
         enterprise_code = object.enterprise[0]
+    except AttributeError:
+        enterprise_code = object.enterprise
 
     return enterprise_code
 

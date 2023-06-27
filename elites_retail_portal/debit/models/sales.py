@@ -14,6 +14,7 @@ from elites_retail_portal.debit.models import InventoryRecord
 from elites_retail_portal.orders.models.orders import Order
 from elites_retail_portal.encounters.models import Encounter
 from elites_retail_portal.enterprise_mgt.helpers import get_valid_enterprise_setup_rules
+from elites_retail_portal.items.models import Product
 
 SALE_TYPE_CHOICES = (
     ('INSTANT', 'INSTANT'),
@@ -26,6 +27,15 @@ SALE_RECORD_PROCESSING_STATUS_CHOICES = (
     ('REJECTED', 'REJECTED'),
     ('CONFIRMED', 'CONFIRMED'),
     ('PROCESSED', 'PROCESSED'),
+)
+
+SALE_STATUS_CHOICES = (
+    ('FAILED', 'FAILED'),
+    ('PENDING', 'PENDING'),
+    ('ONGOING', 'ONGOING'),
+    ('SUCCESS', 'SUCCESS'),
+    ('STALLED', 'STALLED'),
+    ('CANCELED', 'CANCELED'),
 )
 
 PENDING = 'PENDING'
@@ -48,6 +58,7 @@ class Sale(AbstractBase):
     receipt_number = models.CharField(null=True, blank=True, max_length=300)
     is_active = models.BooleanField(default=True)
     is_cleared = models.BooleanField(default=False)
+    status = models.CharField(max_length=300, choices=SALE_STATUS_CHOICES, default=PENDING)
 
     @property
     def sale_summary(self):
@@ -56,9 +67,10 @@ class Sale(AbstractBase):
 
     def get_receipt_number(self):
         """Get the receipt number."""
-        encounter = Encounter.objects.filter(order_guid=self.order.id).first()
-        if encounter:
-            self.receipt_number = encounter.receipt_number
+        if self.order:
+            encounter = Encounter.objects.filter(order_guid=self.order.id).first()
+            if encounter:
+                self.receipt_number = encounter.receipt_number
 
     def check_customer(self):
         """Check customer."""
@@ -110,6 +122,8 @@ class Sale(AbstractBase):
 class SaleItem(AbstractBase):
     """Sales item model."""
 
+    product = models.ForeignKey(
+        Product, null=True, blank=True, on_delete=models.PROTECT)
     sale = models.ForeignKey(
         Sale, verbose_name=("sales"), on_delete=models.PROTECT)
     catalog_item = models.ForeignKey(
@@ -145,25 +159,26 @@ class SaleItem(AbstractBase):
         """Perform pre save and post save actions."""
         self.total_amount = Decimal(float(self.selling_price) * self.quantity_sold)
         super().save(*args, **kwargs)
-        enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
-        default_inventory = enterprise_setup_rules.default_inventory
-        inventory_item = self.catalog_item.inventory_item
-        audit_fields = {
-            'created_by': self.created_by,
-            'updated_by': self.updated_by,
-            'enterprise': self.enterprise,
-        }
+        if self.is_cleared:
+            enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
+            available_inventory = enterprise_setup_rules.available_inventory
+            inventory_item = self.catalog_item.inventory_item
+            audit_fields = {
+                'created_by': self.created_by,
+                'updated_by': self.updated_by,
+                'enterprise': self.enterprise,
+            }
 
-        record = InventoryRecord.objects.filter(removal_guid=self.id).first()
-        if record:
-            record.inventory_item = inventory_item
-            record.quantity_recorded = self.quantity_sold
-            record.unit_price = self.selling_price
-            record.quantity_sold = self.quantity_sold
-            record.save()
-        else:
-            InventoryRecord.objects.create(
-                inventory=default_inventory, inventory_item=inventory_item,
-                quantity_recorded=self.quantity_sold, unit_price=self.selling_price,
-                quantity_sold=self.quantity_sold, record_type='REMOVE',
-                removal_type='SALES', removal_guid=self.id, **audit_fields)
+            record = InventoryRecord.objects.filter(removal_guid=self.id).first()
+            if record:
+                record.inventory_item = inventory_item
+                record.quantity_recorded = self.quantity_sold
+                record.unit_price = self.selling_price
+                record.quantity_sold = self.quantity_sold
+                record.save()
+            else:
+                InventoryRecord.objects.create(
+                    inventory=available_inventory, inventory_item=inventory_item,
+                    quantity_recorded=self.quantity_sold, unit_price=self.selling_price,
+                    quantity_sold=self.quantity_sold, record_type='REMOVE',
+                    removal_type='SALES', removal_guid=self.id, **audit_fields)

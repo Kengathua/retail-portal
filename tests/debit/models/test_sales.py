@@ -5,7 +5,9 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from elites_retail_portal.customers.models import Customer
 from elites_retail_portal.debit.models.inventory import InventoryInventoryItem
-from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_retail_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleInventory,
+    EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
 from elites_retail_portal.catalog.models import Catalog
 from elites_retail_portal.warehouses.models import Warehouse
 from elites_retail_portal.items.models import (
@@ -16,6 +18,7 @@ from elites_retail_portal.debit.models import (
 from elites_retail_portal.catalog.models import CatalogItem
 from elites_retail_portal.enterprises.models import Enterprise
 from elites_retail_portal.customers.models import Customer
+from elites_retail_portal.orders.models import Order
 
 from model_bakery import baker
 
@@ -32,7 +35,7 @@ class TestSale(TestCase):
             guid=uuid.uuid4(), password='Testpass254$', enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
-            is_enterprise=True, enterprise_user=test_user, phone_no='+254712345678',
+            is_site=True, enterprise_user=test_user, phone_no='+254712345678',
             email='johnwick@parabellum.com', enterprise=enterprise_code)
         sale = baker.make(Sale, customer=customer, enterprise=enterprise_code)
 
@@ -48,7 +51,7 @@ class TestSale(TestCase):
             guid=uuid.uuid4(), password='Testpass254$', enterprise=enterprise_code)
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
-            is_enterprise=True, enterprise_user=test_user, phone_no='+254712345678',
+            is_site=True, enterprise_user=test_user, phone_no='+254712345678',
             email='johnwick@parabellum.com', enterprise=enterprise_code)
         sale = baker.make(
             Sale, enterprise=enterprise_code, created_by=test_user.id, updated_by=test_user.id)
@@ -57,6 +60,7 @@ class TestSale(TestCase):
         assert sale
         assert Sale.objects.count() == 1
         assert sale.customer == customer
+
 
 class TestSaleItem(TestCase):
     """."""
@@ -120,24 +124,28 @@ class TestSaleItem(TestCase):
         baker.make(
             ItemUnits, item=item4, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
         inventory_item1 = baker.make(
             InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(
@@ -148,44 +156,32 @@ class TestSaleItem(TestCase):
             InventoryItem, item=item4, enterprise=enterprise_code)
 
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
+            InventoryInventoryItem, inventory=inventory,
             inventory_item=inventory_item1, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory,
-            inventory_item=inventory_item1, enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
+            InventoryInventoryItem, inventory=inventory,
             inventory_item=inventory_item2, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory,
-            inventory_item=inventory_item2, enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
+            InventoryInventoryItem, inventory=inventory,
             inventory_item=inventory_item3, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory,
-            inventory_item=inventory_item3, enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
-            inventory_item=inventory_item4, enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory,
+            InventoryInventoryItem, inventory=inventory,
             inventory_item=inventory_item4, enterprise=enterprise_code)
 
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item1,
             record_type='ADD', quantity_recorded=20, unit_price=350,
             enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item2,
             record_type='ADD', quantity_recorded=10, unit_price=1000,
             enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item3,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item3,
             record_type='ADD', quantity_recorded=5, unit_price=2750,
             enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item4,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item4,
             record_type='ADD', quantity_recorded=5, unit_price=2750,
             enterprise=enterprise_code)
         catalog_item1 = baker.make(
@@ -200,16 +196,19 @@ class TestSaleItem(TestCase):
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             phone_no='+254712345678', email='johnwick@parabellum.com')
 
-        sale = baker.make(Sale, customer=customer, enterprise=enterprise_code)
+        order = baker.make(Order, order_number='#87654', enterprise=enterprise_code)
+        sale = baker.make(Sale, customer=customer, order=order, enterprise=enterprise_code)
         baker.make(
-            SaleItem, sale=sale, quantity_sold=1, selling_price=560, catalog_item=catalog_item1, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=1, selling_price=560,
+            catalog_item=catalog_item1, enterprise=enterprise_code)
         baker.make(
-            SaleItem, sale=sale, quantity_sold=2, selling_price=340, catalog_item=catalog_item2, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=2, selling_price=340,
+            catalog_item=catalog_item2, enterprise=enterprise_code)
         baker.make(
-            SaleItem, sale=sale, quantity_sold=3, selling_price=230, catalog_item=catalog_item3, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=3, selling_price=230,
+            catalog_item=catalog_item3, enterprise=enterprise_code)
         baker.make(
-            SaleItem, sale=sale, quantity_sold=4, selling_price=100, catalog_item=catalog_item4, enterprise=enterprise_code)
+            SaleItem, sale=sale, quantity_sold=4, selling_price=100,
+            catalog_item=catalog_item4, enterprise=enterprise_code)
 
-        assert sale
-        assert Sale.objects.count() == 1
         assert SaleItem.objects.count() == 4

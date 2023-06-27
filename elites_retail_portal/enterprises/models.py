@@ -58,6 +58,7 @@ class Enterprise(BaseModel):
 
     reg_no = models.CharField(max_length=300, null=True, blank=True)
     name = models.CharField(max_length=300, null=False, blank=False)
+    short_name = models.CharField(max_length=300, null=True, blank=True)
     enterprise_code = models.CharField(
         max_length=300, validators=[enterprise_enterprise_code_validator],
         null=True, blank=True, unique=True)
@@ -108,6 +109,7 @@ class Enterprise(BaseModel):
 
     def save(self, *args, **kwargs):
         """Pre save and post save actions."""
+        self.short_name = self.name if not self.short_name else self.short_name
         self.create_enterprise_code()
         return super().save(*args, **kwargs)
 

@@ -10,7 +10,7 @@ from elites_retail_portal.common.views import BaseViewMixin
 from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, ItemType,
     ItemModel, Item, ItemAttribute, ItemUnits, Units,
-    ItemImage, UnitsItemType)
+    ItemImage, UnitsItemType, Product)
 from elites_retail_portal.items import serializers
 from elites_retail_portal.items import filters
 
@@ -18,7 +18,7 @@ from elites_retail_portal.items import filters
 class CategoryViewSet(BaseViewMixin):
     """Category ViewSet class."""
 
-    queryset = Category.objects.all()
+    queryset = Category.objects.all().order_by('-updated_on')
     serializer_class = serializers.CategorySerializer
     filterset_class = filters.CategoryFilter
     search_fields = (
@@ -28,7 +28,7 @@ class CategoryViewSet(BaseViewMixin):
 class ItemTypeViewSet(BaseViewMixin):
     """Item Type Viewset class."""
 
-    queryset = ItemType.objects.all()
+    queryset = ItemType.objects.all().order_by('-updated_on')
     serializer_class = serializers.ItemTypeSerializer
     filterset_class = filters.ItemTypeFilter
     search_fields = (
@@ -40,7 +40,7 @@ class ItemTypeViewSet(BaseViewMixin):
 class BrandViewSet(BaseViewMixin):
     """Brand Viewset class."""
 
-    queryset = Brand.objects.all()
+    queryset = Brand.objects.all().order_by('-updated_on')
     serializer_class = serializers.BrandSerializer
     filterset_class = filters.BrandFilter
     search_fields = (
@@ -52,7 +52,7 @@ class BrandViewSet(BaseViewMixin):
 class BrandItemTypeViewSet(BaseViewMixin):
     """Brand Item Type Viewset class."""
 
-    queryset = BrandItemType.objects.all()
+    queryset = BrandItemType.objects.all().order_by('-updated_on')
     serializer_class = serializers.BrandItemTypeSerializer
     filterset_class = filters.BrandItemTypeFilter
     search_fields = (
@@ -63,7 +63,7 @@ class BrandItemTypeViewSet(BaseViewMixin):
 class ItemModelViewSet(BaseViewMixin):
     """Item Model Viewset class."""
 
-    queryset = ItemModel.objects.all()
+    queryset = ItemModel.objects.all().order_by('-updated_on')
     serializer_class = serializers.ItemModelSerializer
     filterset_class = filters.ItemModelTypeFilter
     search_fields = (
@@ -76,7 +76,7 @@ class ItemModelViewSet(BaseViewMixin):
 class ItemViewSet(BaseViewMixin):
     """Item Viewset class."""
 
-    queryset = Item.objects.all()
+    queryset = Item.objects.all().order_by('-updated_on')
     serializer_class = serializers.ItemSerializer
     filterset_class = filters.ItemFilter
     search_fields = (
@@ -97,7 +97,7 @@ class ItemViewSet(BaseViewMixin):
 class ItemAttributeViewSet(BaseViewMixin):
     """Item Attributes Viewset."""
 
-    queryset = ItemAttribute.objects.all()
+    queryset = ItemAttribute.objects.all().order_by('-updated_on')
     serializer_class = serializers.ItemAttributeSerializer
     filterset_class = filters.ItemAttributeFilter
     search_fields = ('')
@@ -106,7 +106,7 @@ class ItemAttributeViewSet(BaseViewMixin):
 class UnitsViewSet(BaseViewMixin):
     """Units Viewset class."""
 
-    queryset = Units.objects.all()
+    queryset = Units.objects.all().order_by('-updated_on')
     serializer_class = serializers.UnitsSerializer
     filterset_class = filters.UnitsFilter
     search_fields = ('units_name', 'units_code',)
@@ -115,16 +115,16 @@ class UnitsViewSet(BaseViewMixin):
 class ItemUnitsViewSet(BaseViewMixin):
     """Item Units Viewset class."""
 
-    queryset = ItemUnits.objects.all()
+    queryset = ItemUnits.objects.all().order_by('-updated_on')
     serializer_class = serializers.ItemUnitsSerializer
     filterset_class = filters.ItemUnitsFilter
-    search_fields = ('')
+    search_fields = ('item__item_name', 'sales_units__units_name', 'purchases_units__units_name')
 
 
 class ItemImageViewSet(BaseViewMixin):
     """Item Images Viewset class."""
 
-    queryset = ItemImage.objects.all()
+    queryset = ItemImage.objects.all().order_by('-updated_on')
     serializer_class = serializers.ItemImageSerializer
     parser_classes = (MultiPartParser, JSONParser)
 
@@ -187,7 +187,17 @@ class ItemImageViewSet(BaseViewMixin):
 class UnitsItemTypeViewSet(BaseViewMixin):
     """Units Item Type Viewset class."""
 
-    queryset = UnitsItemType.objects.all()
+    queryset = UnitsItemType.objects.all().order_by('-updated_on')
     serializer_class = serializers.UnitsItemTypeSerializer
     filterset_class = filters.UnitsItemTypeFilter
     search_fields = ('units__units_name', 'item_type__type_name')
+
+
+class ProductViewSet(BaseViewMixin):
+    """Product ViewSet class."""
+
+    queryset = Product.objects.all().order_by('-updated_on')
+    serializer_class = serializers.ProductSerializer
+    filterset_class = filters.ProductFilter
+    search_fields = (
+        'item__item_name', 'item__barcode', 'serial_number', 'product_name', 'status')

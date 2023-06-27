@@ -23,13 +23,13 @@ class TestCustomer(TestCase):
             phone_no='+254712345678', email='johnwick@parabellum.com')
 
         assert customer
-        assert customer.is_enterprise == False
+        assert customer.is_site == False
         assert Customer.objects.count() == 1
 
     def test_create_site_customer(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2301-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         test_user = get_user_model().objects.create_superuser(
@@ -41,13 +41,13 @@ class TestCustomer(TestCase):
             email='johnwick@parabellum.com', enterprise=enterprise_code)
 
         assert customer
-        assert customer.is_enterprise == True
+        assert customer.is_site == True
         assert Customer.objects.count() == 1
 
     def test_fail_create_site_customer(self):
         """."""
         franchise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2301-01',
             business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         test_user = get_user_model().objects.create_superuser(
@@ -55,7 +55,7 @@ class TestCustomer(TestCase):
             guid=uuid.uuid4(), password='Testpass254$', enterprise=enterprise_code)
         customer = Recipe(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
-            other_names='Baba Yaga', phone_no='+254712345678', is_enterprise=True,
+            other_names='Baba Yaga', phone_no='+254712345678', is_site=True,
             email='johnwick@parabellum.com', enterprise=enterprise_code)
 
         with pytest.raises(ValidationError) as ve:

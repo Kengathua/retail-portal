@@ -73,7 +73,7 @@ class TesTEndToEnd(TestCase):
         p_units.save()
         baker.make(
             ItemUnits, item=item1, sales_units=s_units, purchases_units=p_units,
-            quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
+            quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
         baker.make(
             ItemUnits, item=item2, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
@@ -108,6 +108,8 @@ class TesTEndToEnd(TestCase):
             enterprise=enterprise_code)
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
+        item1.activate()
+        item2.activate()
         baker.make(
             InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
         baker.make(
@@ -237,7 +239,7 @@ class TesTEndToEnd(TestCase):
             PurchaseItem, purchase=purchase, item=item1, quantity_purchased=5,
             total_cost=7500, recommended_retail_price=2000, quantity_to_inventory=5,
             quantity_to_inventory_on_display=5, enterprise=enterprise_code)
-        baker.make(
+        purchase_item = baker.make(
             PurchaseItem, purchase=purchase, item=item2, quantity_purchased=6,
             total_cost=12000, recommended_retail_price=2500, quantity_to_inventory=6,
             quantity_to_inventory_on_display=6, enterprise=enterprise_code)
@@ -245,8 +247,13 @@ class TesTEndToEnd(TestCase):
         catalog_item1.refresh_from_db()
         catalog_item2.refresh_from_db()
 
+        assert purchase_item.quantity_purchased == 6
+        assert purchase_item.sale_units_purchased == 72
+        assert purchase_item.total_quantity_puchased == 72
+        assert purchase_item.total_cost == 12000.00
+        assert float(purchase_item.unit_cost) == float(format((12000 / 72), ".2f")) == 166.67
         assert catalog_item1.quantity == 2 + 5 == 7
-        assert catalog_item2.quantity == 5 + 6 == 11
+        assert catalog_item2.quantity == 5 + 72 == 77
 
         payment2 = baker.make(
             Payment, paid_amount=400, is_installment=True, enterprise=enterprise_code)
@@ -260,6 +267,7 @@ class TesTEndToEnd(TestCase):
             Installment, order_transaction=order_transaction2, is_direct_installment=True,
             amount=order_transaction2.amount, installment_item=installments_order_item,
             enterprise=enterprise_code)
+        installment1.process_installment()
 
         assert installment1
         installments_order_item.refresh_from_db()
@@ -283,6 +291,7 @@ class TesTEndToEnd(TestCase):
             Installment, order_transaction=order_transaction3, is_direct_installment=True,
             amount=order_transaction3.amount, installment_item=installments_order_item,
             enterprise=enterprise_code)
+        installment2.process_installment()
 
         assert installment2
         installments_order_item.refresh_from_db()
@@ -306,6 +315,7 @@ class TesTEndToEnd(TestCase):
             Installment, order_transaction=order_transaction4, is_direct_installment=True,
             amount=order_transaction4.amount, installment_item=installments_order_item,
             enterprise=enterprise_code)
+        installment3.process_installment()
 
         assert installment3
         installments_order_item.refresh_from_db()
@@ -330,6 +340,7 @@ class TesTEndToEnd(TestCase):
             Installment, order_transaction=order_transaction5, is_direct_installment=True,
             amount=order_transaction5.amount, installment_item=installments_order_item,
             enterprise=enterprise_code)
+        installment4.process_installment()
 
         assert installment4
         installments_order_item.refresh_from_db()
@@ -345,7 +356,7 @@ class TesTEndToEnd(TestCase):
         catalog_item2.refresh_from_db()
 
         assert catalog_item1.quantity == 2 + 5 == 7
-        assert catalog_item2.quantity == 11 - 3 == 8
+        assert catalog_item2.quantity == 77 - 3 == 74
 
         payment6 = baker.make(
             Payment, paid_amount=1, is_installment=True, enterprise=enterprise_code)

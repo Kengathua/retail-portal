@@ -15,8 +15,10 @@ from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
 from elites_retail_portal.enterprise_mgt.models import (
-    EnterpriseSetupRule)
+    EnterpriseSetupRule, EnterpriseSetupRuleInventory,
+    EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
 from elites_retail_portal.warehouses.models import Warehouse
+from elites_retail_portal.orders.models import Order
 
 from model_bakery import baker
 from model_bakery.recipe import Recipe
@@ -27,7 +29,7 @@ class TestPurchasesView(APITests, APITestCase):
 
     def setUp(self):
         enterprise = baker.make(
-            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2201-01',
+            Enterprise, name='Enterprise One', enterprise_code='EAL-E/EO-MB/2301-01',
             business_type='SHOP')
         enterprise_code = enterprise.enterprise_code
         cat = baker.make(
@@ -58,36 +60,35 @@ class TestPurchasesView(APITests, APITestCase):
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
-            is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+            is_default=True, is_master=True, is_active=True, inventory_type='AVAILABLE',
+            enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
         inventory_item = baker.make(
             InventoryItem, item=item, enterprise=enterprise_code)
-
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory,
+            InventoryInventoryItem, inventory=inventory,
             inventory_item=inventory_item, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory,
-            inventory_item=inventory_item, enterprise=enterprise_code)
-
-        baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item,
             record_type='ADD', quantity_recorded=20, unit_price=350,
             enterprise=enterprise_code)
         catalog_item = baker.make(
@@ -95,13 +96,15 @@ class TestPurchasesView(APITests, APITestCase):
         customer = baker.make(
             Customer, customer_number=9876, first_name='John', last_name='Wick',
             phone_no='+254712345678', email='johnwick@parabellum.com')
-        sale = baker.make(Sale, customer=customer, enterprise=enterprise_code)
-        baker.make(
+        order = baker.make(Order, order_number='#987654', enterprise=enterprise_code)
+        sale = baker.make(
+            Sale, order=order, customer=customer, enterprise=enterprise_code)
+        sale_item = baker.make(
             SaleItem, sale=sale, quantity_sold=1, selling_price=560,
             catalog_item=catalog_item, enterprise=enterprise_code)
 
         self.recipe = Recipe(
-            SalesReturn, sale=sale, item=item, quantity_returned=4, enterprise=enterprise_code)
+            SalesReturn, sale=sale, sale_item=sale_item, quantity_returned=4, enterprise=enterprise_code)
 
     url = 'v1:credit:salesreturn'
 

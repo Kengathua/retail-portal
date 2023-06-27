@@ -20,7 +20,9 @@ from elites_retail_portal.customers.models import Customer
 from elites_retail_portal.catalog.models import (
     Catalog, CatalogItem)
 from elites_retail_portal.encounters.models import Encounter
-from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
+from elites_retail_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleCatalog,
+    EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
 
 from model_bakery import baker
 
@@ -29,8 +31,7 @@ MK_ROOT = 'elites_retail_portal.encounters'
 
 pytestmark = pytest.mark.django_db
 
-
-@mock.patch(MK_ROOT+'.tasks.process_customer_encounter.delay')
+@mock.patch(MK_ROOT + '.tasks.process_customer_encounter')
 def test_process_customer_encounter(mock_process_customer_encounter):
     """."""
     franchise = baker.make(Enterprise, name='Elites Age Supermarket')
@@ -52,24 +53,35 @@ def test_process_customer_encounter(mock_process_customer_encounter):
     item_model2 = baker.make(
         ItemModel, brand=brand, item_type=item_type, model_name='WRTHY46-G DAT',
         enterprise=enterprise_code)
-    master_inventory = baker.make(
-        Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-        is_master=True, is_active=True, inventory_type='WORKING STOCK',
-        enterprise=enterprise_code)
-    available_inventory = baker.make(
+    inventory = baker.make(
         Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+        is_default=True, is_master=True,
         is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
+    allocated_inventory = baker.make(
+        Inventory, inventory_name='Elites Age Supermarket Allocated Inventory',
+        is_active=True, inventory_type='ALLOCATED', enterprise=enterprise_code)
     catalog = baker.make(
         Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+        is_default=True,
         description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-    receiving_warehouse = baker.make(
+    warehouse = baker.make(
         Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+        is_receiving=True,
+        enterprise=enterprise_code)
+    rule = baker.make(
+        EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+    baker.make(
+        EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
         enterprise=enterprise_code)
     baker.make(
-        EnterpriseSetupRule, master_inventory=master_inventory,
-        default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-        default_warehouse=receiving_warehouse, standard_catalog=catalog,
-        default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+        EnterpriseSetupRuleInventory, rule=rule, inventory=allocated_inventory,
+        enterprise=enterprise_code)
+    baker.make(
+        EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+        enterprise=enterprise_code)
+    baker.make(
+        EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+        enterprise=enterprise_code)
     baker.make(
         Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
         description='Standard Catalog', is_standard=True,
@@ -99,15 +111,15 @@ def test_process_customer_encounter(mock_process_customer_encounter):
     inventory_item1 = InventoryItem.objects.get(item=item1, enterprise=enterprise_code)
     inventory_item2 = InventoryItem.objects.get(item=item2, enterprise=enterprise_code)
     baker.make(
-        InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item1)
+        InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1)
     baker.make(
-        InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item2)
-    baker.make(
-        InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1,
+        InventoryRecord, inventory=inventory, inventory_item=inventory_item1,
         record_type='ADD', quantity_recorded=4, unit_price=1500, enterprise=enterprise_code)
     baker.make(
-        InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2,
-        record_type='ADD', quantity_recorded=4, unit_price=2000, enterprise=enterprise_code)
+        InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2)
+    baker.make(
+        InventoryRecord, inventory=inventory, inventory_item=inventory_item2,
+        record_type='ADD', quantity_recorded=5, unit_price=1500, enterprise=enterprise_code)
     baker.make(
         Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
         description='Standard Catalog', is_standard=True,
@@ -120,6 +132,7 @@ def test_process_customer_encounter(mock_process_customer_encounter):
         Customer, customer_number=9876, first_name='John',
         last_name='Wick', other_names='Baba Yaga',
         phone_no='+254712345678', email='johnwick@parabellum.com')
+
     billing = [
         {
             'catalog_item': str(catalog_item1.id),
@@ -133,7 +146,7 @@ def test_process_customer_encounter(mock_process_customer_encounter):
             'catalog_item': str(catalog_item2.id),
             'item_name': catalog_item2.inventory_item.item.item_name,
             'quantity': 3,
-            'unit_price': 2200,
+            'unit_price': 2300,
             'total': 6600,
             'sale_type': 'INSTALLMENT'
         },
@@ -145,6 +158,7 @@ def test_process_customer_encounter(mock_process_customer_encounter):
         enterprise=enterprise_code)
 
     mock_process_customer_encounter.assert_called_once_with(encounter.id)
+
     process_customer_encounter(encounter.id)
     assert Cart.objects.count() == 1
     assert CartItem.objects.count() == 2

@@ -34,6 +34,7 @@ class CartSerializer(BaseSerializerMixin):
     order_name = ReadOnlyField(source='order.heading')
     customer_name = CharField(source='customer.full_name', read_only=True)
     encounter_number = CharField(source='encounter.encounter_number', read_only=True)
+    receipt_number = CharField(source='encounter.receipt_number', read_only=True)
 
     # owner_details = SerializerMethodField()
 
@@ -126,6 +127,8 @@ class InstallmentSerializer(BaseSerializerMixin):
         read_only=True)
     customer_name = CharField(
         source='installment_item.order.customer.full_name', read_only=True)
+    customer_id = CharField(
+        source='installment_item.order.customer.id', read_only=True)
     previous_installment_date = CharField(read_only=True)
     next_installment_amount = CharField(read_only=True)
     previous_installment_amount = CharField(read_only=True)

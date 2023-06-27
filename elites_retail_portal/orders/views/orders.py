@@ -15,7 +15,6 @@ from elites_retail_portal.orders.models import Cart, CartItem
 from elites_retail_portal.orders import serializers, filters
 from elites_retail_portal.orders.helpers.orders import refresh_order
 from elites_retail_portal.transactions.models import Payment, Transaction
-from elites_retail_portal.customers.models import Customer
 from elites_retail_portal.encounters.models import Encounter
 
 
@@ -149,20 +148,20 @@ class InstallmentViewSet(BaseViewMixin):
 
         installment_item = InstallmentsOrderItem.objects.get(id=request.data['installment_item'])
 
-        if installment_item.is_cleared and installment_item.total_amount == installment_item.amount_paid:   # noqa
+        if installment_item.is_cleared and installment_item.total_amount <= installment_item.amount_paid:   # noqa
             error = {'item': 'The order item {} if already cleared'.format(
                 installment_item.cart_item.catalog_item.inventory_item.item.item_name)}
             return Response(data=error, status=status.HTTP_400_BAD_REQUEST)
 
-        customer = Customer.objects.get(id=request.data['customer'])
+        customer = installment_item.order.customer
 
         encounter = Encounter.objects.filter(order_guid=installment_item.order.id).first()
         payment_payload = {
-            'payment_code': request.data['payment_code'],
-            'account_number': customer.account_number,
+            'payment_code': request.data.get('payment_code', None),
+            'account_number': customer.account_number or customer.phone_no or customer.customer_number, # noqa
             'customer': customer,
             'paid_amount': request.data['amount'],
-            'payment_method': request.data['payment_method'],
+            'payment_method': request.data.get('payment_method', 'CASH'),
             'encounter': encounter,
             'is_installment': True,
         }
@@ -170,9 +169,9 @@ class InstallmentViewSet(BaseViewMixin):
         payment.refresh_from_db()
 
         transaction_payload = {
-            'account_number': customer.account_number,
+            'account_number': customer.account_number or customer.phone_no or customer.customer_number, # noqa
             'amount': request.data['amount'],
-            'transaction_means': request.data['payment_method'],
+            'transaction_means': request.data.get('payment_method', 'CASH'),
             'customer': customer,
         }
 
@@ -191,6 +190,7 @@ class InstallmentViewSet(BaseViewMixin):
         }
         order_transaction = OrderTransaction.objects.create(
             **order_transaction_payload, **audit_fields)
+        transaction.is_processed = True
         transaction.balance = 0
         transaction.save()
 
@@ -199,7 +199,7 @@ class InstallmentViewSet(BaseViewMixin):
             'installment_item': installment_item,
             'amount': request.data['amount'],
             'balance': 0,
-            'note': request.data['note'],
+            'note': request.data.get('note', None),
             'is_direct_installment': True
         }
 
@@ -213,11 +213,47 @@ class InstallmentViewSet(BaseViewMixin):
             transaction.save()
 
         installment = Installment.objects.create(**installment_payload, **audit_fields)
+        installment.process_installment()
+        installment.refresh_from_db()
+
+        order_transaction.is_processed = True
         order_transaction.save()
 
         serializer = serializers.InstallmentSerializer(installment, many=False)
 
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
+    @transaction.atomic()
+    def update(self, request, *args, **kwargs):
+        """Installments update."""
+        installment = self.get_object()
+        previous_amount = installment.amount
+        order_transaction = installment.order_transaction
+        transaction = order_transaction.transaction
+        payment = Payment.objects.get(transaction_guid=transaction.id)
+
+        payment.paid_amount = request.data['amount']
+        payment.final_amount = request.data['amount']
+        payment.updated_by = self.request.user.id
+        payment.save()
+
+        transaction.amount = request.data['amount']
+        transaction.updated_by = self.request.user.id
+        transaction.save()
+
+        order_transaction.amount = request.data['amount']
+        order_transaction.updated_by = self.request.user.id
+        order_transaction.save()
+
+        installment.amount = request.data['amount']
+        installment.updated_by = self.request.user.id
+        installment.save()
+        installment.process_installment(new_installment=False, previous_amount=previous_amount)
+        installment.refresh_from_db()
+
+        serializer = serializers.InstallmentSerializer(installment, many=False)
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class OrderTransactionViewSet(BaseViewMixin):

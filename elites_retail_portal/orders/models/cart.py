@@ -12,8 +12,20 @@ from elites_retail_portal.common.models import AbstractBase
 from elites_retail_portal.catalog.models import CatalogItem
 from elites_retail_portal.customers.models import Customer
 from elites_retail_portal.encounters.models import Encounter
+from elites_retail_portal.items.models import Product
 
 LOGGER = logging.getLogger(__name__)
+
+STATUS_CHOICES = (
+    ('FAILED', 'FAILED'),
+    ('PENDING', 'PENDING'),
+    ('ONGOING', 'ONGOING'),
+    ('SUCCESS', 'SUCCESS'),
+    ('STALLED', 'STALLED'),
+    ('CANCELED', 'CANCELED'),
+)
+
+PENDING = "PENDING"
 
 
 class Cart(AbstractBase):
@@ -29,7 +41,8 @@ class Cart(AbstractBase):
     is_empty = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_checked_out = models.BooleanField(default=False)
-    on_site = models.BooleanField(default=False)
+    is_site = models.BooleanField(default=False)
+    status = models.CharField(max_length=300, choices=STATUS_CHOICES, default=PENDING)
 
     # TODO set the is_empty flag as a property field
 
@@ -124,8 +137,8 @@ class Cart(AbstractBase):
             self.order_guid = order.id
             self.save()
 
-        else:
-            order.on_site = self.on_site
+        if not order.customer:
+            order.is_site = self.is_site
             order.save()
 
         for cart_item in cart_items:
@@ -152,6 +165,8 @@ class Cart(AbstractBase):
                     instant_order_item.update(**payload)
                 else:
                     InstantOrderItem.objects.create(**filters, **payload, **audit_fields)
+            cart_item.status = "SUCCESS"
+            cart_item.save()
 
         self.__class__.objects.filter(id=self.id).update(order_guid=order.id, is_checked_out=True)
 
@@ -188,7 +203,7 @@ class Cart(AbstractBase):
 
         else:
             update_data = {
-                'on_site': self.on_site,
+                'is_site': self.is_site,
                 'customer': Customer.objects.get(id=self.updated_by)
             }
             customer_orders.filter(cart_code=self.cart_code).update(**update_data)
@@ -210,10 +225,10 @@ class Cart(AbstractBase):
                     order=order, cart_item=cart_item, confirmation_status='PENDING',
                     quantity=quantity, **audit_fields)
 
-    def check_if_on_site_cart(self):
+    def check_if_is_site_cart(self):
         """Check if item is being processed under the company's default customers."""
         if not self.customer:
-            self.on_site = True
+            self.is_site = True
 
     def validate_one_empty_active_cart_per_customer(self):
         """Validate one active cart per customer."""
@@ -236,10 +251,10 @@ class Cart(AbstractBase):
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        # self.on_site = False if not self.customer else False
+        # self.is_site = False if not self.customer else False
         if not self.cart_code:
             self.cart_code = '#{}'.format(random.randint(1001, 9999))
-        # self.check_if_on_site_cart()
+        self.check_if_is_site_cart()
         super().save(*args, **kwargs)
 
     class Meta:
@@ -251,7 +266,10 @@ class Cart(AbstractBase):
 class CartItem(AbstractBase):
     """Cart Item model."""
 
-    cart = models.ForeignKey(Cart, null=False, blank=False, on_delete=models.PROTECT)
+    product = models.ForeignKey(
+        Product, null=True, blank=True, on_delete=models.PROTECT)
+    cart = models.ForeignKey(
+        Cart, null=False, blank=False, on_delete=models.PROTECT)
     catalog_item = models.ForeignKey(
         CatalogItem, null=False, blank=False, on_delete=models.PROTECT)
     opening_quantity = models.FloatField(null=True, blank=True, default=0)
@@ -265,6 +283,7 @@ class CartItem(AbstractBase):
         null=True, blank=True, default=0)
     is_installment = models.BooleanField(default=False)
     order_now = models.BooleanField(default=False)
+    status = models.CharField(max_length=300, choices=STATUS_CHOICES, default=PENDING)
 
     def get_opening_and_closing_quantity(self):
         """Calculate opening and closing quantities."""

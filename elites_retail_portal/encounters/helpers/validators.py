@@ -35,6 +35,9 @@ def validate_catalog_item(item_name, enterprise_code, catalog_item=None):
 
 def validate_billing(encounter):
     """Valdiate new sale encounter data."""
+    if encounter.processing_status != "PENDING":
+        return
+
     for bill in encounter.billing:
         catalog_items = CatalogItem.objects.filter(
             id=bill['catalog_item'], is_active=True)

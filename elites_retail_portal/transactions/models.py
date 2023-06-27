@@ -19,6 +19,7 @@ TRANSACTION_TYPES = (
 )
 
 TRANSACTION_MEANS = (
+    ('PDQ', 'PDQ'),
     ('CASH', 'CASH'),
     ('CARD', 'CARD'),
     ('WALLET', 'WALLET'),
@@ -44,12 +45,23 @@ PAYMENT_REQUEST_STATUS_CHOICES = (
     ('FAILED', 'FAILED'),
 )
 
+PAYMENT_STATUS_CHOICES = (
+    ('FAILED', 'FAILED'),
+    ('PENDING', 'PENDING'),
+    ('ONGOING', 'ONGOING'),
+    ('SUCCESS', 'SUCCESS'),
+    ('STALLED', 'STALLED'),
+    ('CANCELED', 'CANCELED'),
+    ('RECEIVED', 'RECEIVED'),
+)
+
 NO_RESERVATION = 'NO RESERVATION'
 WALLET = 'WALLET'
 CASH = 'CASH'
 DEPOSIT = 'DEPOSIT'
 PENDING = 'PENDING'
 PAYBILL = 'PAYBILL'
+RECEIVED = 'RECEIVED'
 
 
 class Transaction(AbstractBase):
@@ -81,11 +93,13 @@ class Transaction(AbstractBase):
         max_length=250, choices=TRANSACTION_TYPES, default=DEPOSIT)
     transaction_means = models.CharField(
         max_length=250, choices=TRANSACTION_MEANS, default=CASH)
-    transaction_processed = models.BooleanField(default=False)
+    is_processed = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=300, choices=PAYMENT_STATUS_CHOICES, default=RECEIVED)
 
     def initialize_balance(self):
         """Initialize transaction balance."""
-        if not self.balance:
+        if not self.balance and not self.is_processed:
             self.balance = self.amount
 
     def get_customer(self):
@@ -95,74 +109,17 @@ class Transaction(AbstractBase):
                 account_number=self.account_number, enterprise=self.enterprise)
             self.customer = customers.first()
 
-    def process_transaction(self):
-        """Process transaction for instant and installment order items."""
-        # Process Cash transactions
-        from elites_retail_portal.orders.models import Order, OrderTransaction
-        from elites_retail_portal.transactions.helpers.transactions import (
-            create_order_transaction)
-
-        if OrderTransaction.objects.filter(transaction=self).exists():
-            return
-
-        if self.transaction_means == CASH:
-            if self.transaction_type == DEPOSIT:
-                customer = self.customer
-                customer_orders = Order.objects.filter(
-                    customer=customer, is_active=True, is_cleared=False)
-                if customer_orders.exists():
-                    create_order_transaction(self, customer_orders)
-
-                else:
-                    # TODO Process the transaction into the Customer's wallet
-                    pass
-
-        else:
-            # self.transaction_means != CASH
-            if self.transaction_type == DEPOSIT:
-                if not self.customer:
-                    if self.account_number:
-                        customers = Customer.objects.filter(
-                            Q(account_number=self.account_number) | Q(
-                                phone_no=self.account_number) | Q(
-                                    customer_number=self.account_number),
-                            enterprise=self.enterprise)
-
-                    elif self.wallet_code:
-                        pass
-
-                else:
-                    customers = Customer.objects.filter(id=self.customer.id)
-
-                if customers.exists() and customers.count() == 1:
-                    customer = customers.first()
-                    customer_orders = Order.objects.filter(
-                        customer=customer, is_active=True, is_cleared=False)
-                    if customer_orders.exists():
-                        create_order_transaction(self, customer_orders)
-                    else:
-                        # TODO Process the transaction into the Customer's wallet
-                        pass
-
-                else:
-                    # TODO Process the transaction in Anonymous wallet
-                    return
-
-            else:
-                # Obtain more info about the transaction
-                # Store money in the anonymous wallet
-                pass
-
-    # TODO initialize balance to amount
-    # HINT
-    # USE
-
     def validate_non_cash_transactions_have_account_number(self):
-        """Validate non cash transactions have an account number."""
+        """Validate non cash transactions have an account number.
+
+        Restore this functionality once the golang module for handling
+        integrated payments is built
+        """
         if self.transaction_means != CASH:
             if not self.account_number:
-                raise ValidationError(
-                    {'account_number': 'Please add the account number to the transaction'})
+                pass
+                # raise ValidationError(
+                #     {'account_number': 'Please add the account number to the transaction'})
 
     def clean(self) -> None:
         """Clean transactions model."""
@@ -174,12 +131,12 @@ class Transaction(AbstractBase):
         self.initialize_balance()
         self.get_customer()
         super().save(*args, **kwargs)
-        # self.process_transaction()
 
 
 class Payment(AbstractBase):
     """Payment Requests model."""
 
+    payment_time = models.DateTimeField(db_index=True, default=timezone.now)
     payment_code = models.CharField(max_length=300, null=True, blank=True)
     transaction_code = models.CharField(max_length=300, null=True, blank=True)
     account_number = models.CharField(max_length=300, null=True, blank=True)
@@ -199,7 +156,8 @@ class Payment(AbstractBase):
     final_amount = models.DecimalField(
         max_digits=30, decimal_places=2, validators=[MinValueValidator(0.00)],
         null=True, blank=True)
-    payment_method = models.CharField(max_length=300, default=CASH)
+    payment_method = models.CharField(max_length=300, null=True, blank=True, default=CASH)
+    status = models.CharField(max_length=300, choices=PAYMENT_STATUS_CHOICES, default=RECEIVED)
     is_confirmed = models.BooleanField(default=False)
     is_processed = models.BooleanField(default=False)
     is_installment = models.BooleanField(default=False)

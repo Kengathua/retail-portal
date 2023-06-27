@@ -21,6 +21,8 @@ RECORD_TYPE_CHOICES = (
     ('REMOVE', 'REMOVE'),
 )
 
+AUDIT_CREATE_OPERATION_CHOICES = ['CREATE CATALOG ITEM', 'CREATE INVENTORY RECORD']
+
 INVENTORY_TYPE_CHOICES = (
     ('EXCESS', 'EXCESS'),
     ('SERVICE', 'SERVICE'),
@@ -71,24 +73,35 @@ class InventoryItem(AbstractBase):
             'available_quantity': available_quantity,
             'total': '',
         }
-
         return summary
 
     @property
     def quantity(self):
         """Get total quantity of item in inventory."""
+        records = InventoryRecord.objects.filter(inventory_item=self)
+        if records:
+            record = records.latest('record_date')
+            return record.closing_stock_quantity
         return 0
 
     @property
     def total_amount(self):
         """Get the total amount of item in inventory."""
+        records = InventoryRecord.objects.filter(inventory_item=self)
+        if records:
+            record = records.latest('record_date')
+            return record.closing_stock_total_amount
         return 0
 
     @property
     def unit_price(self):
         """Get the unit price."""
-        record = InventoryRecord.objects.filter(inventory_item=self).first()
-        return record.unit_price if record else 0
+        records = InventoryRecord.objects.filter(
+            inventory_item=self, record_type='ADD')
+        if records:
+            record = records.latest('record_date')
+            return record.unit_price
+        return 0
 
     def check_item_in_warehouse(self):
         """Check item exists in store."""
@@ -103,7 +116,7 @@ class InventoryItem(AbstractBase):
             }
             WarehouseItem.objects.create(**data)
 
-    def check_item_in_catalog_items(self, section):
+    def check_inventory_item_in_catalog_items(self, section):
         """Check that item exists in catalog items."""
         from elites_retail_portal.catalog.models import CatalogItem
         data = {
@@ -174,7 +187,7 @@ class Inventory(AbstractBase):
             for inventory_item in inventory_items:
                 try:
                     latest_inventory_item_record = inventory_records.filter(
-                        inventory_item=inventory_item).latest('updated_on')
+                        inventory_item=inventory_item).latest('record_date')
                     quantity = latest_inventory_item_record.closing_stock_quantity
                     total_amount = latest_inventory_item_record.closing_stock_total_amount
                     data = {
@@ -190,16 +203,29 @@ class Inventory(AbstractBase):
 
     def get_inventory_item_summary(self, inventory_item):
         """Get inventory item summary."""
-        latest_record = InventoryRecord.objects.filter(
-            inventory=self, inventory_item=inventory_item).latest('record_date')
+        records = InventoryRecord.objects.filter(
+            inventory=self, inventory_item=inventory_item)
+
         summary = {
-            'opening_stock_quantity': latest_record.opening_stock_quantity,
-            'opening_stock_total_amount': latest_record.opening_stock_total_amount,
-            'quantity_recorded': latest_record.quantity_recorded,
-            'total_amount_recorded': latest_record.total_amount_recorded,
-            'closing_stock_quantity': latest_record.closing_stock_quantity,
-            'closing_stock_total_amount': latest_record.closing_stock_total_amount,
+            'opening_stock_quantity': 0,
+            'opening_stock_total_amount': 0,
+            'quantity_recorded': 0,
+            'total_amount_recorded': 0,
+            'closing_stock_quantity': 0,
+            'closing_stock_total_amount': 0,
         }
+
+        if not records.exists():
+            return summary
+
+        latest_record = records.latest('record_date')
+        summary['opening_stock_quantity'] = latest_record.opening_stock_quantity
+        summary['opening_stock_total_amount'] = latest_record.opening_stock_total_amount
+        summary['quantity_recorded'] = latest_record.quantity_recorded
+        summary['total_amount_recorded'] = latest_record.total_amount_recorded
+        summary['closing_stock_quantity'] = latest_record.closing_stock_quantity
+        summary['closing_stock_total_amount'] = latest_record.closing_stock_total_amount
+
         return summary
 
     def validate_unique_active_master_inventory_for_enterprise(self):
@@ -262,6 +288,7 @@ class InventoryRecord(AbstractBase):
     removal_type = models.CharField(
         max_length=300, null=True, blank=True, choices=REMOVE_FROM_INVENTORY_CHOICES)
     removal_guid = models.UUIDField(null=True, blank=True)
+    addition_guid = models.UUIDField(null=True, blank=True)
     closing_stock_quantity = models.FloatField(null=True, blank=True, default=0)
     closing_stock_total_amount = models.FloatField(null=True, blank=True, default=0)
     quantity_of_stock_on_display = models.FloatField(null=True, blank=True)
@@ -273,6 +300,15 @@ class InventoryRecord(AbstractBase):
     updated_catalog = models.BooleanField(default=False)
 
     # TODO Refactor to use recommended retail price for updating the selling prices of items
+
+    @property
+    def source(self):
+        """Get record source."""
+        from elites_retail_portal.debit.models import SaleItem
+        if self.record_type == "ADD" and SaleItem.objects.filter(id=self.addition_guid).exists():
+            return "RECEIPT CANCELATION"
+
+        return None
 
     def get_latest_record(self, record_type=None):
         """Get the latest record."""
@@ -297,24 +333,29 @@ class InventoryRecord(AbstractBase):
                 {'inventory_item': '{} is not hooked up to an active {} Inventory. '
                  'Please set that up first'.format(inventory_item, inventory_type)})
 
+    def validate_unique_addition_guid(self):
+        """Validate a record is created once from the given source."""
+        if self.addition_guid and self.__class__.objects.filter(
+                addition_guid=self.addition_guid).exclude(id=self.id).exists():
+            msg = "An inventory record from this source already exists, please audit your entries"
+            raise ValidationError({"addition": msg})
+
     def get_opening_stock(self):
         """Initialize opening stock."""
+        existing_record = self.__class__.objects.filter(id=self.id).first()
         records = self.__class__.objects.filter(
-            inventory=self.inventory, inventory_item=self.inventory_item)
+            inventory=self.inventory, inventory_item=self.inventory_item,
+            record_date__lte=self.record_date).exclude(id=self.id)
+
         if records.exists():
-            latest_record = records.latest('updated_on')
+            if existing_record:
+                self.opening_stock_quantity = existing_record.opening_stock_quantity
+            latest_record = records.latest('record_date')
             self.opening_stock_quantity = latest_record.closing_stock_quantity
             self.opening_stock_total_amount = latest_record.closing_stock_total_amount
         else:
             self.opening_stock_quantity = 0.0
             self.opening_stock_total_amount = 0.0
-
-    def validate_removal_type(self):
-        """Validate removal item has removal type."""
-        if self.record_type == REMOVE:
-            if not self.removal_type:
-                raise ValidationError(
-                    {'removal type': 'Please specify the removal type of this item from inventory'})    # noqa
 
     def calculate_total_amount_recorded(self):
         """Calculate total amount recorded."""
@@ -323,19 +364,30 @@ class InventoryRecord(AbstractBase):
 
     def calculate_closing_stock_quantity(self):
         """Calculate quantity of closing stock."""
-        if self.record_type == ADD:
-            recorded_quantity = self.quantity_recorded
-            recorded_total_amount = self.total_amount_recorded
+        record = self.__class__.objects.filter(id=self.id).first()
+        if record:
+            # It is an update
+            # Ensure accuracy in opening_stock_quantity
+            if self.record_type == ADD:
+                self.closing_stock_quantity = self.opening_stock_quantity + self.quantity_recorded
 
-        if self.record_type == REMOVE:
-            recorded_quantity = -(self.quantity_recorded)
-            latest_add = self.get_latest_record('ADD')
-            unit_price = latest_add.unit_price if latest_add else self.unit_price
-            recorded_total_amount = -(unit_price * self.quantity_recorded)
+            if self.record_type == REMOVE:
+                self.closing_stock_quantity = self.opening_stock_quantity - self.quantity_recorded
 
-        self.closing_stock_quantity = self.opening_stock_quantity + recorded_quantity
-        self.closing_stock_total_amount = round(
-            Decimal(float(self.opening_stock_total_amount) + float(recorded_total_amount)), 2)
+        else:
+            if self.record_type == ADD:
+                recorded_quantity = self.quantity_recorded
+                recorded_total_amount = self.total_amount_recorded
+
+            if self.record_type == REMOVE:
+                recorded_quantity = -(self.quantity_recorded)
+                latest_add = self.get_latest_record('ADD')
+                unit_price = latest_add.unit_price if latest_add else self.unit_price
+                recorded_total_amount = -(float(unit_price) * self.quantity_recorded)
+
+            self.closing_stock_quantity = self.opening_stock_quantity + recorded_quantity
+            self.closing_stock_total_amount = round(
+                Decimal(float(self.opening_stock_total_amount) + float(recorded_total_amount)), 2)
 
     def validate_enterprise_has_set_up_rules(self):
         """Validate the enterprise has set up rules."""
@@ -381,19 +433,26 @@ class InventoryRecord(AbstractBase):
         """Validate removal quantity not more than available quantity."""
         from elites_retail_portal.catalog.models import CatalogItem
         catalog_item = CatalogItem.objects.filter(inventory_item=self.inventory_item).first()
-        if self.record_type == REMOVE and self.quantity_recorded > catalog_item.quantity:
-            raise ValidationError(
-                {'quantity': 'You are trying to remove {} items of '
-                    '{} and the {} has {} items'.format(
-                        self.quantity_recorded, self.inventory_item.item.item_name,
-                        self.inventory.inventory_name, catalog_item.quantity)})
+        if catalog_item:
+            if self.record_type == REMOVE and self.quantity_recorded > catalog_item.quantity:
+                raise ValidationError(
+                    {'quantity': 'You are trying to remove {} items of '
+                        '{} and {} has {} items'.format(
+                            self.quantity_recorded, self.inventory_item.item.item_name,
+                            self.inventory.inventory_name, catalog_item.quantity)})
 
-    def validate_removal_item_has_removal_type(self):
-        """Validate removal item has a removal type."""
+    def validate_removal_from_inventory(self):
+        """Validate removal item has removal type."""
         if self.record_type == REMOVE:
             if not self.removal_type:
+                msg = 'Please specify where to the items are being taken to from the inventory'
                 raise ValidationError(
-                    {'removal_type': 'Please specify where to the items are being taken to from the inventory'})    # noqa
+                    {'removal type': msg})
+
+            if not self.removal_guid:
+                msg = 'Please specify the id of where to the items are being taken'\
+                    'from the inventory'
+                raise ValidationError({'removal_guid': msg})
 
     def validate_unique_record_code(self):
         """Validate record code is unique for the inventory."""
@@ -406,12 +465,14 @@ class InventoryRecord(AbstractBase):
 
     def clean(self) -> None:
         """Clean Inventory Record."""
+        # TODO Switch operation type to audit_type
         self.validate_enterprise_has_set_up_rules()
         self.validate_inventory_item_exists_in_inventory()
+        self.validate_unique_addition_guid()
         self.validate_cannot_remove_more_than_existing_items()
-        self.validate_removal_item_has_removal_type()
+        self.validate_removal_from_inventory()
         self.validate_unique_record_code()
-        return super().clean()
+        super().clean()
 
     def update_catalog_item(self):
         """Update Catalog item."""
@@ -423,6 +484,11 @@ class InventoryRecord(AbstractBase):
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         available_inventory = enterprise_setup_rules.available_inventory
         standard_catalog = enterprise_setup_rules.standard_catalog
+        audit_fields = {
+            'created_by': self.created_by,
+            'updated_by': self.updated_by,
+            'enterprise': self.enterprise,
+        }
 
         if not self.inventory.inventory_type == available_inventory.inventory_type:
             self.__class__.objects.filter(id=self.id).update(updated_catalog=False)
@@ -432,13 +498,6 @@ class InventoryRecord(AbstractBase):
             inventory_item=self.inventory_item, is_active=True, enterprise=self.enterprise)
 
         catalog_item = catalog_items.first()
-
-        audit_fields = {
-            'created_by': self.created_by,
-            'updated_by': self.updated_by,
-            'enterprise': self.enterprise,
-        }
-
         if not catalog_item:
             catalog_item = CatalogItem.objects.filter(
                 inventory_item=self.inventory_item, is_active=True,
@@ -451,56 +510,89 @@ class InventoryRecord(AbstractBase):
             CatalogCatalogItem.objects.create(
                 catalog=standard_catalog, catalog_item=catalog_item, **audit_fields)
 
+        details_payload = {
+            'quantity_before': catalog_item.quantity or 0,
+            'quantity_recorded': self.quantity_recorded if self.record_type == ADD else -self.quantity_recorded,    # noqa
+        }
+
+        # Save to get the quantity
+        if self.record_type == "ADD" and self.unit_price != catalog_item.marked_price:
+            catalog_item.marked_price = self.unit_price
+
+        catalog_item.quantity = catalog_item.get_quantity()
+        catalog_item.save()
+        catalog_item.refresh_from_db()
+
         catalog_item_audit_payload = {
             'catalog_item': catalog_item,
             'inventory_record': self,
-            'operation_type': 'CREATE',
+            'operation_type': 'CREATE INVENTORY RECORD',
+            'audit_type': 'CREATE',
             'record_type': self.record_type,
         }
 
         catalog_item_audit_logs = CatalogItemAuditLog.objects.filter(catalog_item=catalog_item)
+        create_catalog_item_audit_logs = catalog_item_audit_logs.filter(
+            audit_type='CREATE', operation_type__in=AUDIT_CREATE_OPERATION_CHOICES)
+        if catalog_item_audit_logs.exists():
+            latest_catalog_item_audit_log = catalog_item_audit_logs.latest('audit_date')
+            details_payload[
+                'marked_price_before'] = latest_catalog_item_audit_log.marked_price_after
+            details_payload[
+                'discount_amount_before'] = latest_catalog_item_audit_log.discount_amount_after
+            details_payload[
+                'selling_price_before'] = latest_catalog_item_audit_log.selling_price_after
+            details_payload[
+                'threshold_price_before'] = latest_catalog_item_audit_log.threshold_price_after
 
         if self.record_type == ADD:
-            details_payload = {
-                'quantity_before': catalog_item.quantity,
-                'quantity_recorded': self.quantity_recorded,
-                'marked_price_recorded': self.unit_price
-            }
+            details_payload['marked_price_recorded'] = self.unit_price
+            catalog_item_audit_payload['operation_type'] = 'UPDATE INVENTORY RECORD'
+            record_catalog_item_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
+            if not record_catalog_item_audit_logs.exists():
+                audit_quantity = self.quantity_recorded
+                if self.record_date < catalog_item.created_on:
+                    catalog_item_audit_payload['audit_type'] = 'UPDATE'
+                    latest_create_log = create_catalog_item_audit_logs.latest('audit_date')
+                    audit_quantity = self.quantity_recorded - latest_create_log.quantity_recorded
 
-            if not catalog_item_audit_logs.exists():
-                catalog_item.quantity = self.quantity_recorded
                 catalog_item.marked_price = self.unit_price
                 catalog_item.save()
+
+                details_payload['quantity_recorded'] = audit_quantity
+                catalog_item_audit_payload['operation_type'] = 'CREATE INVENTORY RECORD'
+                catalog_item_audit_payload['audit_type'] = 'CREATE'
+
                 CatalogItemAuditLog.objects.create(
                     **catalog_item_audit_payload, **details_payload, **audit_fields)
                 self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
                 return
 
-            catalog_item_audit_payload['operation_type'] = 'UPDATE'
-            record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
-            if not record_audit_logs.exists():
-                catalog_item.quantity += self.quantity_recorded
-                catalog_item.marked_price = self.unit_price
-                catalog_item.save()
-                CatalogItemAuditLog.objects.create(
-                    **catalog_item_audit_payload, **details_payload, **audit_fields)
-                self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
-                return
+            latest_record_catalog_item_audit_log = record_catalog_item_audit_logs.latest(
+                'audit_date')
+            create_record_catalog_item_audit_logs = record_catalog_item_audit_logs.filter(
+                audit_type='CREATE', operation_type__in=AUDIT_CREATE_OPERATION_CHOICES)
 
-            latest_catalog_audit_log = record_audit_logs.latest('created_on')
-            if latest_catalog_audit_log.quantity_recorded == self.quantity_recorded and latest_catalog_audit_log.marked_price_recorded == self.unit_price:  # noqa
+            if latest_record_catalog_item_audit_log.quantity_recorded == self.quantity_recorded and latest_record_catalog_item_audit_log.marked_price_recorded == self.unit_price:  # noqa
                 # Early return Quantities and Prices look good
                 return
 
-            diff = self.quantity_recorded - latest_catalog_audit_log.quantity_recorded
-            catalog_item.quantity += diff
-            details_payload['quantity_recorded'] = diff
-            latest_inventory_record_log = catalog_item_audit_logs.latest(
-                'inventory_record__created_on')
-            catalog_item.marked_price = latest_inventory_record_log.marked_price_recorded
-            if latest_inventory_record_log.inventory_record == self:
-                catalog_item.marked_price = self.unit_price
-            catalog_item.save()
+            if create_record_catalog_item_audit_logs.exists():
+                audit_quantity = self.quantity_recorded
+                latest_create_record_catalog_item_audit_log = create_record_catalog_item_audit_logs.latest('audit_date')    # noqa
+                audit_quantity = self.quantity_recorded - latest_create_record_catalog_item_audit_log.quantity_recorded # noqa
+                if self.record_date < catalog_item.created_on:
+                    audit_quantity = self.quantity_recorded - latest_create_record_catalog_item_audit_log.quantity_after    # noqa
+            else:
+                latest_record_catalog_item_audit_log = record_catalog_item_audit_logs.latest(
+                    'audit_date')
+                audit_quantity = self.quantity_recorded - latest_record_catalog_item_audit_log.quantity_after   # noqa
+
+            catalog_item.marked_price = self.unit_price
+            details_payload['quantity_recorded'] = audit_quantity
+            details_payload['quantity_recorded'] = audit_quantity
+            catalog_item_audit_payload['audit_type'] = 'UPDATE'
+            catalog_item_audit_payload['operation_type'] = 'UPDATE INVENTORY RECORD'
             CatalogItemAuditLog.objects.create(
                 **catalog_item_audit_payload, **details_payload, **audit_fields)
             self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
@@ -508,29 +600,26 @@ class InventoryRecord(AbstractBase):
 
         if self.record_type == REMOVE:
             catalog_item.refresh_from_db()
-            details_payload = {
-                'quantity_before': catalog_item.quantity,
-                'quantity_recorded': -self.quantity_recorded,
-            }
+            details_payload['quantity_recorded'] = -self.quantity_recorded
 
-            record_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
-            if not record_audit_logs.exists():
-                catalog_item.quantity -= self.quantity_recorded
-                catalog_item.save()
+            record_catalog_item_audit_logs = catalog_item_audit_logs.filter(inventory_record=self)
+            if not record_catalog_item_audit_logs.exists():
+                latest_catalog_item_audit_log = catalog_item_audit_logs.latest('audit_date')
                 CatalogItemAuditLog.objects.create(
                     **catalog_item_audit_payload, **details_payload, **audit_fields)
                 self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
                 return
 
-            latest_catalog_audit_log = record_audit_logs.latest('created_on')
-            if latest_catalog_audit_log.quantity_recorded == -self.quantity_recorded:  # noqa
+            latest_record_catalog_item_audit_log = record_catalog_item_audit_logs.latest(
+                'audit_date')
+
+            if latest_record_catalog_item_audit_log.quantity_recorded == -self.quantity_recorded:  # noqa
                 # Early return quantities look good
                 return
 
-            diff = latest_catalog_audit_log.quantity_recorded - self.quantity_recorded
-            catalog_item.quantity += diff
-            details_payload['quantity_recorded'] = diff
-            catalog_item.save()
+            quantity_diff = self.quantity_recorded - abs(
+                latest_record_catalog_item_audit_log.quantity_recorded)
+            details_payload['quantity_recorded'] = -quantity_diff
             CatalogItemAuditLog.objects.create(
                 **catalog_item_audit_payload, **details_payload, **audit_fields)
             self.__class__.objects.filter(id=self.id).update(updated_catalog=True)
@@ -541,11 +630,21 @@ class InventoryRecord(AbstractBase):
         if not self.record_code:
             from random import randint
             self.record_code = str(randint(10000, 10000000))
+        record = self.__class__.objects.filter(id=self.id).first()
+        if record:
+            self.record_date = record.record_date if record.record_date else timezone.now()
         self.get_opening_stock()
         self.calculate_total_amount_recorded()
         self.calculate_closing_stock_quantity()
         super().save(*args, **kwargs)
         self.update_catalog_item()
+        existing_record = self.__class__.objects.filter(id=self.id).first()
+        if existing_record:
+            for record in InventoryRecord.objects.filter(
+                    inventory=self.inventory, inventory_item=self.inventory_item,
+                    record_date__gt=self.record_date):
+                # NOTE If you remove the record date check it will loop infinitely
+                record.save()
 
     class Meta:
         """Meta class for Base Inventory class."""
