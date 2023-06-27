@@ -5,6 +5,9 @@ import datetime
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
+from elites_retail_portal.enterprise_mgt.models import (
+    EnterpriseSetupRule, EnterpriseSetupRuleInventory,
+    EnterpriseSetupRuleCatalog, EnterpriseSetupRuleWarehouse)
 from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemModel, ItemType,
     ItemUnits, UnitsItemType, Units)
@@ -15,10 +18,11 @@ from elites_retail_portal.enterprises.models import Enterprise
 from elites_retail_portal.catalog.models import (
     CatalogItem, Catalog, CatalogCatalogItem)
 from elites_retail_portal.orders.models import (
-    Cart, CartItem, Order, InstantOrderItem, InstallmentsOrderItem, Installment)
+    Cart, CartItem, Order, InstantOrderItem,
+    InstallmentsOrderItem, Installment, OrderTransaction)
 from elites_retail_portal.customers.models import Customer
-from elites_retail_portal.enterprise_mgt.models import EnterpriseSetupRule
 from elites_retail_portal.warehouses.models import Warehouse
+from elites_retail_portal.transactions.models import Transaction, Payment
 
 from tests.utils import APITests
 
@@ -34,7 +38,7 @@ class TestOrderView(APITests, APITestCase):
         """."""
         franchise = baker.make(
             Enterprise, reg_no='BS-9049444', name='Enterprise One',
-            enterprise_code='EAL-E/EO-MB/2201-01', business_type='SHOP')
+            enterprise_code='EAL-E/EO-MB/2301-01', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         customer = baker.make(
             Customer, customer_number=9876, first_name='John',
@@ -148,24 +152,28 @@ class TestOrderView(APITests, APITestCase):
             ItemUnits, item=item8, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=12, enterprise=enterprise_code)
 
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
 
         inventory_item1 = baker.make(InventoryItem, item=item1, enterprise=enterprise_code)
         inventory_item2 = baker.make(InventoryItem, item=item2, enterprise=enterprise_code)
@@ -177,78 +185,53 @@ class TestOrderView(APITests, APITestCase):
         inventory_item8 = baker.make(InventoryItem, item=item8, enterprise=enterprise_code)
 
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item1,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item1,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item2,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item2,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item3,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item3,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item4,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item4,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item5,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item5,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item6,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item6,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item7,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item7,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item8,
-            enterprise=enterprise_code)
-
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item1,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item2,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item3,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item4,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item5,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item6,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item7,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item8,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item8,
             enterprise=enterprise_code)
 
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item1,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item1,
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item2,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item2,
             record_type='ADD', quantity_recorded=10, unit_price=1000, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item3,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item3,
             record_type='ADD', quantity_recorded=5, unit_price=2750, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item4,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item4,
             record_type='ADD', quantity_recorded=15, unit_price=500, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item5,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item5,
             record_type='ADD', quantity_recorded=23, unit_price=1200, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item6,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item6,
             record_type='ADD', quantity_recorded=65, unit_price=250, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item7,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item7,
             record_type='ADD', quantity_recorded=27, unit_price=1350, enterprise=enterprise_code)
         baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item8,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item8,
             record_type='ADD', quantity_recorded=30, unit_price=3000, enterprise=enterprise_code)
 
         catalog_item1 = baker.make(
@@ -379,7 +362,7 @@ class TestInstantOrderItemView(APITests, APITestCase):
         """."""
         franchise = baker.make(
             Enterprise, reg_no='BS-9049444', name='Enterprise One',
-            enterprise_code='EAL-E/EO-MB/2201-01', business_type='SHOP')
+            enterprise_code='EAL-E/EO-MB/2301-01', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -402,38 +385,39 @@ class TestInstantOrderItemView(APITests, APITestCase):
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
+        p_units = s_units
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
+
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
-        baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item, record_type='ADD',
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
@@ -474,7 +458,7 @@ class TestInstallmentOrderItemView(APITests, APITestCase):
         end_date = datetime.datetime.now().date() + datetime.timedelta(90)
         franchise = baker.make(
             Enterprise, reg_no='BS-9049444', name='Enterprise One',
-            enterprise_code='EAL-E/EO-MB/2201-01', business_type='SHOP')
+            enterprise_code='EAL-E/EO-MB/2301-01', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -497,40 +481,40 @@ class TestInstallmentOrderItemView(APITests, APITestCase):
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
+        p_units = s_units
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
+
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item,
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item,
             enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item,
-            enterprise=enterprise_code)
-        baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item,
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item,
             record_type='ADD', quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
@@ -582,7 +566,7 @@ class TestInstallmentView(APITests, APITestCase):
         """."""
         franchise = baker.make(
             Enterprise, reg_no='BS-9049444', name='Enterprise One',
-            enterprise_code='EAL-E/EO-MB/2201-01', business_type='SHOP')
+            enterprise_code='EAL-E/EO-MB/2301-01', business_type='SHOP')
         enterprise_code = franchise.enterprise_code
         cat = baker.make(
             Category, category_name='Cat One',
@@ -605,62 +589,63 @@ class TestInstallmentView(APITests, APITestCase):
         baker.make(UnitsItemType, item_type=item_type, units=s_units, enterprise=enterprise_code)
         s_units.item_types.set([item_type])
         s_units.save()
-        p_units = baker.make(Units, units_name='5 Gas', enterprise=enterprise_code)
-        baker.make(UnitsItemType, item_type=item_type, units=p_units, enterprise=enterprise_code)
-        p_units.item_types.set([item_type])
-        p_units.save()
+        p_units = s_units
         baker.make(
             ItemUnits, item=item, sales_units=s_units, purchases_units=p_units,
             quantity_of_sale_units_per_purchase_unit=1, enterprise=enterprise_code)
-        master_inventory = baker.make(
-            Inventory, inventory_name='Elites Age Supermarket Working Stock Inventory',
-            is_master=True, is_active=True, inventory_type='WORKING STOCK',
-            enterprise=enterprise_code)
-        available_inventory = baker.make(
+
+        inventory = baker.make(
             Inventory, inventory_name='Elites Age Supermarket Available Inventory',
+            is_default=True, is_master=True,
             is_active=True, inventory_type='AVAILABLE', enterprise=enterprise_code)
         catalog = baker.make(
             Catalog, catalog_name='Elites Age Supermarket Standard Catalog',
+            is_default=True,
             description='Standard Catalog', is_standard=True, enterprise=enterprise_code)
-        receiving_warehouse = baker.make(
+        warehouse = baker.make(
             Warehouse, warehouse_name='Elites Private Warehouse', is_default=True,
+            is_receiving=True, enterprise=enterprise_code)
+        rule = baker.make(
+            EnterpriseSetupRule, name='Elites Age', is_active=True, enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleInventory, rule=rule, inventory=inventory,
             enterprise=enterprise_code)
         baker.make(
-            EnterpriseSetupRule, master_inventory=master_inventory,
-            default_inventory=available_inventory, receiving_warehouse=receiving_warehouse,
-            default_warehouse=receiving_warehouse, standard_catalog=catalog,
-            default_catalog=catalog, is_active=True, enterprise=enterprise_code)
+            EnterpriseSetupRuleWarehouse, rule=rule, warehouse=warehouse,
+            enterprise=enterprise_code)
+        baker.make(
+            EnterpriseSetupRuleCatalog, rule=rule, catalog=catalog,
+            enterprise=enterprise_code)
+
         inventory_item = baker.make(InventoryItem, item=item, enterprise=enterprise_code)
         baker.make(
-            InventoryInventoryItem, inventory=master_inventory, inventory_item=inventory_item)
+            InventoryInventoryItem, inventory=inventory, inventory_item=inventory_item)
         baker.make(
-            InventoryInventoryItem, inventory=available_inventory, inventory_item=inventory_item)
-        baker.make(
-            InventoryRecord, inventory=available_inventory, inventory_item=inventory_item, record_type='ADD',
+            InventoryRecord, inventory=inventory, inventory_item=inventory_item, record_type='ADD',
             quantity_recorded=20, unit_price=350, enterprise=enterprise_code)
         catalog_item = baker.make(
             CatalogItem, inventory_item=inventory_item, enterprise=enterprise_code)
         baker.make(
             CatalogCatalogItem, catalog=catalog, catalog_item=catalog_item,
             enterprise=enterprise_code)
-        customer = baker.make(
+        self.customer = baker.make(
             Customer, title='Mr', customer_number=9876, first_name='John',
             last_name='Wick', other_names='Baba Yaga', gender='MALE',
             phone_no='+254712345678', email='johnwick@parabellum.com', enterprise=enterprise_code)
         cart = baker.make(
-            Cart, cart_code='EAS-C-10001', customer=customer, enterprise=enterprise_code)
+            Cart, cart_code='EAS-C-10001', customer=self.customer, enterprise=enterprise_code)
         cart_item = baker.make(
             CartItem, cart=cart, catalog_item=catalog_item, quantity_added=2,
             enterprise=enterprise_code)
         order = baker.make(
-            Order, customer=customer, cart_code=cart.cart_code, enterprise=enterprise_code)
-        installment_order_item = baker.make(
+            Order, customer=self.customer, cart_code=cart.cart_code, enterprise=enterprise_code)
+        self.installment_order_item = baker.make(
             InstallmentsOrderItem, enterprise=enterprise_code,
             order=order, cart_item=cart_item,  confirmation_status='CONFIRMED',
             amount_paid=150, deposit_amount=150)
         next_installment_date = datetime.date.today() + datetime.timedelta(30)
         self.recipe = Recipe(
-            Installment, installment_code='34567', installment_item=installment_order_item, amount=100,
+            Installment, installment_code='34567', installment_item=self.installment_order_item, amount=100,
             next_installment_date=next_installment_date,
             enterprise=enterprise_code)
 
@@ -668,20 +653,113 @@ class TestInstallmentView(APITests, APITestCase):
 
     def test_post(self, status_code=201):
         self.client = authenticate_test_user()
-        instance = self.make()
-        test_data = self.get_test_data(instance)
+        test_post_data = self.post_data()
+        test_post_data['installment_item'] = self.installment_order_item.id
+        test_post_data['customer'] = self.customer.id
         url = reverse(self.url + '-list')
-        resp = self.client.post(url, test_data)
-        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)  # noqa
-        if resp.status_code != 201:
-            return resp
+        OrderTransaction.objects.all().delete()
+        Transaction.objects.all().delete()
+        resp = self.client.post(url, test_post_data)
+        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_post_data)  # noqa
 
-        self.compare_dicts(test_data, resp.data)
+        assert Payment.objects.count() == 1
+        payment = Payment.objects.first()
+        assert payment.account_number == self.customer.phone_no
+        assert payment.customer == self.customer
+        assert payment.paid_amount == 100
+        assert payment.final_amount == 100
+        assert payment.balance_amount == 0
+        assert payment.is_confirmed
+        assert payment.is_installment
+        assert payment.is_processed
 
-        return test_data, resp
+        assert Transaction.objects.count() == 1
+        transaction = Transaction.objects.first()
+        assert transaction.account_number == self.customer.phone_no
+        assert transaction.customer == self.customer
+        assert transaction.amount == 100
+        assert transaction.balance == 0
+        assert transaction.transaction_means == 'CASH'
+        assert transaction.transaction_type == 'DEPOSIT'
+        assert transaction.is_processed
+
+        assert payment.transaction_guid == transaction.id
+
+        assert OrderTransaction.objects.count() == 1
+        order_transaction = OrderTransaction.objects.first()
+        assert order_transaction.amount == 100
+        assert order_transaction.balance == 0
+        assert order_transaction.is_installment
+        assert order_transaction.order == self.installment_order_item.order
+        assert order_transaction.transaction == transaction
+
+        self.installment_order_item.refresh_from_db()
+        assert self.installment_order_item.total_amount == 700
+        assert self.installment_order_item.deposit_amount == 150
+        assert self.installment_order_item.amount_due == 450
+        assert self.installment_order_item.amount_paid == 150 + 100 == 250
+
 
     def test_put(self, status_code=200):
-        pass
+        self.client = authenticate_test_user()
+        # First post
+        test_post_data = self.post_data()
+        test_post_data['installment_item'] = self.installment_order_item.id
+        test_post_data['customer'] = self.customer.id
+        url = reverse(self.url + '-list')
+        OrderTransaction.objects.all().delete()
+        Transaction.objects.all().delete()
+        post_resp = self.client.post(url, test_post_data)
+
+        # Now Put
+        test_data = test_post_data
+        test_data['amount'] = 200
+
+        test_id = post_resp.data['id']
+        url = reverse(
+            self.url + '-detail', kwargs={self.id_field: test_id}
+        )
+        resp = self.client.put(url, test_data)
+
+        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)
+
+        assert Payment.objects.count() == 1
+        payment = Payment.objects.first()
+        assert payment.account_number == self.customer.phone_no
+        assert payment.customer == self.customer
+        assert payment.paid_amount == 200
+        assert payment.final_amount == 200
+        assert payment.balance_amount == 0
+        assert payment.is_confirmed
+        assert payment.is_installment
+        assert payment.is_processed
+
+        assert Transaction.objects.count() == 1
+        transaction = Transaction.objects.first()
+        assert transaction.account_number == self.customer.phone_no
+        assert transaction.customer == self.customer
+        assert transaction.amount == 200
+        assert transaction.balance == 0
+        assert transaction.transaction_means == 'CASH'
+        assert transaction.transaction_type == 'DEPOSIT'
+        assert transaction.is_processed
+
+        assert payment.transaction_guid == transaction.id
+
+        assert OrderTransaction.objects.count() == 1
+        order_transaction = OrderTransaction.objects.first()
+        assert order_transaction.amount == 200
+        assert order_transaction.balance == 0
+        assert order_transaction.is_installment
+        assert order_transaction.order == self.installment_order_item.order
+        assert order_transaction.transaction == transaction
+
+        self.installment_order_item.refresh_from_db()
+        assert self.installment_order_item.total_amount == 700
+        assert self.installment_order_item.deposit_amount == 150
+        assert self.installment_order_item.total_installments == 200
+        assert self.installment_order_item.amount_paid == 150 + 200 == 350
+        assert self.installment_order_item.amount_due == 700 - 350 == 350
 
     def test_patch(self, status_code=200):
         pass

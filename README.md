@@ -1,8 +1,16 @@
-Setup a virtualenv
+This project is a Test Driven Python (Django and Django Rest Framework with gitlab CI/CD) implementation of a real world electronics store use case
+
+-> The store has branches and the data is partitioned by the shop/enterprise code
+
+The project is built on python 3.9. To set up this python version, refer to the `python_installation.sh` script in the project and run it on your linux machine.
+
+To get started set up a virtualenv
 
 [Virtualenv with Virtualenvwrapper](https://www.freecodecamp.org/newsvirtualenv-with-virtualenvwrapper-on-ubuntu-18-04/)
 
-    mkvirtualenv -p python3.9 retail-portal
+-> Replace RETAIL-PORTAL with your virtualenv
+
+    mkvirtualenv -p python3.9 RETAIL-PORTAL
 
 If you have a virtual environment set up.
 
@@ -10,27 +18,63 @@ If you have a virtual environment set up.
 
     python manage.py migrate
 
+    python manage.py load_default_data
+
     python manage.py shell
 
 Once the shell has loaded enter
 
     exec(open('setup_data.py').read())
 
-    exec(open('default_data.py').read())
-
     exit()
 
-Default data is loaded
+`python manage.py load_default_data` command loads the default data
+
+Executing the `setup_data.py` script loads the development data
+
+Now since everything is set up run the server
 
     python manage.py runserver
 
 You should be set now
 
-### Ngrok
+The project uses JWT authentication. To authenticate hit the /api/token/ endpoint with the payload
+
+    {
+        "email": "adminuser@email.com",
+        "password": "Hu46!YftP6^l$"
+    }
+
+Use the access token generated for authentication
+
+By default the project uses an sqlite database.
+
+However, to use postgres source the env.sh file (Run `source env.sh`) and have the database set up
+
+## DATABASE SETUP
+
+    sudo -u postgres psql
+
+    CREATE DATABASE retail_db;
+
+    CREATE USER elites_user WITH PASSWORD 'elites_pass';
+
+    ALTER ROLE elites_user SET client_encoding TO 'utf8';
+    ALTER ROLE elites_user SET default_transaction_isolation TO 'read committed';
+    ALTER ROLE elites_user SET timezone TO 'UTC';
+
+    GRANT ALL PRIVILEGES ON DATABASE retail_db TO elites_user;
+
+    \q
+
+# Other Set ups
+
+## To use Ngrok
 
     ngrok http 8000
 
-### Install redis
+
+## Redis
 
 #### On Ubuntu
 
@@ -57,31 +101,10 @@ You should be set now
 
 https://developer.redis.com/create/windows/
 
-### Ignore this
 
-    echo 'export PATH="/home/gathua/.ebcli-virtual-env/executables:$PATH"' >> ~/.bash_profile && source ~/.bash_profile
+## Additional notes
+
+    -> To delete other branches and keep master branch use
 
     git branch | grep -v "master" | xargs git branch -D
 
-    scrcpy
-
-
-## DATABASE SETUP
-
-    sudo -u postgres psql
-
-    CREATE DATABASE elites_franchise;
-
-    CREATE USER elites_user WITH PASSWORD 'elites_pass';
-
-    ALTER ROLE elites_user SET client_encoding TO 'utf8';
-    ALTER ROLE elites_user SET default_transaction_isolation TO 'read committed';
-    ALTER ROLE elites_user SET timezone TO 'UTC';
-
-    GRANT ALL PRIVILEGES ON DATABASE elites_franchise TO elites_user;
-
-    \q
-
-
-xrandr -o left
-xrandr -o normal

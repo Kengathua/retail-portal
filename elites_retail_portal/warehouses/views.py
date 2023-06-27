@@ -45,4 +45,4 @@ class WarehouseRecordViewSet(BaseViewMixin):
     filterset_class = filters.WarehouseRecordFilter
     search_fields = (
         'warehouse__warehouse_name', 'warehouse__warehouse_code',
-        'warehouse__warehouse_type')
+        'warehouse__warehouse_type', 'warehouse_item__item__item_name')

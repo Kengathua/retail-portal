@@ -140,7 +140,7 @@ def refresh_order(order):
         Q(order_guid=order.id) | Q(cart_code=order.cart_code),
         enterprise=order.enterprise)
 
-    if not customer.is_enterprise:
+    if not customer.is_site:
         carts.update(customer=customer)
     pass
     # Get all sales attached to this order

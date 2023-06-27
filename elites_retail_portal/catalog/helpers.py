@@ -30,9 +30,4 @@ def get_catalog_item_available_quantity(catalog_item, include_encounters=True):
 
     quantity = catalog_item.quantity - unprocessed_encounters_quantity
 
-    if quantity < 0:
-        item_name = catalog_item.inventory_item.item.item_name
-        raise ValidationError(
-            {'catalog_item': 'The available quantity for {} is less than 0'.format(item_name)})
-
     return quantity

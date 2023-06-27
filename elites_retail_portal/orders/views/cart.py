@@ -12,6 +12,9 @@ class CartViewSet(BaseViewMixin):
     queryset = Cart.objects.all().order_by('customer__first_name')
     serializer_class = serializers.CartSerializer
     filterset_class = filters.CartFilter
+    search_fields = (
+        'encounter__encounter_number', 'encounter__receipt_number', 'cart_code',
+        'customer__first_name', 'customer__last_name', 'customer__other_names')
 
 
 class CartItemViewSet(BaseViewMixin):

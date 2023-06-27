@@ -1,0 +1,70 @@
+{% load static %} {% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elites Sales Report - {{report_preview.report_date}}</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="file://{{path_to_static}}{% static 'css/style.css' %}" />
+
+  </head>
+
+  <body>
+    <div class="main-container">
+      <div class="topnav">
+      </div>
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+      <div class="dashboard-content" id="dash_content">
+        <h1>Sales Report {{report_preview.report_date}}</h1>
+        {% if data %}
+        <div class="dashboard-card">
+          <div class="table-holder">
+            <table class="form-table borders">
+              <thead>
+                <th>Item.</th>
+                <th>Quantity In Catalog.</th>
+                <th>Quantity In Inventory.</th>
+                <th>Quantity In Warehouse.</th>
+                <th>Status.</th>
+                <th>Marked Price.</th>
+                <th>Selling Price.</th>
+                <th>Threshold Price.</th>
+
+              </thead>
+              <tbody>
+                {% for stock in data.stock_data %}
+                <tr>
+                  <td class="no-line">{{ stock.item }}</td>
+                  <td class="no-line">{{ stock.quantity_in_catalog }}</td>
+                  <td class="no-line">{{ stock.quantity_in_inventory }}</td>
+                  <td class="no-line">{{ stock.quantity_in_warehouse }}</td>
+                  <td class="no-line">{{ stock.status }}</td>
+                  <td class="no-line">{{ stock.marked_price }}</td>
+                  <td class="no-line">{{ stock.selling_price }}</td>
+                  <td class="no-line">{{ stock.threshold_price }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                  <td class="no-line">TOTALS</td>
+                  <td class="no-line">{{data.totals_data.quantity_in_catalog}}</td>
+                  <td class="no-line">{{data.totals_data.quantity_in_inventory}}</td>
+                  <td class="no-line">{{data.totals_data.quantity_in_warehouse}}</td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

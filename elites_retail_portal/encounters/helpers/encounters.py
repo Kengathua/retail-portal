@@ -2,7 +2,7 @@
 
 from elites_retail_portal.encounters.models import Encounter
 
-UNPROCESSED_ENCOUNTERS_STATUS = ['PENDING', 'ONGOING']
+UNPROCESSED_ENCOUNTERS_STATUSES = ['PENDING', 'ONGOING']
 
 
 def process_billing(encounter):
@@ -13,7 +13,7 @@ def process_billing(encounter):
 def get_all_unprocessed_encounters(enterprise_code, catalog_item=None):
     """."""
     encounters = Encounter.objects.filter(
-        enterprise=enterprise_code, processing_status__in=UNPROCESSED_ENCOUNTERS_STATUS)
+        enterprise=enterprise_code, processing_status__in=UNPROCESSED_ENCOUNTERS_STATUSES)
     if catalog_item and encounters.exists():
         catalog_item_encounter_ids = []
         for encounter in encounters:

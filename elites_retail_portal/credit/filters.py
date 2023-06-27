@@ -24,6 +24,16 @@ class PurchaseItemFilter(SearchComboboxBaseFilter):
         fields = '__all__'
 
 
+class PurchasePaymentFilter(SearchComboboxBaseFilter):
+    """Filter Purchase Payment."""
+
+    class Meta:
+        """Meta class for Purchase Payment filter."""
+
+        model = models.PurchasePayment
+        fields = '__all__'
+
+
 class SalesReturnFilter(SearchComboboxBaseFilter):
     """Filter Sales Returns."""
 

@@ -1,7 +1,7 @@
 """Debit side serializers."""
 
-from rest_framework.fields import CharField
-from rest_framework.fields import SerializerMethodField, ReadOnlyField
+from rest_framework.fields import (
+    SerializerMethodField, ReadOnlyField, CharField)
 
 from elites_retail_portal.common.serializers import BaseSerializerMixin
 from elites_retail_portal.debit import models
@@ -60,7 +60,7 @@ class InventoryRecordSerializer(BaseSerializerMixin):
 class SaleSerializer(BaseSerializerMixin):
     """Sale serializer class."""
 
-    customer_name = CharField(source='customer.full_name')
+    customer_name = ReadOnlyField(source='customer.full_name')
     order_number = CharField(source='order.order_number', read_only=True)
 
     class Meta:

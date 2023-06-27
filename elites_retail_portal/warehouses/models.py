@@ -63,7 +63,7 @@ class WarehouseItem(AbstractBase):
 
     item = models.OneToOneField(
         Item, null=False, blank=False, on_delete=PROTECT, unique=True)
-    description = models.CharField(max_length=300, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     @property
@@ -136,6 +136,31 @@ class Warehouse(AbstractBase):
     is_default = models.BooleanField(default=False)
     pushed_to_edi = models.BooleanField(default=False)
 
+    def get_warehouse_item_summary(self, warehouse_item):
+        """Get warehouse item summary."""
+        summary = {
+            'opening_quantity': 0,
+            'opening_total_amount': 0,
+            'quantity_recorded': 0,
+            'total_amount_recorded': 0,
+            'closing_quantity': 0,
+            'closing_total_amount': 0,
+        }
+        records = WarehouseRecord.objects.filter(
+            warehouse=self, warehouse_item=warehouse_item)
+
+        if not records.exists():
+            return summary
+
+        latest_record = records.latest('record_date')
+        summary['opening_quantity'] = latest_record.opening_quantity
+        summary['opening_total_amount'] = latest_record.opening_total_amount
+        summary['quantity_recorded'] = latest_record.quantity_recorded
+        summary['total_amount_recorded'] = latest_record.total_amount_recorded
+        summary['closing_quantity'] = latest_record.closing_quantity
+        summary['closing_total_amount'] = latest_record.closing_total_amount
+        return summary
+
 
 class WarehouseWarehouseItem(AbstractBase):
     """Warehouse Warehouse Items model."""
@@ -166,6 +191,8 @@ class WarehouseRecord(AbstractBase):
     quantity_recorded = models.FloatField(null=False, blank=False)
     removal_type = models.CharField(
         max_length=300, null=True, blank=True, choices=REMOVE_FROM_WAREHOUSE_CHOICES)
+    removal_guid = models.UUIDField(null=True, blank=True)
+    addition_guid = models.UUIDField(null=True, blank=True)
     unit_price = models.FloatField(null=True, blank=True)
     disposing_price = models.FloatField(null=True, blank=True)
     total_amount_recorded = models.FloatField(null=True, blank=True)
@@ -187,9 +214,10 @@ class WarehouseRecord(AbstractBase):
 
     def get_opening_records(self):
         """Initialize opening records."""
-        records = self.__class__.objects.filter(warehouse=self.warehouse)
+        records = self.__class__.objects.filter(
+            warehouse=self.warehouse, warehouse_item=self.warehouse_item)
         if records.exists():
-            latest_record = records.latest('updated_on')
+            latest_record = records.latest('record_date')
             self.opening_quantity = latest_record.closing_quantity
             self.opening_total_amount = latest_record.closing_total_amount
 
@@ -200,9 +228,26 @@ class WarehouseRecord(AbstractBase):
                 raise ValidationError(
                     {'removal type': 'Please specify the removal type of this item from store'})
 
+    def validate_unique_addition_guid(self):
+        """Validate a record is created once from the given source."""
+        if self.addition_guid and self.__class__.objects.filter(
+                record_type=self.record_type,
+                addition_guid=self.addition_guid).exclude(id=self.id).exists():
+            msg = "A similar warehouse record from this source already exists, \
+                please audit your entries"
+            raise ValidationError({"removal": msg})
+
+    def validate_unique_removal_guid(self):
+        """Validate a record is created once from the given source."""
+        if self.removal_guid and self.__class__.objects.filter(
+                removal_guid=self.removal_guid).exclude(id=self.id).exists():
+            msg = "A similar warehouse record to this destination already exists, \
+                please audit your entries"
+            raise ValidationError({"removal": msg})
+
     def validate_removed_items_exist(self):
         """Validate removal item exists."""
-        if self.record_type == REMOVE:
+        if self.record_type == REMOVE and not self.removal_guid:
             if self.quantity_recorded > self.opening_quantity:
                 if self.opening_quantity == 0.0:
                     raise ValidationError(
@@ -238,6 +283,8 @@ class WarehouseRecord(AbstractBase):
         """Clean Store record model."""
         self.get_opening_records()
         self.validate_removal_type()
+        self.validate_unique_addition_guid()
+        self.validate_unique_removal_guid()
         self.validate_removed_items_exist()
         self.calculate_closing_records()
         return super().clean()
@@ -274,18 +321,35 @@ class WarehouseRecord(AbstractBase):
             inventory_items = default_inventory.inventory_items.filter(id=inventory_item.id)
             inventory_item = inventory_items.first()
 
-            record = InventoryRecord.objects.create(
-                inventory=default_inventory, inventory_item=inventory_item,
-                quantity_recorded=self.quantity_recorded, unit_price=self.unit_price,
-                record_type=ADD,
-                quantity_of_stock_on_display=self.removal_quantity_leaving_warehouse,
-                quantity_of_stock_in_warehouse=self.removal_quantity_remaining_in_warehouse,
-                **audit_fields)
-            return record
+            inventory_record = InventoryRecord.objects.filter(addition_guid=self.id).first()
+
+            if inventory_record:
+                inventory_record.inventory = default_inventory
+                inventory_record.inventory_item = inventory_item
+                inventory_record.quantity_recorded = self.quantity_recorded
+                inventory_record.unit_price = self.unit_price
+                inventory_record.updated_by = self.updated_by
+                inventory_record.quantity_of_stock_on_display = self.removal_quantity_leaving_warehouse     # noqa
+                inventory_record.quantity_of_stock_in_warehouse = self.removal_quantity_remaining_in_warehouse    # noqa
+                inventory_record.save()
+                self.__class__.objects.filter(id=self.id).update(removal_guid=inventory_record.id)
+            else:
+                payload = {
+                    "inventory": default_inventory,
+                    "inventory_item": inventory_item,
+                    "quantity_recorded": self.quantity_recorded,
+                    "unit_price": self.unit_price,
+                    "record_type": ADD,
+                    "addition_guid": self.id,
+                    "quantity_of_stock_on_display": self.removal_quantity_leaving_warehouse,
+                    "quantity_of_stock_in_warehouse": self.removal_quantity_remaining_in_warehouse
+                }
+                inventory_record = InventoryRecord.objects.create(**payload, **audit_fields)
+                self.__class__.objects.filter(id=self.id).update(removal_guid=inventory_record.id)
 
     def save(self, *args, **kwargs):
         """Perform pre save and post save actions."""
-        if self.record_type == REMOVE:
+        if self.record_type == REMOVE and not self.removal_quantity_remaining_in_warehouse:
             self.removal_quantity_remaining_in_warehouse = (
                 self.quantity_recorded - self.removal_quantity_leaving_warehouse)
         self.get_unit_price()

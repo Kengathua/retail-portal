@@ -13,7 +13,7 @@ from rest_framework.test import APITestCase
 from tests.utils.api import APITests
 from elites_retail_portal.items.models import (
     Brand, BrandItemType, Category, Item, ItemAttribute, ItemImage,
-    ItemModel, ItemType, ItemUnits, Units)
+    ItemModel, ItemType, ItemUnits, Units, Product)
 from elites_retail_portal.enterprises.models import Enterprise
 from tests.utils.login_mixins import LoggedInMixin, authenticate_test_user
 
@@ -214,12 +214,12 @@ class TestItemUnitsView(APITests, APITestCase):
             Item, item_model=item_model, barcode='83838388383', make_year=2020,
             enterprise=enterprise_code)
         sales_units_recipe = baker.make(
-            Units, units_name='230 L', enterprise=enterprise_code)
+            Units, units_name='1 PACKET', enterprise=enterprise_code)
         purchases_units_recipe = baker.make(
-            Units, units_name='230 L', enterprise=enterprise_code)
+            Units, units_name='1 DOZEN', enterprise=enterprise_code)
         self.recipe = Recipe(
             ItemUnits, item=item, sales_units=sales_units_recipe,
-            purchases_units=purchases_units_recipe, quantity_of_sale_units_per_purchase_unit=1,
+            purchases_units=purchases_units_recipe, quantity_of_sale_units_per_purchase_unit=12,
             enterprise=enterprise_code)
 
     url = 'v1:items:itemunits'
@@ -314,3 +314,61 @@ class TestItemImages(APITests, APITestCase, LoggedInMixin):
         test_post_list = [test_post_data1, test_post_data2]
         # resp = self.client.post(url, test_post_list)
         pass
+
+
+class TestProductViews(APITests, APITestCase, LoggedInMixin):
+    """."""
+
+    def setUp(self):
+        """."""
+        enterprise = baker.make(
+            Enterprise, name='Enterprise One', enterprise_type='FRANCHISE')
+        enterprise_code = enterprise.enterprise_code
+        cat = baker.make(
+            Category, category_name='Cat One',
+            enterprise=enterprise_code)
+        item_type = baker.make(
+            ItemType, category=cat, type_name='Cooker',
+            enterprise=enterprise_code)
+        brand = baker.make(
+            Brand, brand_name='Samsung', enterprise=enterprise_code)
+        baker.make(
+            BrandItemType, brand=brand, item_type=item_type,
+            enterprise=enterprise_code)
+        item_model = baker.make(
+            ItemModel, brand=brand, item_type=item_type, model_name='GE731K-B SUT',
+            enterprise=enterprise_code)
+        item = baker.make(
+            Item, item_model=item_model, barcode='83838388383', make_year=2020,
+            enterprise=enterprise_code, item_name="Samsung SUT GE731K-B Cooker")
+        self.recipe = Recipe(
+            Product, item=item, serial_number="9939383838", enterprise=enterprise_code)
+
+    url = 'v1:items:product'
+
+    def test_post(self, status_code=201):
+        self.client = authenticate_test_user()
+        product = self.make()
+        Product.objects.all().delete()
+        test_data = self.get_test_data(product)
+        url = reverse(self.url + '-list')
+        resp = self.client.post(url, test_data)
+        assert resp.status_code == status_code, '{}, {}, {}'.format(resp.content, url, test_data)  # noqa
+        if resp.status_code != 201:
+            return resp
+        self.compare_dicts(test_data, resp.data)
+
+        return test_data, resp
+
+    def test_post_multiple_serial_numbers(self, status_code=201):
+        self.client = authenticate_test_user()
+        product = self.make()
+        Product.objects.all().delete()
+        test_data = self.get_test_data(product)
+        test_data.pop('serial_number')
+        test_data['serial_numbers'] = [992929, 939393, 7377363]
+        url = reverse(self.url + '-list')
+        resp = self.client.post(url, test_data)
+        assert resp.status_code == status_code
+
+        return test_data, resp

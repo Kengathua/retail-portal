@@ -22,10 +22,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """."""
-        enterprise = Enterprise.objects.filter(enterprise_code='EAL-E/EA-MB/2201-01').first()
+        enterprise = Enterprise.objects.filter(enterprise_code='EAL-E/EA-MB/2301-01').first()
         if not enterprise:
             enterprise = Enterprise.objects.create(
-                name='Elites Age', enterprise_code='EAL-E/EA-MB/2201-01',
+                name='Elites Age', enterprise_code='EAL-E/EA-MB/2301-01',
                 updated_by=uuid.uuid4(), created_by=uuid.uuid4())
 
         user = get_user_model().objects.filter(email='adminuser@email.com').first()

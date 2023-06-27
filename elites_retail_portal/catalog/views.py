@@ -20,7 +20,8 @@ class SectionViewSet(BaseViewMixin):
     search_fields = ('section_name', 'section_code')
 
     partition_spec = {
-        'ENTERPRISE': 'enterprise'
+        'FRANCHISE': 'enterprise',
+        'INDEPENDENT': 'enterprise'
     }
 
 
@@ -45,6 +46,7 @@ class CatalogItemViewSet(BaseViewMixin):
         'inventory_item__item__item_model__brand__brand_name',
         'inventory_item__item__item_model__item_type__type_name',
         'inventory_item__item__item_code', 'inventory_item__item__barcode')
+    filter_backends = [filters.ProductSearchFilter]
 
     # @method_decorator(vary_on_cookie)
     # @method_decorator(cache_page(60*60*14))
@@ -62,7 +64,8 @@ class CatalogItemViewSet(BaseViewMixin):
         """Add catalog item to catalogs endpoint."""
         user = request.user
         catalog_item = self.get_object()
-        catalogs = Catalog.objects.filter(id__in=request.data['catalogs'])
+        catalog_ids = dict(request.data)['catalogs']
+        catalogs = Catalog.objects.filter(id__in=catalog_ids)
         catalog_item.add_to_catalogs(user, catalogs)
 
         return Response(data={"status": "OK"}, status=status.HTTP_200_OK)

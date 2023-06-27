@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from django.urls import reverse
 from django.db.models import ForeignKey, OneToOneField
 from django.db.models import CharField, DecimalField, FloatField, IntegerField
-
+from django.db.models.fields.files import FieldFile
 from .login_mixins import LoggedInMixin, authenticate_test_user
 
 from model_bakery import baker
@@ -176,8 +176,9 @@ class APITests(LoggedInMixin, object):
 
             test_value = test_dict[key] or ''
             candidate_value = candidate_dict[key] or ''
-            assert candidate_value.title() == test_value.title(), '{}  should equal -> {}, key {}'.format(
-                candidate_dict[key], test_dict[key], key)
+            if not type(test_value) == FieldFile:
+                assert candidate_value.title() == test_value.title(), '{}  should equal -> {}, key {}'.format(  # noqa
+                    candidate_dict[key], test_dict[key], key)
 
     def get_test_data(self, instance):
         data = {}

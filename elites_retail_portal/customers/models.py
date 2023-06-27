@@ -21,7 +21,7 @@ class Customer(BioData):
     account_number = models.CharField(max_length=300, null=True, blank=True)
     join_date = models.DateTimeField(default=timezone.now)
     is_vip = models.BooleanField(default=False)
-    is_enterprise = models.BooleanField(default=False)
+    is_site = models.BooleanField(default=False)
     enterprise_user = models.ForeignKey(
         User, null=True, blank=True, on_delete=models.PROTECT)
     pushed_to_edi = models.BooleanField(default=False)
@@ -63,9 +63,9 @@ class Customer(BioData):
                 raise ValidationError(
                     {'phone_number': 'A customer with this phone number already exists.'})
 
-    def validate_on_site_customer_has_user(self):
+    def validate_is_site_customer_has_user(self):
         """Validate on site customer has a user assigned to them."""
-        if self.is_enterprise:
+        if self.is_site:
             if not self.enterprise_user:
                 raise ValidationError(
                     {'user': 'Please assign a user to the customer'})
@@ -73,7 +73,7 @@ class Customer(BioData):
     def process_site_customer(self):
         """Process site customer."""
         if self.enterprise_user:
-            self.is_enterprise = True
+            self.is_site = True
 
     def clean(self) -> None:
         """Clean the customer model."""
@@ -83,7 +83,7 @@ class Customer(BioData):
             self.validate_unique_customer_number()
             self.validate_unique_account_number()
             self.validate_unique_phone_no()
-            self.validate_on_site_customer_has_user()
+            self.validate_is_site_customer_has_user()
         return super().clean()
 
     def __str__(self) -> str:

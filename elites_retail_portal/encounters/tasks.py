@@ -9,7 +9,7 @@ from elites_retail_portal.encounters.models import Encounter
 from elites_retail_portal.orders.models import (
     CartItem, Cart, Order, OrderTransaction)
 from elites_retail_portal.orders.helpers.orders import process_order_transaction
-
+from elites_retail_portal.items.models import Product
 from elites_retail_portal.transactions.models import Payment, Transaction
 
 from celery import shared_task
@@ -36,10 +36,15 @@ def process_customer_encounter(encounter_id):
         encounters.update(cart_guid=cart.id)
 
         for bill in encounter.billing:
+            product = None
+            product_id = bill.get('product', None)
+            if product_id:
+                product = Product.objects.get(id=product_id)
             catalog_item = CatalogItem.objects.get(id=bill['catalog_item'])
             sale_type = bill['sale_type']
             cart_item_payload = {
                 'cart': cart,
+                'product': product,
                 'catalog_item': catalog_item,
                 'quantity_added': bill['quantity'],
                 'selling_price': bill['unit_price'],
@@ -97,6 +102,7 @@ def process_customer_encounter(encounter_id):
                 transaction.balance += payment.paid_amount
                 transaction.save()
                 payment.transaction_guid = transaction.id
+                payment.is_processed = True
                 payment.save()
 
             else:

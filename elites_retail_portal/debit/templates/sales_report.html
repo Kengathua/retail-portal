@@ -1,0 +1,84 @@
+{% load static %} {% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Elites Sales Report - {{report_preview.report_date}}</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="file://{{path_to_static}}{% static 'css/style.css' %}" />
+
+  </head>
+
+  <body>
+    <div class="main-container">
+      <div class="topnav">
+      </div>
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+      <div class="dashboard-content" id="dash_content">
+        <h1>Sales Report {{report_preview.report_date}}</h1>
+        {% if data %}
+        <div class="dashboard-card">
+          <div class="table-holder">
+            <table class="form-table borders">
+              <thead>
+                <th>Sale Date.</th>
+                <th>Receipt Number.</th>
+                <th>Item.</th>
+                <th>Customer.</th>
+                <th>Status.</th>
+                <th>Processing Status.</th>
+                <th>Order Number.</th>
+                <th>Quantity Sold.</th>
+                <th>Selling Price.</th>
+                <th>Total Price.</th>
+                <th>Amount Paid.</th>
+                <th>Sale Type.</th>
+
+              </thead>
+              <tbody>
+                {% for sale_data in data.sales_data %}
+                <tr>
+                  <td class="no-line">{{ sale_data.sale_date }}</td>
+                  <td class="no-line">{{ sale_data.receipt_number }}</td>
+                  <td class="no-line">{{ sale_data.item }}</td>
+                  <td class="no-line">{{ sale_data.customer }}</td>
+                  <td class="no-line">{{ sale_data.status }}</td>
+                  <td class="no-line">{{ sale_data.processing_status }}</td>
+                  <td class="no-line">{{ sale_data.order_number }}</td>
+                  <td class="no-line">{{ sale_data.quantity_sold }}</td>
+                  <td class="no-line">{{ sale_data.selling_price }}</td>
+                  <td class="no-line">{{ sale_data.total_price }}</td>
+                  <td class="no-line">{{ sale_data.amount_paid }}</td>
+                  <td class="no-line">{{ sale_data.sale_type }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                  <td class="no-line">TOTALS</td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line"></td>
+                  <td class="no-line">{{data.totals_data.total_quantity}}</td>
+                  <td class="no-line"></td>
+                  <td class="no-line">{{data.totals_data.total_price}}</td>
+                  <td class="no-line">{{data.totals_data.amount_paid}}</td>
+                  <td class="no-line"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <script src="./assets/js/btnClicks.js"></script>
+    <script src="./assets/js/sidebar.js"></script>
+  </body>
+</html>

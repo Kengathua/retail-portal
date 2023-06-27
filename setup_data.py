@@ -4,25 +4,14 @@ import django
 django.setup()
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
-from elites_retail_portal.customers.models import Customer
-from elites_retail_portal.debit.models.inventory import InventoryInventoryItem
 from elites_retail_portal.enterprises.models import Enterprise
-from elites_retail_portal.items.models import (
-    Category, ItemType, Brand, BrandItemType, ItemModel,
-    Item, Units, UnitsItemType, ItemUnits)
-from elites_retail_portal.debit.models import (
-    Inventory, InventoryItem, InventoryRecord)
-from elites_retail_portal.warehouses.models import (
-    Warehouse, WarehouseItem, WarehouseRecord, WarehouseWarehouseItem)
-from elites_retail_portal.catalog.models import (
-    Section, Catalog, CatalogItem, CatalogCatalogItem)
-from elites_retail_portal.debit.models import Sale
-from django.conf import settings
 from elites_retail_portal.enterprise_mgt.models import (
-    EnterpriseSetupRule, EnterpriseSetupRuleCatalog, EnterpriseSetupRuleInventory, EnterpriseSetupRuleWarehouse)
+    EnterpriseSetupRule)
+from elites_retail_portal.users.perms import BASE_PERMISSIONS_MAPPER
+from elites_retail_portal.users.roles import BASE_ROLES_MAPPER
+from elites_retail_portal.users.models import (
+    Permission, Role, UserRole, Group, GroupPermission)
 
-# settings.configure()
 
 enterprise = Enterprise.objects.create(
     name='Elites Supermarket', updated_by=uuid.uuid4(), created_by=uuid.uuid4())
@@ -43,3 +32,37 @@ audit_fields = {
 rule,_ = EnterpriseSetupRule.objects.update_or_create(
     name='Elites Age Supermarket', is_default=True, supports_installment_sales=True,
     is_active=True, **audit_fields)
+
+audit_fields = {
+    'created_by': user.id,
+    'updated_by': user.id,
+    'enterprise': user.enterprise
+}
+super_admin_group = Group.objects.filter(
+    name='Super Admin Group', enterprise=user.enterprise).first()
+if not super_admin_group:
+    super_admin_group = Group.objects.create(name='Super Admin Group', **audit_fields)
+
+user.group = super_admin_group
+user.save()
+
+for key, value in BASE_ROLES_MAPPER.items():
+    role = Role.objects.filter(name=key, value=value).first()
+    if not role:
+        try:
+            role = Role.objects.create(name=key, value=value)
+        except Exception as exc:
+            pass
+
+    if not UserRole.objects.filter(user=user, role=role).exists():
+        UserRole.objects.create(user=user, role=role)
+
+for key, value in BASE_PERMISSIONS_MAPPER.items():
+    perm = Permission.objects.filter(name=key, value=value).first()
+    if not perm:
+        perm = Permission.objects.create(name=key, value=value)
+
+    if not GroupPermission.objects.filter(
+            group=super_admin_group, permission=perm).exists():
+        GroupPermission.objects.create(
+            group=super_admin_group, permission=perm, **audit_fields)

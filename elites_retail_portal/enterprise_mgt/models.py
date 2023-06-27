@@ -174,6 +174,19 @@ class EnterpriseSetupRule(AbstractBase):
 
         return warehouse.first()
 
+    def validate_unique_rule(self):
+        """Validate the enterprise has only one rule."""
+        if self.__class__.objects.filter(
+                is_active=True, enterprise=self.enterprise).exclude(id=self.id).exists():
+            msg = "A rule for this enterprise already exists. "\
+                "Please deactivate or update the exisiting rule to continue"
+            raise ValidationError({'rule': msg})
+
+    def clean(self) -> None:
+        """Clean rule warehouse."""
+        self.validate_unique_rule()
+        return super().clean()
+
 
 class EnterpriseSetupRuleInventory(AbstractBase):
     """Rule Inventory model."""

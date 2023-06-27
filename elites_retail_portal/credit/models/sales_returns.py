@@ -43,7 +43,6 @@ class SalesReturn(AbstractBase):
         self.total_price = round(
             Decimal(float(self.unit_price) * float(self.quantity_returned)), 2)
         super().save(*args, **kwargs)
-
         enterprise_setup_rules = get_valid_enterprise_setup_rules(self.enterprise)
         inventory = enterprise_setup_rules.default_inventory
         inventory_item = InventoryItem.objects.get(

@@ -119,3 +119,13 @@ class ItemAttributeFilter(SearchComboboxBaseFilter):
 #                  },
 #              },
 #         }
+
+
+class ProductFilter(SearchComboboxBaseFilter):
+    """Filter individual product."""
+
+    class Meta:
+        """Restrict filter fields."""
+
+        model = models.Product
+        fields = '__all__'
